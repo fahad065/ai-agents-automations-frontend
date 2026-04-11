@@ -401,9 +401,7 @@ export function DashboardAgentDetail({ agentId }: { agentId: string }) {
                         {stat.label}
                       </p>
                     </div>
-                    <p style={{
-                      fontSize: "14px", fontWeight: 600, color: colors.text,
-                    }}>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>
                       {stat.value}
                     </p>
                   </div>
@@ -497,9 +495,7 @@ export function DashboardAgentDetail({ agentId }: { agentId: string }) {
           </div>
 
           {recentVideos.length === 0 ? (
-            <div style={{
-              padding: "48px 24px", textAlign: "center",
-            }}>
+            <div style={{ padding: "48px 24px", textAlign: "center" }}>
               <Video size={28} color={colors.textMuted}
                 style={{ margin: "0 auto 12px" }} />
               <p style={{ color: colors.textMuted, fontSize: "13px", marginBottom: "12px" }}>
@@ -516,52 +512,57 @@ export function DashboardAgentDetail({ agentId }: { agentId: string }) {
               </Link>
             </div>
           ) : (
-            recentVideos.map((video, i) => (
-              <div key={video._id} style={{
-                display: "flex", alignItems: "center",
-                gap: "12px", padding: "14px 20px",
-                borderBottom: i < recentVideos.length - 1
-                  ? `1px solid ${colors.border}` : "none",
-              }}>
-                <div style={{
-                  width: "32px", height: "32px", borderRadius: "8px",
-                  background: "rgba(239,68,68,0.1)",
+            recentVideos.map((video, i) => {
+              const ytUrl = video.youtubeUrl || "";
+              return (
+                <div key={video._id} style={{
                   display: "flex", alignItems: "center",
-                  justifyContent: "center", flexShrink: 0,
-                  fontSize: "14px",
+                  gap: "12px", padding: "14px 20px",
+                  borderBottom: i < recentVideos.length - 1
+                    ? `1px solid ${colors.border}` : "none",
                 }}>
-                  🎬
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: "13px", color: colors.text,
-                    fontWeight: 500,
-                    whiteSpace: "nowrap", overflow: "hidden",
-                    textOverflow: "ellipsis", marginBottom: "2px",
+                  <div style={{
+                    width: "32px", height: "32px", borderRadius: "8px",
+                    background: "rgba(239,68,68,0.1)",
+                    display: "flex", alignItems: "center",
+                    justifyContent: "center", flexShrink: 0,
+                    fontSize: "14px",
                   }}>
-                    {video.title}
-                  </p>
-                  <p style={{ fontSize: "11px", color: colors.textMuted }}>
-                    {new Date(video.createdAt).toLocaleDateString()}
-                  </p>
+                    🎬
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontSize: "13px", color: colors.text, fontWeight: 500,
+                      whiteSpace: "nowrap", overflow: "hidden",
+                      textOverflow: "ellipsis", marginBottom: "2px",
+                    }}>
+                      {video.title}
+                    </p>
+                    <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                      {new Date(video.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <StatusBadge status={video.status} />
+                    {ytUrl && (
+                      <a
+                        href={ytUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#a78bfa" }}
+                      >
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <StatusBadge status={video.status} />
-                  {video.youtubeUrl && (
-                      href={video.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#a78bfa" }}
-                    >
-                      <ExternalLink size={12} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
