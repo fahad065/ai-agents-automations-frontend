@@ -12,6 +12,7 @@ import {
   Mail, Phone, Globe, CreditCard, X,
   Save, AlertTriangle, RefreshCw, Filter,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserData {
   _id: string;
@@ -404,6 +405,7 @@ export function UsersPage() {
   const handleSave = async (userId: string, data: Partial<UserData>) => {
     try {
       await api.patch(`/users/${userId}`, data);
+      toast.success("Updated successfully");
       fetchUsers();
     } catch {}
   };
@@ -411,6 +413,7 @@ export function UsersPage() {
   const handleDelete = async (userId: string) => {
     try {
       await api.delete(`/users/${userId}`);
+      toast.success('Deleted successfully')
       setDeleteUser(null);
       fetchUsers();
     } catch {}

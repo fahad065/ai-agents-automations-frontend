@@ -9,6 +9,7 @@ import {
   User, Bell, Shield, Moon, Sun, Save,
   Loader2, CheckCircle2, AlertCircle, Lock, AlertTriangle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const ReactSelect = dynamic(() => import("react-select"), { ssr: false });
 
@@ -80,29 +81,6 @@ const HEARD_ABOUT = [
   "Friend / Referral", "Reddit", "Other",
 ].map(s => ({ value: s, label: s }));
 
-// ── Toast ─────────────────────────────────────────────────────
-function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error"; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
-  return (
-    <div style={{
-      position: "fixed", bottom: "24px", right: "24px", zIndex: 999,
-      display: "flex", alignItems: "center", gap: "10px",
-      padding: "12px 18px", borderRadius: "10px",
-      background: type === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-      border: `1px solid ${type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
-      boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-      animation: "slideUp 0.3s ease",
-    }}>
-      {type === "success"
-        ? <CheckCircle2 size={15} color="#22c55e" />
-        : <AlertCircle size={15} color="#ef4444" />}
-      <span style={{ fontSize: "13px", fontWeight: 500, color: type === "success" ? "#22c55e" : "#ef4444" }}>
-        {msg}
-      </span>
-    </div>
-  );
-}
-
 // ── Section ───────────────────────────────────────────────────
 function Section({ title, icon: Icon, children, colors }: {
   title: string; icon: any; children: React.ReactNode; colors: any;
@@ -132,7 +110,6 @@ export function SettingsPage() {
   const [tab, setTab] = useState<"profile" | "notifications" | "security">("profile");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const [profile, setProfile] = useState({
     name: "", email: "", phoneNumber: "", country: "",
@@ -240,9 +217,9 @@ export function SettingsPage() {
           heardAboutUs: profile.heardAboutUs,
         },
       });
-      setToast({ msg: "Profile updated successfully", type: "success" });
+      toast.success("Profile updated successfully");
     } catch {
-      setToast({ msg: "Failed to update profile", type: "error" });
+      toast.error("Failed to update profile");
     }
     setSaving(false);
   };
@@ -251,9 +228,9 @@ export function SettingsPage() {
     setSaving(true);
     try {
       await api.patch("/users/profile", notifs);
-      setToast({ msg: "Notification preferences saved", type: "success" });
+      toast.success("Notification preferences saved")
     } catch {
-      setToast({ msg: "Failed to save preferences", type: "error" });
+      toast.error("Failed to save preferences");
     }
     setSaving(false);
   };
@@ -268,10 +245,10 @@ export function SettingsPage() {
         oldPassword: passwords.oldPassword,
         newPassword: passwords.newPassword,
       });
-      setToast({ msg: "Password changed successfully", type: "success" });
+      toast.success("Password changed successfully");
       setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: any) {
-      setToast({ msg: err?.response?.data?.message || "Failed to change password", type: "error" });
+      toast.error(err?.response?.data?.message || "Failed to change password")
     }
     setSaving(false);
   };
@@ -595,8 +572,6 @@ export function SettingsPage() {
           )}
         </>
       )}
-
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

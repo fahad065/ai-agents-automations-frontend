@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { FaInstagram, FaYoutube } from "react-icons/fa";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────
 interface UserModule {
@@ -115,6 +116,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
           instagramAccountId: form.instagramAccountId,
         },
       });
+      toast.success("Module added - 30 days trial started!")
       onSuccess();
       onClose();
     } catch (err: any) {

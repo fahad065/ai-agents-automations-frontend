@@ -10,6 +10,7 @@ import {
   Loader2, Shield, Clock, XCircle, CheckCircle2,
   RefreshCw, Filter, X, Save, AlertTriangle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Subscription {
   _id: string;
@@ -59,6 +60,7 @@ function ManageModal({ sub, onClose, onRefresh, colors, isDark }: {
     setSaving(true); setAction("extend");
     try {
       await api.patch(`/usermodules/${sub._id}/extend-trial`, { days: extendDays });
+      toast.success("Subscription updated.")
       onRefresh(); onClose();
     } catch {}
     setSaving(false); setAction(null);
@@ -68,6 +70,7 @@ function ManageModal({ sub, onClose, onRefresh, colors, isDark }: {
     setSaving(true); setAction("free");
     try {
       await api.patch(`/usermodules/${sub._id}/free-forever`);
+      toast.success("Updated successfully.")
       onRefresh(); onClose();
     } catch {}
     setSaving(false); setAction(null);
@@ -78,6 +81,7 @@ function ManageModal({ sub, onClose, onRefresh, colors, isDark }: {
     setSaving(true); setAction("cancel");
     try {
       await api.patch(`/usermodules/${sub._id}/cancel`);
+      toast.success("Subscription updated")
       onRefresh(); onClose();
     } catch {}
     setSaving(false); setAction(null);

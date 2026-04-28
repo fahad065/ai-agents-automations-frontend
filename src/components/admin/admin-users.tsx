@@ -8,6 +8,7 @@ import {
   Shield, User, ChevronLeft, ChevronRight,
   Loader2, Eye, MoreHorizontal, RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserRow {
   _id: string;
@@ -72,10 +73,13 @@ export function AdminUsers() {
     try {
       if (action === "suspend") {
         await api.patch(`/admin/users/${userId}`, { isActive: false });
+        toast.success("Suspended successfully");
       } else if (action === "activate") {
         await api.patch(`/admin/users/${userId}`, { isActive: true });
+        toast.success("Activated successfully");
       } else if (action === "delete") {
         await api.delete(`/admin/users/${userId}`);
+        toast.success("Deleted successfully");
       } else if (action === "impersonate") {
         const res = await api.post(`/admin/users/${userId}/impersonate`);
         alert(`Impersonating: ${res.data.user.email}\nNote: Full impersonation session coming soon.`);

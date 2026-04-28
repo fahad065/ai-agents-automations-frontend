@@ -5,6 +5,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Bot, Plus, Pencil, Trash2, Search, Loader2,
   X, Save, ChevronRight, ChevronLeft, Check,
@@ -286,6 +287,7 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
       } else {
         await api.post("/modules", payload);
       }
+      toast.success(template ? "Module updated successfully" : "Module created successfully");
       onSave();
       onClose();
     } catch (err: any) {

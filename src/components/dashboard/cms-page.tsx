@@ -10,6 +10,7 @@ import {
   Loader2, ChevronLeft, ChevronRight, X, Save,
   Globe, FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface BlogPost {
   _id: string;
@@ -54,7 +55,9 @@ function PageEditModal({ page, onClose, onSave, colors, isDark }: {
     setSaving(true); setError("");
     try {
       await api.put(`/cms/admin/pages/${page.slug}`, { title, content });
+      toast.success('Content updated successfully');
       onSave(); onClose();
+      toast.success("Updated successfully");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to save page");
     }
@@ -175,8 +178,10 @@ function BlogModal({ post, onClose, onSave, colors, isDark }: {
       };
       if (post?._id) {
         await api.put(`/cms/admin/blog/${post._id}`, payload);
+        toast.success("Content updated successfully");
       } else {
         await api.post("/cms/admin/blog", payload);
+        toast.success("Content saved successfully");
       }
       onSave(); onClose();
     } catch (err: any) {
@@ -367,6 +372,7 @@ export function CmsPage() {
     if (!confirm("Delete this blog post?")) return;
     try {
       await api.delete(`/cms/admin/blog/${id}`);
+      toast.success('Deleted successfully');
       fetchData();
     } catch {}
   };

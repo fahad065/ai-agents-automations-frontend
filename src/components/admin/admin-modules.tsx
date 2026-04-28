@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Loader2,
   CheckCircle2, XCircle, Boxes,
 } from "lucide-react";
-
+import { toast } from "sonner";
 interface Module {
   _id: string;
   name: string;
@@ -77,8 +77,10 @@ export function AdminModules() {
       };
       if (editingId) {
         await api.patch(`/admin/modules/${editingId}`, payload);
+        toast.success("Updated successfully");
       } else {
         await api.post("/admin/modules", payload);
+        toast.success("Saved successfully");
       }
       setShowForm(false);
       fetchModules();
