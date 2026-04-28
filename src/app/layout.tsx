@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 import { Providers } from "@/components/layout/providers";
 import { Toaster } from "sonner";
+import { KeepAlive } from "@/components/keep-alive";
 
 export const metadata: Metadata = {
   title: {
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Toaster position="bottom-right" theme="dark" richColors closeButton />
         </Providers>
+        <KeepAlive />
       </body>
     </html>
   );
