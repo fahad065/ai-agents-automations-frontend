@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const post = await res.json();
     return { title: post.metaTitle || post.title, description: post.metaDescription || post.excerpt };
   } catch {
-    return { title: "Blog — NexAgent" };
+    return { title: "Blog — LogicMate" };
   }
 }
 

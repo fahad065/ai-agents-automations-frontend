@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "Sign in to NexAgent",
-    template: "%s | NexAgent",
+    default: "Sign in to LogicMate",
+    template: "%s | LogicMate",
   },
 };
 

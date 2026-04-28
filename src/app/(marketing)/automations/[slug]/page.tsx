@@ -13,18 +13,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const res = await fetch(`${apiUrl}/modules/${slug}`, {
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return { title: "Automation — NexAgent" };
+    if (!res.ok) return { title: "Automation — LogicMate" };
     const automation = await res.json();
     return {
-      title: `${automation.name} — NexAgent`,
+      title: `${automation.name} — LogicMate`,
       description: automation.description,
       openGraph: {
-        title: `${automation.name} — NexAgent`,
+        title: `${automation.name} — LogicMate`,
         description: automation.description,
       },
     };
   } catch {
-    return { title: "Automation — NexAgent" };
+    return { title: "Automation — LogicMate" };
   }
 }
 

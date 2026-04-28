@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const page = await res.json();
     return { title: page.metaTitle, description: page.metaDescription };
   } catch {
-    return { title: "About — NexAgent" };
+    return { title: "About — LogicMate" };
   }
 }
 
