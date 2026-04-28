@@ -97,7 +97,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
     const fetchAgent = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/agents/templates/${slug}`);
+        const res = await fetch(`${apiUrl}/modules/${slug}`);
         if (!res.ok) throw new Error("Agent not found");
         const data = await res.json();
         setAgent(data);
@@ -233,7 +233,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <Link
-                  href={isAuthenticated ? "/dashboard/agents" : "/auth/signup"}
+                  href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: "8px",
                     background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
@@ -583,7 +583,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
               </ul>
 
               <Link
-                href={isAuthenticated ? "/dashboard/agents" : "/auth/signup"}
+                href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                   background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
@@ -639,7 +639,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
             color: colors.text, marginBottom: "12px",
           }}>
-            Ready to deploy {agent.name}?
+            Ready To Deploy {agent.name}?
           </h2>
           <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "28px", lineHeight: 1.7 }}>
             {agent.badge === "Live"
@@ -648,7 +648,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             }
           </p>
           <Link
-            href={isAuthenticated ? "/dashboard/agents" : "/auth/signup"}
+            href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"}
             style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",

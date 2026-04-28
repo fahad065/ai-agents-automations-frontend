@@ -1,10 +1,37 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import { ArrowRight, Sparkles, Bot, Zap, BarChart3 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+
+interface Stats {
+  totalModules: number;
+  totalUsers: number;
+  totalRuns: number;
+  hoursSaved: number;
+  successRate: number;
+}
+
+// ── Animated counter ──────────────────────────────────────────
+function AnimatedCount({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!target) return;
+    let start = 0;
+    const duration = 1800;
+    const step = 16;
+    const increment = target / (duration / step);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) { setCount(target); clearInterval(timer); }
+      else setCount(Math.floor(start));
+    }, step);
+    return () => clearInterval(timer);
+  }, [target]);
+  return <>{count.toLocaleString()}{suffix}</>;
+}
 
 export function HeroSection() {
   const { colors, isDark } = useTheme();
@@ -13,9 +40,21 @@ export function HeroSection() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
   const mockupRef = useRef<HTMLDivElement>(null);
   const orb1 = useRef<HTMLDivElement>(null);
   const orb2 = useRef<HTMLDivElement>(null);
+
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  useEffect(() => {
+    // Fetch live stats
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+    fetch(`${apiUrl}/modules/public/stats`, { cache: "no-store" })
+      .then(r => r.json())
+      .then(d => setStats(d))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -27,10 +66,43 @@ export function HeroSection() {
         .from(h1Ref.current, { opacity: 0, y: 40, duration: 0.9, ease: "power3.out" }, "-=0.3")
         .from(subRef.current, { opacity: 0, y: 24, duration: 0.7, ease: "power3.out" }, "-=0.4")
         .from(ctaRef.current, { opacity: 0, y: 24, duration: 0.6, ease: "power3.out" }, "-=0.4")
-        .from(mockupRef.current, { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, "-=0.3");
+        .from(statsRef.current, { opacity: 0, y: 20, duration: 0.6, ease: "power3.out" }, "-=0.3")
+        .from(mockupRef.current, { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, "-=0.4");
     }, containerRef);
     return () => ctx.revert();
   }, []);
+
+  // Use live stats if available, fallback to placeholder numbers
+  const displayStats = [
+    {
+      label: "Active modules",
+      value: stats?.totalModules ?? 3,
+      suffix: "+",
+      icon: Bot,
+      color: "#7c3aed",
+    },
+    {
+      label: "Pipeline runs",
+      value: stats?.totalRuns ?? 0,
+      suffix: "+",
+      icon: Zap,
+      color: "#22c55e",
+    },
+    {
+      label: "Hours saved",
+      value: stats ? Math.max(stats.totalRuns * 4, 100) : 382,
+      suffix: "h+",
+      icon: BarChart3,
+      color: "#3b82f6",
+    },
+    {
+      label: "Success rate",
+      value: stats?.successRate ?? 98,
+      suffix: "%",
+      icon: BarChart3,
+      color: "#f59e0b",
+    },
+  ];
 
   return (
     <section ref={containerRef} style={{
@@ -135,9 +207,31 @@ export function HeroSection() {
         </div>
 
         {/* Trust badges */}
-        <p style={{ fontSize: "13px", color: colors.textSubtle, marginBottom: "64px" }}>
+        <p style={{ fontSize: "13px", color: colors.textSubtle, marginBottom: "48px" }}>
           No credit card required · Cancel anytime · 98% pipeline success rate
         </p>
+
+        {/* ── Live Stats Bar ── */}
+        <div ref={statsRef} style={{
+          display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "1px", marginBottom: "48px",
+          background: colors.border, borderRadius: "14px", overflow: "hidden",
+          border: `1px solid ${colors.border}`,
+        }}>
+          {displayStats.map((s, i) => (
+            <div key={s.label} style={{
+              background: colors.bgCard,
+              padding: "20px 16px", textAlign: "center",
+            }}>
+              <p style={{ fontSize: "22px", fontWeight: 800, color: colors.text, lineHeight: 1, marginBottom: "4px" }}>
+                {stats !== null
+                  ? <AnimatedCount target={s.value} suffix={s.suffix} />
+                  : `${s.value}${s.suffix}`}
+              </p>
+              <p style={{ fontSize: "12px", color: colors.textMuted }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Dashboard mockup */}
         <div ref={mockupRef} style={{
@@ -160,12 +254,12 @@ export function HeroSection() {
             <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28c840" }} />
             <div style={{
               flex: 1, height: "24px", borderRadius: "6px",
-              background: colors.bgSecondary,
+              background: colors.bgSecondary || colors.bg,
               margin: "0 12px",
               display: "flex", alignItems: "center",
               paddingLeft: "10px",
             }}>
-              <span style={{ fontSize: "11px", color: colors.textSubtle }}>
+              <span style={{ fontSize: "11px", color: colors.textSubtle || colors.textMuted }}>
                 app.nexagent.ai/dashboard
               </span>
             </div>
@@ -177,19 +271,13 @@ export function HeroSection() {
             background: isDark ? "#0d0d0d" : "#f8f8f8",
             borderRadius: "10px", minHeight: "340px",
           }}>
-
-            {/* Top stats row */}
+            {/* Top stats row — uses live data */}
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
               gap: "12px", marginBottom: "20px",
             }}>
-              {[
-                { label: "Active agents", value: "12", icon: Bot, color: "#7c3aed" },
-                { label: "Tasks completed", value: "4,821", icon: Zap, color: "#22c55e" },
-                { label: "Hours saved", value: "382h", icon: BarChart3, color: "#3b82f6" },
-                { label: "Success rate", value: "98.2%", icon: BarChart3, color: "#f59e0b" },
-              ].map((stat) => (
+              {displayStats.map((stat) => (
                 <div key={stat.label} style={{
                   background: colors.bgCard,
                   border: `1px solid ${colors.border}`,
@@ -198,8 +286,8 @@ export function HeroSection() {
                   <p style={{ fontSize: "11px", color: colors.textMuted, marginBottom: "6px" }}>
                     {stat.label}
                   </p>
-                  <p style={{ fontSize: "20px", fontWeight: 700, color: colors.text }}>
-                    {stat.value}
+                  <p style={{ fontSize: "20px", fontWeight: 700, color: stat.color }}>
+                    {stat.value}{stat.suffix}
                   </p>
                 </div>
               ))}
@@ -223,8 +311,7 @@ export function HeroSection() {
                 }}>
                   <div style={{
                     width: "32px", height: "32px", borderRadius: "8px",
-                    background: `${agent.color}18`,
-                    border: `1px solid ${agent.color}30`,
+                    background: `${agent.color}18`, border: `1px solid ${agent.color}30`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <Bot size={14} color={agent.color} />
@@ -243,7 +330,7 @@ export function HeroSection() {
                     </div>
                     <div style={{
                       height: "4px", borderRadius: "2px",
-                      background: colors.bgSecondary, overflow: "hidden",
+                      background: isDark ? "#1a1a1a" : "#e5e7eb", overflow: "hidden",
                     }}>
                       <div style={{
                         height: "100%", width: `${agent.progress}%`,

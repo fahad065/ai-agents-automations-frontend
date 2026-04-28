@@ -44,12 +44,12 @@ export function AgentsListPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiUrl}/agents/templates`, {
+      const res = await fetch(`${apiUrl}/modules?moduleType=agent`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setAgents(data);
+      setAgents(data.data || data);
     } catch {
       setError("Failed to load agents. Please try again.");
     } finally {

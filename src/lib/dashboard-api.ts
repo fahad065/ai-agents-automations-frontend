@@ -29,7 +29,7 @@ export const dashboardApi = {
 
   // Templates
   getTemplates: async () => {
-    const res = await api.get("/agents/templates");
+    const res = await api.get("/modules?moduleType=agent");
     return res.data;
   },
 

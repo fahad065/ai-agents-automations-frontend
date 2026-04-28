@@ -56,7 +56,7 @@ export function LoginForm() {
         
         // Route based on role
         if (res.user.role === "admin") {
-          router.push("/admin");
+          router.push("/dashboard");
         } else {
           router.push("/dashboard");
         }

@@ -89,7 +89,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     const fetchAutomation = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/automations/templates/${slug}`);
+        const res = await fetch(`${apiUrl}/modules/${slug}`);
         if (!res.ok) throw new Error("Not found");
         const data = await res.json();
         setAutomation(data);

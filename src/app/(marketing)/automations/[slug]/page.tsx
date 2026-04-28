@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    const res = await fetch(`${apiUrl}/automations/templates/${slug}`, {
+    const res = await fetch(`${apiUrl}/modules/${slug}`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return { title: "Automation — NexAgent" };
