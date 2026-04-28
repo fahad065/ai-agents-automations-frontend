@@ -3,10 +3,13 @@ import { useEffect } from "react";
 
 export function KeepAlive() {
   useEffect(() => {
-    const API = process.env.NEXT_PUBLIC_API_URL || "https://api.logicmate.io/api/v1";
     const ping = async () => {
-      try { await fetch(`${API}/health`); } catch {}
-    };
+        try {
+          const BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') 
+            || "https://api.logicmate.io";
+          await fetch(`${BASE}/health`);
+        } catch {}
+      };
     ping();
     const interval = setInterval(ping, 4 * 60 * 1000);
     return () => clearInterval(interval);
