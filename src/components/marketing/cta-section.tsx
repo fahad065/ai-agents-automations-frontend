@@ -43,7 +43,8 @@ export function CtaSection() {
           borderRadius: "9999px", fontSize: "12px",
           fontWeight: 500, marginBottom: "20px",
         }}>
-          <Zap size={11} /> Start in minutes
+          <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
+          Start in minutes
         </div>
 
         <h2 style={{
@@ -57,7 +58,7 @@ export function CtaSection() {
           lineHeight: 1.7, maxWidth: "520px", margin: "0 auto 40px",
         }}>
           Deploy your first AI agent in minutes. No technical knowledge required.
-          Join thousands of businesses already running on NexAgent.
+          Join thousands of businesses already running on LogicMate.
         </p>
 
         <div style={{

@@ -131,7 +131,7 @@ export function PricingPage() {
             width: "36px", height: "36px", borderRadius: "9px", flexShrink: 0,
             background: "rgba(124,58,237,0.15)", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Zap size={16} color="#a78bfa" />
+            <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>

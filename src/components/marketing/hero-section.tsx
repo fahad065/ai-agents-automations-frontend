@@ -148,7 +148,7 @@ export function HeroSection() {
             fontSize: "13px", fontWeight: 500,
           }}>
             <Sparkles size={13} />
-            Introducing NexAgent — AI automation for everyone
+            Introducing LogicMate — AI automation for everyone
           </span>
         </div>
 
@@ -260,7 +260,7 @@ export function HeroSection() {
               paddingLeft: "10px",
             }}>
               <span style={{ fontSize: "11px", color: colors.textSubtle || colors.textMuted }}>
-                app.nexagent.ai/dashboard
+                app.logicmate.ai/dashboard
               </span>
             </div>
           </div>

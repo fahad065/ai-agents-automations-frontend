@@ -171,7 +171,7 @@ export function BillingPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
             <p style={{ fontSize: "12px", color: colors.textMuted }}>API Key Mode</p>
             <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Zap size={15} color="#3b82f6" />
+            <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
             </div>
           </div>
           <p style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "2px" }}>

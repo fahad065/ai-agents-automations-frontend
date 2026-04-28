@@ -113,7 +113,8 @@ export function AutomationsSection() {
                 borderRadius: "9999px", fontSize: "12px",
                 fontWeight: 500, marginBottom: "12px",
               }}>
-                <Zap size={11} /> Automations
+                <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
+                Automations
               </div>
               <h2 style={{
                 fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 700,

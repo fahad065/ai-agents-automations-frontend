@@ -64,7 +64,7 @@ export function BlogListPage() {
           borderRadius: "9999px", fontSize: "12px",
           fontWeight: 500, marginBottom: "16px",
         }}>
-          <BookOpen size={11} /> NexAgent Blog
+          <BookOpen size={11} /> LogicMate Blog
         </div>
         <h1 style={{
           fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800,
@@ -74,7 +74,7 @@ export function BlogListPage() {
           Insights and tutorials
         </h1>
         <p style={{ fontSize: "17px", color: colors.textMuted, maxWidth: "480px", margin: "0 auto" }}>
-          Product updates, automation tutorials, case studies and tips from the NexAgent team.
+          Product updates, automation tutorials, case studies and tips from the LogicMate team.
         </p>
       </section>
 

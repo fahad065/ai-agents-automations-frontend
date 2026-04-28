@@ -85,7 +85,8 @@ export function AutomationsListPage() {
           borderRadius: "9999px", fontSize: "12px",
           fontWeight: 500, marginBottom: "20px",
         }}>
-          <Zap size={11} /> Automation Marketplace
+          <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
+          Automation Marketplace
         </div>
         <h1 style={{
           fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 800,

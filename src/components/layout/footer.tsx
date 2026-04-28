@@ -61,10 +61,10 @@ export function Footer() {
                 background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Zap size={14} color="white" strokeWidth={2.5} />
+                <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
               </div>
               <span style={{ fontWeight: 700, color: colors.text, fontSize: "15px" }}>
-                Nex<span style={{ color: "#a78bfa" }}>Agent</span>
+                Logic<span style={{ color: "#a78bfa" }}>Mate</span>
               </span>
             </Link>
             <p style={{
@@ -131,7 +131,7 @@ export function Footer() {
           textAlign: "center",
         }}>
           <p style={{ color: colors.textMuted, fontSize: "12px" }}>
-            © {new Date().getFullYear()} NexAgent. All rights reserved.
+            © {new Date().getFullYear()} LogicMate. All rights reserved.
           </p>
         </div>
       </div>

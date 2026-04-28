@@ -10,7 +10,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
   { icon: TrendingUp, value: 4821, suffix: "+", label: "Tasks automated daily", color: "#7c3aed" },
-  { icon: Users, value: 2400, suffix: "+", label: "Businesses using NexAgent", color: "#22c55e" },
+  { icon: Users, value: 2400, suffix: "+", label: "Businesses using LogicMate", color: "#22c55e" },
   { icon: Globe, value: 47, suffix: "", label: "Countries served", color: "#3b82f6" },
   { icon: Clock, value: 98, suffix: "%", label: "Uptime guarantee", color: "#f59e0b" },
 ];

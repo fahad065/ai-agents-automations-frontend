@@ -85,7 +85,7 @@ export function FaqPage() {
   return (
     <CmsPage
       title="Frequently asked questions"
-      subtitle="Everything you need to know about NexAgent"
+      subtitle="Everything you need to know about LogicMate"
     >
       {/* Search */}
       <div style={{ position: "relative", marginBottom: "32px" }}>

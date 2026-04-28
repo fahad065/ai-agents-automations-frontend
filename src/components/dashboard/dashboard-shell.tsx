@@ -445,11 +445,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              <Zap size={15} color="white" strokeWidth={2.5} />
+              <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
             </div>
             <div>
               <span style={{ fontSize: "15px", fontWeight: 700, color: colors.text }}>
-                Nex<span style={{ color: "#a78bfa" }}>Agent</span>
+                Logic<span style={{ color: "#a78bfa" }}>Mate</span>
               </span>
               {isAdmin && (
                 <span style={{ display: "block", fontSize: "10px", color: "#a78bfa", fontWeight: 600, letterSpacing: "0.05em", marginTop: "-1px" }}>
@@ -465,7 +465,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Zap size={15} color="white" strokeWidth={2.5} />
+            <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
           </div>
         )}
         <button onClick={() => setCollapsed(!collapsed)} className="desktop-collapse-btn" style={{

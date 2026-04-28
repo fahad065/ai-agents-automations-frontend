@@ -117,7 +117,7 @@ export function TestimonialsSection() {
             Loved by creators and businesses
           </h2>
           <p style={{ color: colors.textMuted, fontSize: "16px" }}>
-            Real results from real people running on NexAgent
+            Real results from real people running on LogicMate
           </p>
         </div>
       </div>

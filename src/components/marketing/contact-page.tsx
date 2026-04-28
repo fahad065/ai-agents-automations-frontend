@@ -126,7 +126,7 @@ export function ContactPage() {
                 <div>
                   <p style={{ fontSize: "12px", color: colors.textMuted }}>Twitter / X</p>
                   <a href={contactInfo.twitter} target="_blank" rel="noopener noreferrer" style={{ fontSize: "14px", color: "#3b82f6", textDecoration: "none" }}>
-                    @nexagent
+                    @logicmate
                   </a>
                 </div>
               </div>

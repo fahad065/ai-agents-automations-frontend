@@ -43,7 +43,7 @@ export function AboutPage() {
   }
 
   return (
-    <CmsPage title={page?.title || "About NexAgent"} subtitle={page?.subtitle} maxWidth="900px">
+    <CmsPage title={page?.title || "About LogicMate"} subtitle={page?.subtitle} maxWidth="900px">
 
       {/* Content */}
       {page?.content && (

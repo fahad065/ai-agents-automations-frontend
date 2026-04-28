@@ -60,13 +60,13 @@ export function Navbar() {
               background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Zap size={16} color="white" strokeWidth={2.5} />
+              <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
             </div>
             <span style={{
               fontSize: "17px", fontWeight: 700,
               color: colors.text, letterSpacing: "-0.01em",
             }}>
-              Nex<span style={{ color: "#a78bfa" }}>Agent</span>
+              Logic<span style={{ color: "#a78bfa" }}>Mate</span>
             </span>
           </Link>
 
