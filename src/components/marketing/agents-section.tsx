@@ -36,9 +36,9 @@ export function AgentsSection() {
       try {
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/agents/templates`);
+        const res = await fetch(`${apiUrl}/modules?moduleType=agent`);
         const data = await res.json();
-        setAgents(data.slice(0, 4));
+        setAgents((data.data || data).slice(0, 4));
       } catch {
         // Keep empty — section will not render
       } finally {

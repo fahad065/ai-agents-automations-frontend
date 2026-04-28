@@ -39,11 +39,11 @@ export function AutomationsSection() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiUrl}/automations/templates`, {
+        const res = await fetch(`${apiUrl}/modules?moduleType=automation`, {
         cache: "no-store",
       });
       const data = await res.json();
-      setAutomations(data);
+      setAutomations(data.data || data);
     } catch {}
     finally { setLoading(false); }
   }, []);
