@@ -195,7 +195,7 @@ export function HeroSection() {
           }}>
             Start for free <ArrowRight size={16} />
           </Link>
-          <Link href="#automations" style={{
+          <Link href="/agents" style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
             border: `1px solid ${colors.border}`,
             color: colors.textMuted, padding: "14px 32px", borderRadius: "10px",
