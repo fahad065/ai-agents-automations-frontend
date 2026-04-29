@@ -205,7 +205,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                   ))}
                 </div>
               )}
-              {module.requiredApiKeys?.length > 0 && (
+              {/* {module.requiredApiKeys?.length > 0 && (
                 <div style={{
                   background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)",
                   borderRadius: "9px", padding: "14px", marginBottom: "16px",
@@ -229,7 +229,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                     Add these in Settings → API Keys before running the module.
                   </p>
                 </div>
-              )}
+              )} */}
               <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: "9px", padding: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Pricing</p>
@@ -324,28 +324,19 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                 </div>
               </div>
 
-              {/* API Key Mode */}
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "8px" }}>
-                  API Key Mode
-                </label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  {[
-                    { value: "own_keys", label: "Own API Keys", desc: "Lower cost, you manage keys", color: "#22c55e" },
-                    { value: "platform_keys", label: "Platform Keys", desc: "Higher cost, we manage keys", color: "#3b82f6" },
-                  ].map((opt) => (
-                    <button key={opt.value} onClick={() => setForm(f => ({ ...f, apiKeyMode: opt.value }))} style={{
-                      padding: "10px 12px", borderRadius: "8px", cursor: "pointer", textAlign: "left",
-                      border: `2px solid ${form.apiKeyMode === opt.value ? opt.color : colors.border}`,
-                      background: form.apiKeyMode === opt.value ? `${opt.color}08` : colors.bg,
-                    }}>
-                      <p style={{ fontSize: "12px", fontWeight: 600, color: form.apiKeyMode === opt.value ? opt.color : colors.text, marginBottom: "2px" }}>
-                        {opt.label}
-                      </p>
-                      <p style={{ fontSize: "11px", color: colors.textMuted }}>{opt.desc}</p>
-                    </button>
-                  ))}
-                </div>
+              {/* API Key Mode — own keys only for now */}
+              <div style={{
+                padding: "10px 14px", borderRadius: "8px",
+                border: "2px solid #22c55e",
+                background: "rgba(34,197,94,0.06)",
+              }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e", marginBottom: "2px" }}>
+                  Own API Keys ✓
+                </p>
+                <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                  Uses your OpenAI and Seedance keys from Settings → API Keys.
+                  Lower cost, you stay in control.
+                </p>
               </div>
 
               {error && (
