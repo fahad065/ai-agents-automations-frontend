@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
-import { Check, X, Loader2, ExternalLink } from "lucide-react";
+import { X, Loader2, ExternalLink } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { toast } from "sonner";
 
@@ -11,10 +11,15 @@ interface YouTubeStatus {
   connected: boolean;
   channelTitle?: string;
   channelId?: string;
-  expiresAt?: string;
 }
 
-export function YouTubeConnectButton({ colors }: { colors: any }) {
+export function YouTubeConnectButton({
+  colors,
+  compact = false,
+}: {
+  colors: any;
+  compact?: boolean;
+}) {
   const { accessToken } = useAuthStore();
   const [status, setStatus] = useState<YouTubeStatus>({ connected: false });
   const [loading, setLoading] = useState(true);
@@ -22,20 +27,17 @@ export function YouTubeConnectButton({ colors }: { colors: any }) {
 
   useEffect(() => {
     fetchStatus();
-
-    // Check URL params after OAuth redirect
     const params = new URLSearchParams(window.location.search);
-    const youtubeStatus = params.get("youtube");
-    if (youtubeStatus === "connected") {
-      toast.success("YouTube channel connected successfully!");
+    const yt = params.get("youtube");
+    if (yt === "connected") {
+      toast.success("YouTube channel connected!");
       fetchStatus();
-      // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
-    } else if (youtubeStatus === "error") {
-      toast.error("Failed to connect YouTube. Please try again.");
+    } else if (yt === "error") {
+      toast.error("YouTube connection failed. Try again.");
       window.history.replaceState({}, "", window.location.pathname);
-    } else if (youtubeStatus === "denied") {
-      toast.error("YouTube connection was cancelled.");
+    } else if (yt === "denied") {
+      toast.error("YouTube connection cancelled.");
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -55,12 +57,12 @@ export function YouTubeConnectButton({ colors }: { colors: any }) {
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("Disconnect your YouTube channel?")) return;
+    if (!confirm("Disconnect YouTube channel?")) return;
     setDisconnecting(true);
     try {
       await api.delete("/auth/youtube/disconnect");
       setStatus({ connected: false });
-      toast.success("YouTube channel disconnected");
+      toast.success("YouTube disconnected");
     } catch {
       toast.error("Failed to disconnect");
     }
@@ -70,12 +72,12 @@ export function YouTubeConnectButton({ colors }: { colors: any }) {
   if (loading) {
     return (
       <div style={{
-        padding: "12px 16px", borderRadius: "9px",
-        border: `1px solid ${colors.border}`, background: colors.bg,
-        display: "flex", alignItems: "center", gap: "10px",
+        padding: compact ? "6px 10px" : "10px 14px",
+        borderRadius: "8px", border: `1px solid ${colors.border}`,
+        display: "flex", alignItems: "center", gap: "8px",
       }}>
-        <Loader2 size={14} color={colors.textMuted} style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: "13px", color: colors.textMuted }}>Checking YouTube connection...</span>
+        <Loader2 size={12} color={colors.textMuted} style={{ animation: "spin 1s linear infinite" }} />
+        <span style={{ fontSize: "12px", color: colors.textMuted }}>Checking...</span>
       </div>
     );
   }
@@ -83,74 +85,64 @@ export function YouTubeConnectButton({ colors }: { colors: any }) {
   if (status.connected) {
     return (
       <div style={{
-        padding: "12px 16px", borderRadius: "9px",
-        border: "1px solid rgba(34,197,94,0.2)",
+        display: "flex", alignItems: "center", gap: "8px",
+        padding: compact ? "6px 10px" : "10px 14px",
+        borderRadius: "8px",
+        border: "1px solid rgba(34,197,94,0.25)",
         background: "rgba(34,197,94,0.05)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: "12px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "32px", height: "32px", borderRadius: "8px",
-            background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <FaYoutube size={15} color="#ef4444" />
-          </div>
-          <div>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>
-              {status.channelTitle || "YouTube Connected"}
-            </p>
-            <p style={{ fontSize: "11px", color: "#22c55e" }}>
-              ✓ Channel connected — ready to upload
-            </p>
-          </div>
-        </div>
+        <FaYoutube size={compact ? 12 : 14} color="#ef4444" />
+        <span style={{ fontSize: compact ? "11px" : "12px", color: "#22c55e", fontWeight: 500, flex: 1 }}>
+          {status.channelTitle || "YouTube"} connected ✓
+        </span>
         <button onClick={handleDisconnect} disabled={disconnecting} style={{
-          display: "flex", alignItems: "center", gap: "5px",
-          padding: "5px 10px", borderRadius: "6px", cursor: "pointer",
-          border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)",
-          color: "#ef4444", fontSize: "11px", fontWeight: 500,
+          background: "none", border: "none", cursor: "pointer",
+          color: colors.textMuted, padding: "0", display: "flex",
         }}>
-          {disconnecting ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <X size={11} />}
-          Disconnect
+          {disconnecting
+            ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+            : <X size={11} />}
         </button>
       </div>
     );
   }
 
+  if (compact) {
+    return (
+      <button onClick={handleConnect} style={{
+        display: "flex", alignItems: "center", gap: "6px",
+        padding: "6px 10px", borderRadius: "7px", cursor: "pointer",
+        border: "1px solid rgba(239,68,68,0.3)",
+        background: "rgba(239,68,68,0.06)",
+        color: "#ef4444", fontSize: "11px", fontWeight: 600, width: "100%",
+        justifyContent: "center",
+      }}>
+        <FaYoutube size={12} />
+        Connect YouTube
+        <ExternalLink size={10} />
+      </button>
+    );
+  }
+
   return (
     <div style={{
-      padding: "14px 16px", borderRadius: "9px",
+      padding: "12px 14px", borderRadius: "9px",
       border: "1px solid rgba(239,68,68,0.2)",
       background: "rgba(239,68,68,0.04)",
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-        <FaYoutube size={15} color="#ef4444" style={{ marginTop: "2px", flexShrink: 0 }} />
-        <div>
-          <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>
-            Connect YouTube Channel
-          </p>
-          <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.5 }}>
-            Required for auto-upload. Click below to connect your YouTube channel via Google OAuth.
-            We only request upload permissions.
-          </p>
-        </div>
-      </div>
+      <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "8px", lineHeight: 1.5 }}>
+        Connect your YouTube channel to enable auto-upload.
+      </p>
       <button onClick={handleConnect} style={{
         display: "flex", alignItems: "center", gap: "8px",
-        padding: "9px 16px", borderRadius: "8px", cursor: "pointer",
+        padding: "8px 14px", borderRadius: "7px", cursor: "pointer",
         background: "#ef4444", color: "white", border: "none",
-        fontSize: "13px", fontWeight: 600,
-        boxShadow: "0 4px 12px rgba(239,68,68,0.25)",
+        fontSize: "12px", fontWeight: 600,
       }}>
-        <FaYoutube size={14} />
+        <FaYoutube size={13} />
         Connect YouTube Channel
-        <ExternalLink size={12} />
+        <ExternalLink size={11} />
       </button>
-      <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "8px" }}>
-        You can still run the pipeline without connecting — video will be saved locally until connected.
-      </p>
     </div>
   );
 }

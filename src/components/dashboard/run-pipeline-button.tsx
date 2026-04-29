@@ -1,19 +1,14 @@
-// src/components/dashboard/run-pipeline-button.tsx
-// Run button with status polling
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { api } from "@/lib/api";
-import { Play, Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Play, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface RunStatus {
-  status: "idle" | "running" | "uploaded" | "failed" | "no_runs";
-  title?: string;
-  error?: string;
+  status: "idle" | "running" | "complete" | "failed" | "no_runs";
+  errorMessage?: string;
   youtubeUrl?: string;
-  reelUrl?: string;
 }
 
 export function RunPipelineButton({
@@ -28,10 +23,9 @@ export function RunPipelineButton({
   onComplete?: () => void;
 }) {
   const [running, setRunning] = useState(false);
-  const [status, setStatus] = useState<RunStatus>({ status: "idle" });
+  const [lastStatus, setLastStatus] = useState<RunStatus>({ status: "idle" });
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch latest run status on mount
   useEffect(() => {
     fetchStatus();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -41,7 +35,7 @@ export function RunPipelineButton({
     try {
       const res = await api.get(`/usermodules/${userModuleId}/run-status`);
       const data = res.data;
-      setStatus({ status: data.status || "idle", ...data });
+      setLastStatus({ status: data.status || "idle", ...data });
       if (data.status === "running") {
         setRunning(true);
         startPolling();
@@ -55,99 +49,73 @@ export function RunPipelineButton({
       try {
         const res = await api.get(`/usermodules/${userModuleId}/run-status`);
         const data = res.data;
-        setStatus({ status: data.status || "idle", ...data });
-
-        if (data.status === "uploaded") {
+        setLastStatus({ status: data.status || "idle", ...data });
+        if (data.status === "complete" || data.status === "uploaded") {
           setRunning(false);
           clearInterval(pollRef.current!);
           pollRef.current = null;
-          toast.success(`Pipeline complete! ${data.youtubeUrl ? "Video uploaded to YouTube" : "Reel posted to Instagram"}`);
+          toast.success("Pipeline complete! Video uploaded to YouTube ✅");
           onComplete?.();
         } else if (data.status === "failed") {
           setRunning(false);
           clearInterval(pollRef.current!);
           pollRef.current = null;
-          toast.error(`Pipeline failed: ${data.error || "Unknown error"}`);
+          toast.error(`Pipeline failed: ${data.errorMessage || "Unknown error"}`);
         }
       } catch {}
-    }, 15000); // poll every 15 seconds
+    }, 20000);
   };
 
   const handleRun = async () => {
     if (running) return;
     setRunning(true);
-    setStatus({ status: "running" });
-
+    setLastStatus({ status: "running" });
     try {
-      toast.loading("Starting pipeline...", { id: "pipeline-start" });
+      toast.loading("Starting pipeline...", { id: "run" });
       await api.post(`/usermodules/${userModuleId}/run`);
-      toast.success("Pipeline started! This will take 15-25 minutes.", { id: "pipeline-start", duration: 5000 });
+      toast.success("Pipeline started! Takes 15-25 min. Email when done.", { id: "run", duration: 5000 });
       startPolling();
     } catch (err: any) {
       setRunning(false);
-      setStatus({ status: "failed", error: err?.response?.data?.message });
-      toast.error(err?.response?.data?.message || "Failed to start pipeline", { id: "pipeline-start" });
+      setLastStatus({ status: "failed" });
+      toast.error(err?.response?.data?.message || "Failed to start", { id: "run" });
     }
   };
-
-  const getStatusDisplay = () => {
-    switch (status.status) {
-      case "running":
-        return { color: "#f59e0b", icon: <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />, text: "Running..." };
-      case "uploaded":
-        return { color: "#22c55e", icon: <CheckCircle2 size={12} />, text: "Last run: Success" };
-      case "failed":
-        return { color: "#ef4444", icon: <XCircle size={12} />, text: "Last run: Failed" };
-      default:
-        return null;
-    }
-  };
-
-  const statusDisplay = getStatusDisplay();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <button
-        onClick={handleRun}
-        disabled={running}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-          padding: "9px 16px", borderRadius: "8px", cursor: running ? "not-allowed" : "pointer",
-          background: running
-            ? "rgba(245,158,11,0.1)"
-            : "linear-gradient(135deg, #7c3aed, #6d28d9)",
-          border: running ? "1px solid rgba(245,158,11,0.3)" : "none",
-          color: running ? "#f59e0b" : "white",
-          fontSize: "13px", fontWeight: 600,
-          boxShadow: running ? "none" : "0 4px 12px rgba(124,58,237,0.3)",
-          transition: "all 0.2s",
-          width: "100%",
-        }}
-      >
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <button onClick={handleRun} disabled={running} style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+        padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
+        cursor: running ? "not-allowed" : "pointer", border: "none", width: "100%",
+        background: running
+          ? "rgba(245,158,11,0.12)"
+          : "linear-gradient(135deg, #7c3aed, #6d28d9)",
+        color: running ? "#f59e0b" : "white",
+        boxShadow: running ? "none" : "0 2px 8px rgba(124,58,237,0.25)",
+        transition: "all 0.2s",
+      }}>
         {running
-          ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Running pipeline...</>
-          : <><Play size={13} /> Run Now</>
+          ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Running...</>
+          : <><Play size={12} /> Run Now</>
         }
       </button>
 
-      {statusDisplay && (
-        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <span style={{ color: statusDisplay.color }}>{statusDisplay.icon}</span>
-          <span style={{ fontSize: "11px", color: statusDisplay.color }}>{statusDisplay.text}</span>
-          {status.youtubeUrl && (
-            <a href={status.youtubeUrl} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: "11px", color: "#a78bfa", marginLeft: "4px" }}>
-              View video →
-            </a>
-          )}
+      {/* Last run status */}
+      {lastStatus.status === "complete" && (
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <CheckCircle2 size={10} color="#22c55e" />
+          <span style={{ fontSize: "10px", color: "#22c55e" }}>Last run: Success</span>
+        </div>
+      )}
+      {lastStatus.status === "failed" && (
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <XCircle size={10} color="#ef4444" />
+          <span style={{ fontSize: "10px", color: "#ef4444" }}>Last run: Failed</span>
         </div>
       )}
 
-      {running && (
-        <p style={{ fontSize: "11px", color: colors.textMuted, textAlign: "center" }}>
-          Pipeline runs in background. Takes 15-25 min. You'll get an email when done.
-        </p>
-      )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
