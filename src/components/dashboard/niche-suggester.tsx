@@ -1,4 +1,3 @@
-// src/components/dashboard/niche-suggester.tsx
 "use client";
 
 import { useState } from "react";
@@ -16,6 +15,8 @@ const NICHE_SUGGESTIONS: Record<string, string[]> = {
     "Conspiracy theories and cover-ups",
     "Self-improvement and discipline",
     "Social engineering and persuasion",
+    "Quantum physics explained simply",
+    "Ancient civilizations and mysteries",
   ],
   instagram: [
     "Motivational quotes and mindset",
@@ -33,20 +34,21 @@ const NICHE_SUGGESTIONS: Record<string, string[]> = {
   ],
 };
 
-interface NicheSuggesterProps {
+interface Props {
   value: string;
   onChange: (niche: string) => void;
   pipelineType?: string;
   colors: any;
+  isDark: boolean;
 }
 
-export function NicheSuggester({ value, onChange, pipelineType = "youtube", colors }: NicheSuggesterProps) {
+export function NicheSuggester({ value, onChange, pipelineType = "youtube", colors, isDark }: Props) {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const inp = {
-    width: "100%", padding: "9px 12px 9px 12px", borderRadius: "8px", fontSize: "13px",
+    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
     border: `1px solid ${colors.border}`, background: colors.bg,
     color: colors.text, outline: "none", boxSizing: "border-box" as const,
     fontFamily: "inherit",
@@ -54,16 +56,18 @@ export function NicheSuggester({ value, onChange, pipelineType = "youtube", colo
 
   const getSuggestions = () => {
     setLoading(true);
-    // Get niche list for pipeline type
     const list = NICHE_SUGGESTIONS[pipelineType] || NICHE_SUGGESTIONS.default;
-    // Shuffle and pick 5
-    const shuffled = [...list].sort(() => Math.random() - 0.5).slice(0, 5);
+    const shuffled = [...list].sort(() => Math.random() - 0.5).slice(0, 6);
     setTimeout(() => {
       setSuggestions(shuffled);
       setShowSuggestions(true);
       setLoading(false);
     }, 400);
   };
+
+  // Solid background for dropdown
+  const dropdownBg = isDark ? "#1a1a1a" : "#ffffff";
+  const dropdownBorder = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
   return (
     <div style={{ position: "relative" }}>
@@ -77,10 +81,11 @@ export function NicheSuggester({ value, onChange, pipelineType = "youtube", colo
         <button
           onClick={getSuggestions}
           disabled={loading}
-          title="Get niche suggestions"
+          title="Get AI-suggested niches"
           style={{
-            width: "36px", height: "36px", borderRadius: "8px", flexShrink: 0,
-            border: `1px solid ${colors.border}`, background: colors.bg,
+            width: "38px", height: "38px", borderRadius: "8px", flexShrink: 0,
+            border: `1px solid rgba(124,58,237,0.4)`,
+            background: "rgba(124,58,237,0.12)",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             color: "#a78bfa",
           }}
@@ -92,41 +97,66 @@ export function NicheSuggester({ value, onChange, pipelineType = "youtube", colo
         </button>
       </div>
 
-      {/* Suggestions dropdown */}
+      {/* Suggestions dropdown — solid background */}
       {showSuggestions && suggestions.length > 0 && (
-        <div style={{
-          position: "absolute", top: "100%", left: 0, right: "42px", zIndex: 100,
-          background: colors.bgCard, border: `1px solid ${colors.border}`,
-          borderRadius: "8px", marginTop: "4px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-          overflow: "hidden",
-        }}>
-          <p style={{ fontSize: "10px", color: colors.textMuted, padding: "8px 12px 4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Suggested niches
-          </p>
-          {suggestions.map((s, i) => (
-            <button key={i} onClick={() => { onChange(s); setShowSuggestions(false); }} style={{
-              width: "100%", padding: "9px 12px", textAlign: "left",
-              background: "transparent", border: "none", cursor: "pointer",
-              fontSize: "13px", color: colors.text,
-              borderTop: i > 0 ? `1px solid ${colors.border}` : "none",
-            }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(124,58,237,0.08)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              {s}
-            </button>
-          ))}
-          <button onClick={() => setShowSuggestions(false)} style={{
-            width: "100%", padding: "7px 12px", textAlign: "center",
-            background: "transparent", border: "none", cursor: "pointer",
-            borderTop: `1px solid ${colors.border}`,
-            fontSize: "11px", color: colors.textMuted,
+        <>
+          {/* Backdrop to close */}
+          <div
+            onClick={() => setShowSuggestions(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 98 }}
+          />
+          <div style={{
+            position: "absolute", top: "calc(100% + 6px)", left: 0, right: "46px",
+            zIndex: 99,
+            background: dropdownBg,
+            border: `1px solid ${dropdownBorder}`,
+            borderRadius: "10px",
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0,0,0,0.6)"
+              : "0 8px 32px rgba(0,0,0,0.15)",
+            overflow: "hidden",
           }}>
-            Close
-          </button>
-        </div>
+            <div style={{
+              padding: "8px 12px 6px",
+              borderBottom: `1px solid ${dropdownBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <p style={{ fontSize: "10px", color: "#a78bfa", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                ✨ Suggested Niches
+              </p>
+              <button onClick={() => setShowSuggestions(false)} style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: colors.textMuted, fontSize: "11px", padding: "0 2px",
+              }}>✕</button>
+            </div>
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => { onChange(s); setShowSuggestions(false); }}
+                style={{
+                  width: "100%", padding: "10px 14px", textAlign: "left",
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontSize: "13px", color: isDark ? "#e5e5e5" : "#111",
+                  borderTop: i > 0 ? `1px solid ${dropdownBorder}` : "none",
+                  display: "flex", alignItems: "center", gap: "8px",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(124,58,237,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                }}
+              >
+                <span style={{ color: "#a78bfa", fontSize: "12px" }}>→</span>
+                {s}
+              </button>
+            ))}
+          </div>
+        </>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

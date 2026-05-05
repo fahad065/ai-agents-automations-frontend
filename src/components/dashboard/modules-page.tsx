@@ -193,6 +193,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                   onChange={(v) => setForm(f => ({ ...f, niche: v }))}
                   pipelineType={module.pipelineType}
                   colors={colors}
+                  isDark={isDark}  // ← add this
                 />
                 <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>AI will research topics and create content for this niche.</p>
               </div>
