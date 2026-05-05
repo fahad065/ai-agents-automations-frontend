@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
-import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   Package, Plus, Play, Pause, Trash2, Eye,
   Loader2, Search, X, AlertTriangle,
-  ChevronRight, Key, Check,
+  ChevronRight, Key, Check, Settings,
 } from "lucide-react";
 import { FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
 import { RunPipelineButton } from "./run-pipeline-button";
 import { YouTubeConnectButton } from "./youtube-connect-button";
+import { EditModuleModal } from "./edit-module-modal";
+import { NicheSuggester } from "./niche-suggester";
 
 interface UserModule {
   _id: string;
@@ -25,6 +26,8 @@ interface UserModule {
   moduleName: string;
   scheduleFrequency?: string;
   scheduleTime?: string;
+  customPrompt?: string;
+  useCustomPrompt?: boolean;
   totalRuns?: number;
   totalCost?: number;
   createdAt: string;
@@ -144,7 +147,6 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
         </div>
 
         <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
-          {/* Overview tab */}
           {step === "overview" && (
             <div>
               {module.tagline && (
@@ -176,7 +178,6 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
             </div>
           )}
 
-          {/* Setup tab */}
           {step === "setup" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
@@ -184,8 +185,15 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                 <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} style={inp} placeholder="My YouTube Agent" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>Content Niche *</label>
-                <input value={form.niche} onChange={(e) => setForm(f => ({ ...f, niche: e.target.value }))} style={inp} placeholder="e.g. Dark psychology and human behavior" />
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>
+                  Content Niche * <span style={{ color: colors.textMuted, fontWeight: 400 }}>— click 🔄 for suggestions</span>
+                </label>
+                <NicheSuggester
+                  value={form.niche}
+                  onChange={(v) => setForm(f => ({ ...f, niche: v }))}
+                  pipelineType={module.pipelineType}
+                  colors={colors}
+                />
                 <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>AI will research topics and create content for this niche.</p>
               </div>
 
@@ -207,7 +215,6 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                 </div>
               )}
 
-              {/* Schedule */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>Schedule</label>
@@ -223,7 +230,6 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                 </div>
               </div>
 
-              {/* API Key mode — own keys only */}
               <div style={{ padding: "10px 14px", borderRadius: "8px", border: "2px solid #22c55e", background: "rgba(34,197,94,0.05)" }}>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e", marginBottom: "2px" }}>Own API Keys ✓</p>
                 <p style={{ fontSize: "11px", color: colors.textMuted }}>Uses your OpenAI and Seedance keys from Settings → API Keys.</p>
@@ -236,7 +242,6 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
           )}
         </div>
 
-        {/* Footer */}
         <div style={{ padding: "16px 24px", borderTop: `1px solid ${panelBorder}`, display: "flex", gap: "10px" }}>
           {step === "overview" ? (
             <>
@@ -320,7 +325,7 @@ function MarketplaceModal({ onClose, onSubscribed, colors, isDark }: {
                 <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "12px", padding: "32px 24px" }}>
                   <AlertTriangle size={28} color="#f59e0b" style={{ margin: "0 auto 12px" }} />
                   <p style={{ fontSize: "14px", fontWeight: 600, color: isDark ? "#e5e5e5" : "#111", marginBottom: "6px" }}>No modules available yet</p>
-                  <p style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>Admin hasn't published any modules yet. Check back soon.</p>
+                  <p style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>Admin hasn't published any modules yet.</p>
                 </div>
               ) : (
                 <p style={{ fontSize: "13px", color: colors.textMuted }}>No modules match your search</p>
@@ -370,6 +375,8 @@ export function MyModulesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [editModule, setEditModule] = useState<UserModule | null>(null);
+  const [runningModuleId, setRunningModuleId] = useState<string | null>(null);
 
   useEffect(() => { fetchModules(); }, []);
 
@@ -391,6 +398,18 @@ export function MyModulesPage() {
     try { await api.delete(`/usermodules/${id}`); toast.success("Module removed"); fetchModules(); } catch {}
   };
 
+  const handleRunNow = async (id: string) => {
+    try {
+      setRunningModuleId(id);
+      await api.post(`/usermodules/${id}/run`);
+      toast.success("Pipeline started! Takes 15-25 min. You'll get a notification when done.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to start pipeline");
+    } finally {
+      setRunningModuleId(null);
+    }
+  };
+
   const filtered = agents.filter((m) => {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.niche?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || m.status === statusFilter;
@@ -398,6 +417,16 @@ export function MyModulesPage() {
   });
 
   const inp = { padding: "8px 12px", borderRadius: "8px", fontSize: "13px", border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, outline: "none" };
+
+  // Format schedule display
+  const formatSchedule = (module: UserModule) => {
+    if (!module.scheduleFrequency || module.scheduleFrequency === "manual") return "Manual";
+    const time = module.scheduleTime || "08:00";
+    const [h, m] = time.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${module.scheduleFrequency === "daily" ? "Daily" : "Weekly"} ${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+  };
 
   return (
     <div>
@@ -449,6 +478,7 @@ export function MyModulesPage() {
           {filtered.map((module) => {
             const sc = STATUS_COLORS[module.status] || STATUS_COLORS.paused;
             const isYouTube = module.pipelineType === "youtube";
+            const isRunning = runningModuleId === module._id;
             return (
               <div key={module._id} style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px" }}>
                 {/* Card header */}
@@ -462,9 +492,19 @@ export function MyModulesPage() {
                       <p style={{ fontSize: "11px", color: colors.textMuted }}>{module.moduleName}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px", background: sc.bg, color: sc.color, flexShrink: 0 }}>
-                    {module.status}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px", background: sc.bg, color: sc.color }}>
+                      {module.status}
+                    </span>
+                    {/* Settings / Edit button */}
+                    <button
+                      onClick={() => setEditModule(module)}
+                      title="Configure module"
+                      style={{ width: "26px", height: "26px", borderRadius: "6px", cursor: "pointer", border: `1px solid ${colors.border}`, background: colors.bg, color: colors.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <Settings size={12} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Niche */}
@@ -477,10 +517,10 @@ export function MyModulesPage() {
                   {[
                     { label: "Runs", value: module.totalRuns ?? 0 },
                     { label: "Spent", value: `$${(module.totalCost || 0).toFixed(2)}` },
-                    { label: "Schedule", value: module.scheduleFrequency === "daily" ? `Daily ${module.scheduleTime || ""}` : module.scheduleFrequency || "Manual" },
+                    { label: "Schedule", value: formatSchedule(module) },
                   ].map((s, i) => (
                     <div key={i} style={{ flex: 1, padding: "6px 8px", background: colors.bg, borderRadius: "7px", border: `1px solid ${colors.border}`, textAlign: "center" }}>
-                      <p style={{ fontSize: "12px", fontWeight: 700, color: colors.text }}>{s.value}</p>
+                      <p style={{ fontSize: "11px", fontWeight: 700, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.value}</p>
                       <p style={{ fontSize: "10px", color: colors.textMuted }}>{s.label}</p>
                     </div>
                   ))}
@@ -514,8 +554,21 @@ export function MyModulesPage() {
         </div>
       )}
 
+      {/* Marketplace modal */}
       {showMarketplace && (
         <MarketplaceModal onClose={() => setShowMarketplace(false)} onSubscribed={fetchModules} colors={colors} isDark={isDark} />
+      )}
+
+      {/* Edit module modal */}
+      {editModule && (
+        <EditModuleModal
+          module={editModule}
+          onClose={() => setEditModule(null)}
+          onSaved={fetchModules}
+          onRunNow={() => handleRunNow(editModule._id)}
+          colors={colors}
+          isDark={isDark}
+        />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
