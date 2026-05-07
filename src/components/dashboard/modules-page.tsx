@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { YouTubeConnectButton } from "./youtube-connect-button";
 import { EditModuleModal } from "./edit-module-modal";
 import { NicheSuggester } from "./niche-suggester";
+import { PipelineStatusWidget } from "./pipeline-status-widget";
 
 interface UserModule {
   _id: string;
@@ -496,22 +497,14 @@ export function MyModulesPage() {
                     <span style={{ fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px", background: sc.bg, color: sc.color }}>
                       {module.status}
                     </span>
-                    {/* Settings / Edit button */}
-                    <button
-                      onClick={() => setEditModule(module)}
-                      title="Configure module"
-                      style={{ width: "26px", height: "26px", borderRadius: "6px", cursor: "pointer", border: `1px solid ${colors.border}`, background: colors.bg, color: colors.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}
-                    >
-                      <Settings size={12} />
-                    </button>
                   </div>
                 </div>
-
+ 
                 {/* Niche */}
                 {module.niche && (
                   <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "10px", lineHeight: 1.5 }}>{module.niche}</p>
                 )}
-
+ 
                 {/* Stats row */}
                 <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
                   {[
@@ -525,68 +518,38 @@ export function MyModulesPage() {
                     </div>
                   ))}
                 </div>
-
+ 
                 {/* YouTube connect — compact */}
                 {isYouTube && (
                   <div style={{ marginBottom: "10px" }}>
                     <YouTubeConnectButton colors={colors} compact />
                   </div>
                 )}
-
-                {/* Actions */}
+ 
+                {/* Pipeline status widget */}
+                <div style={{ marginBottom: "10px" }}>
+                  <PipelineStatusWidget
+                    userModuleId={module._id}
+                    colors={colors}
+                    onRunNow={() => setEditModule(module)}
+                  />
+                </div>
+ 
+                {/* Configure & Run button + pause + delete */}
                 <div style={{ display: "flex", gap: "6px", alignItems: "stretch" }}>
-                  {/* Logs */}
-                  <button
-                    onClick={() => router.push("/dashboard/pipeline-logs")}
-                    style={{
-                      padding: "10px 14px", borderRadius: "8px", cursor: "pointer",
-                      border: `1px solid ${colors.border}`, background: colors.bg,
-                      color: colors.textMuted, fontSize: "12px",
-                      display: "flex", alignItems: "center", gap: "5px", flexShrink: 0,
-                    }}
-                  >
-                    <Eye size={13} /> Logs
+                  <button onClick={() => setEditModule(module)} style={{
+                    flex: 1, padding: "9px 14px", borderRadius: "8px", cursor: "pointer",
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                    color: "white", border: "none", fontSize: "12px", fontWeight: 600,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
+                  }}>
+                    <Settings2 size={13} /> Configure & Run
                   </button>
- 
-                  {/* Configure & Run — primary action */}
-                  <button
-                    onClick={() => setEditModule(module)}
-                    style={{
-                      flex: 1, padding: "10px 14px", borderRadius: "8px", cursor: "pointer",
-                      background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                      color: "white", border: "none", fontSize: "13px", fontWeight: 600,
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
-                      boxShadow: "0 2px 8px rgba(124,58,237,0.3)",
-                    }}
-                  >
-                    <Settings2 size={14} />
-                    Configure & Run
-                  </button>
- 
-                  {/* Pause/Resume */}
-                  <button
-                    onClick={() => toggleModule(module._id)}
-                    title={["active", "trial"].includes(module.status) ? "Pause module" : "Resume module"}
-                    style={{
-                      width: "38px", height: "38px", borderRadius: "8px", cursor: "pointer",
-                      border: `1px solid ${colors.border}`, background: colors.bg,
-                      color: ["active", "trial"].includes(module.status) ? "#f59e0b" : "#22c55e",
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}
-                  >
+                  <button onClick={() => toggleModule(module._id)} title={["active", "trial"].includes(module.status) ? "Pause" : "Resume"} style={{ width: "36px", height: "36px", borderRadius: "8px", cursor: "pointer", border: `1px solid ${colors.border}`, background: colors.bg, color: ["active", "trial"].includes(module.status) ? "#f59e0b" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {["active", "trial"].includes(module.status) ? <Pause size={13} /> : <Play size={13} />}
                   </button>
- 
-                  {/* Delete */}
-                  <button
-                    onClick={() => deleteModule(module._id)}
-                    title="Remove module"
-                    style={{
-                      width: "38px", height: "38px", borderRadius: "8px", cursor: "pointer",
-                      border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)",
-                      color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}
-                  >
+                  <button onClick={() => deleteModule(module._id)} title="Remove" style={{ width: "36px", height: "36px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Trash2 size={13} />
                   </button>
                 </div>

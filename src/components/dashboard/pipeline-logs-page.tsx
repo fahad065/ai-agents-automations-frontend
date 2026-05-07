@@ -1,14 +1,15 @@
-// src/components/dashboard/pipeline-logs-page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
 import {
-  Loader2, CheckCircle2, XCircle, Clock, Play,
-  ExternalLink, RefreshCw, AlertTriangle,
+  Loader2, CheckCircle2, XCircle, Clock,
+  RefreshCw, Terminal, X,
+  AlertTriangle, Play,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
+import { toast } from "sonner";
 
 interface PipelineRun {
   _id: string;
@@ -25,57 +26,175 @@ interface PipelineRun {
   startedAt?: string;
   completedAt?: string;
   createdAt: string;
+  logs?: string[];
 }
 
 const STEP_LABELS: Record<number, string> = {
-  1: "Researching topics",
-  2: "Writing script",
-  3: "Generating voiceover",
-  4: "Generating video clips",
-  5: "Assembling video",
-  6: "Generating thumbnail",
-  7: "Creating Shorts",
-  8: "Uploading to YouTube",
-  9: "Complete",
+  1: "Researching topics", 2: "Writing script", 3: "Generating voiceover",
+  4: "Generating video clips", 5: "Assembling video", 6: "Generating thumbnail",
+  7: "Creating Shorts", 8: "Uploading to YouTube", 9: "Complete",
 };
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any; label: string }> = {
-  pending:  { color: "#6b7280", bg: "rgba(107,114,128,0.1)", icon: Clock,         label: "Pending" },
-  running:  { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  icon: Loader2,       label: "Running" },
-  complete: { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   icon: CheckCircle2,  label: "Complete" },
-  failed:   { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: XCircle,       label: "Failed" },
+const STATUS_CFG: Record<string, { color: string; bg: string; border: string; label: string }> = {
+  pending:  { color: "#6b7280", bg: "rgba(107,114,128,0.08)", border: "rgba(107,114,128,0.2)",  label: "Pending" },
+  running:  { color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)",   label: "Running" },
+  complete: { color: "#22c55e", bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.3)",    label: "Complete" },
+  uploaded: { color: "#22c55e", bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.3)",    label: "Uploaded" },
+  failed:   { color: "#ef4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.3)",    label: "Failed" },
 };
 
-function StepProgress({ current, total = 9 }: { current: number; total?: number }) {
-  const { colors } = useTheme();
+// ── Log Drawer ────────────────────────────────────────────────
+function LogDrawer({ run, onClose, isDark }: { run: PipelineRun; onClose: () => void; isDark: boolean }) {
+  const [logs, setLogs] = useState<string[]>(run.logs || []);
+  const [refreshing, setRefreshing] = useState(false);
+  const logEndRef = useRef<HTMLDivElement>(null);
+  const isRunning = run.status === "running" || run.status === "pending";
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(refreshLogs, 10000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const refreshLogs = async () => {
+    setRefreshing(true);
+    try {
+      const res = await api.get(`/pipeline-runs/${run.runId}`);
+      setLogs(res.data?.logs || []);
+    } catch {}
+    setRefreshing(false);
+  };
+
+  const getLogColor = (log: string) => {
+    if (log.includes("❌") || log.includes("failed") || log.includes("Error")) return "#f87171";
+    if (log.includes("✅") || log.includes("✓") || log.includes("complete") || log.includes("Saved")) return "#4ade80";
+    if (log.includes("[Step") || log.includes("━━━")) return "#a78bfa";
+    if (log.includes("[TTS]") || log.includes("[Thumbnail]")) return "#60a5fa";
+    if (log.includes("[Seedance]")) return "#fb923c";
+    if (log.includes("[YouTube]") || log.includes("[Assembler]")) return "#34d399";
+    return "#9ca3af";
+  };
+
   return (
-    <div style={{ marginTop: "10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-        <span style={{ fontSize: "11px", color: colors.textMuted }}>
-          Step {current}/{total}: {STEP_LABELS[current] || "Processing..."}
-        </span>
-        <span style={{ fontSize: "11px", color: "#f59e0b" }}>
-          {Math.round((current / total) * 100)}%
-        </span>
-      </div>
-      <div style={{ height: "4px", background: colors.border, borderRadius: "2px", overflow: "hidden" }}>
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 700,
+      background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: "100%", maxWidth: "900px", height: "65vh",
+        background: "#0d0d0d",
+        borderRadius: "16px 16px 0 0",
+        border: "1px solid rgba(255,255,255,0.08)",
+        display: "flex", flexDirection: "column",
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+      }}>
+        {/* Header */}
         <div style={{
-          height: "100%", borderRadius: "2px",
-          width: `${(current / total) * 100}%`,
-          background: "linear-gradient(90deg, #7c3aed, #a78bfa)",
-          transition: "width 0.5s ease",
-        }} />
+          padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Terminal size={14} color="#a78bfa" />
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#e5e5e5" }}>Pipeline Logs</span>
+            {isRunning && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: "4px",
+                padding: "2px 7px", borderRadius: "9999px",
+                background: "rgba(239,68,68,0.2)", color: "#ef4444",
+                fontSize: "10px", fontWeight: 700,
+              }}>
+                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "livePulse 1s infinite" }} />
+                LIVE
+              </span>
+            )}
+            <span style={{ fontSize: "10px", color: "#404040", fontFamily: "monospace" }}>
+              {run.runId?.slice(-20) || run._id}
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button onClick={refreshLogs} disabled={refreshing} style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "#525252", display: "flex", alignItems: "center", gap: "4px", fontSize: "11px",
+            }}>
+              <RefreshCw size={11} style={refreshing ? { animation: "spin 1s linear infinite" } : {}} />
+              Refresh
+            </button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#525252" }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Title */}
+        {run.title && (
+          <div style={{ padding: "8px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+            <span style={{ fontSize: "12px", color: "#525252" }}>Video: </span>
+            <span style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 500 }}>{run.title}</span>
+          </div>
+        )}
+
+        {/* Logs */}
+        <div style={{
+          flex: 1, overflow: "auto", padding: "14px 20px",
+          fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: "12px", lineHeight: 1.8,
+        }}>
+          {logs.length === 0 ? (
+            <div style={{ color: "#404040", padding: "20px 0" }}>
+              {isRunning ? "⏳ Waiting for logs... pipeline is starting" : "No logs available for this run"}
+            </div>
+          ) : (
+            logs.map((log, i) => (
+              <div key={i} style={{ color: getLogColor(log), padding: "0" }}>
+                <span style={{ color: "#303030", userSelect: "none", marginRight: "12px" }}>
+                  {String(i + 1).padStart(3, "0")}
+                </span>
+                {log}
+              </div>
+            ))
+          )}
+          <div ref={logEndRef} />
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: "10px 20px", borderTop: "1px solid rgba(255,255,255,0.05)",
+          display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0,
+        }}>
+          <span style={{ fontSize: "11px", color: "#404040" }}>
+            {logs.length} log entries
+            {isRunning && " · Auto-refreshing every 10s"}
+          </span>
+          {run.youtubeUrl && (
+            <a href={run.youtubeUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              padding: "5px 12px", borderRadius: "6px",
+              background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+              color: "#ef4444", fontSize: "11px", fontWeight: 600, textDecoration: "none",
+            }}>
+              <FaYoutube size={12} /> Watch on YouTube
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
+// ── Run Card ──────────────────────────────────────────────────
 function RunCard({ run, onRefresh, colors, isDark }: {
   run: PipelineRun; onRefresh: () => void; colors: any; isDark: boolean;
 }) {
-  const cfg = STATUS_CONFIG[run.status] || STATUS_CONFIG.pending;
-  const Icon = cfg.icon;
-  const isRunning = run.status === "running";
+  const [showLogs, setShowLogs] = useState(false);
+  const cfg = STATUS_CFG[run.status] || STATUS_CFG.pending;
+  const isRunning = run.status === "running" || run.status === "pending";
+  const step = run.currentStep || 0;
+  const pct = step > 0 ? Math.round((step / (run.totalSteps || 9)) * 100) : 0;
 
   const duration = () => {
     const start = new Date(run.startedAt || run.createdAt);
@@ -86,112 +205,140 @@ function RunCard({ run, onRefresh, colors, isDark }: {
 
   const formatDate = (d?: string) => {
     if (!d) return "—";
-    return new Date(d).toLocaleString("en-US", {
-      month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
+    return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
   return (
-    <div style={{
-      background: colors.bgCard, border: `1px solid ${colors.border}`,
-      borderRadius: "12px", padding: "18px", position: "relative",
-      borderLeft: `3px solid ${cfg.color}`,
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            {/* Status badge */}
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: "4px",
-              padding: "3px 8px", borderRadius: "9999px",
-              background: cfg.bg, color: cfg.color,
-              fontSize: "11px", fontWeight: 600,
+    <>
+      <div style={{
+        background: colors.bgCard,
+        border: `1px solid ${cfg.border}`,
+        borderRadius: "12px",
+        borderLeft: `3px solid ${cfg.color}`,
+        overflow: "hidden",
+      }}>
+        <div style={{ padding: "16px 18px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Status row */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "5px",
+                  padding: "3px 9px", borderRadius: "9999px",
+                  background: cfg.bg, color: cfg.color, fontSize: "11px", fontWeight: 700,
+                }}>
+                  {isRunning && (
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#f59e0b", display: "inline-block", animation: "livePulse 1s infinite" }} />
+                  )}
+                  {cfg.label}
+                </span>
+                <span style={{ fontSize: "11px", color: colors.textMuted, textTransform: "capitalize" }}>
+                  {run.moduleType} pipeline
+                </span>
+                {run.niche && (
+                  <span style={{ fontSize: "11px", color: colors.textMuted }}>· {run.niche}</span>
+                )}
+              </div>
+
+              {/* Title */}
+              <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "5px" }}>
+                {run.title || "Pipeline Run"}
+              </p>
+
+              {/* Meta */}
+              <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "11px", color: colors.textMuted }}>
+                  {formatDate(run.startedAt || run.createdAt)}
+                </span>
+                <span style={{ fontSize: "11px", color: colors.textMuted }}>
+                  {isRunning ? `Running ${duration()}` : `Took ${duration()}`}
+                </span>
+                {run.totalCost && (
+                  <span style={{ fontSize: "11px", color: colors.textMuted }}>
+                    Cost: ~${run.totalCost.toFixed(2)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+              {run.youtubeUrl && (
+                <a href={run.youtubeUrl} target="_blank" rel="noopener noreferrer" style={{
+                  display: "inline-flex", alignItems: "center", gap: "4px",
+                  padding: "6px 10px", borderRadius: "7px",
+                  background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+                  color: "#ef4444", fontSize: "11px", fontWeight: 600, textDecoration: "none",
+                }}>
+                  <FaYoutube size={12} /> Watch
+                </a>
+              )}
+              <button onClick={() => setShowLogs(true)} style={{
+                display: "inline-flex", alignItems: "center", gap: "4px",
+                padding: "6px 10px", borderRadius: "7px",
+                background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)",
+                color: "#a78bfa", fontSize: "11px", fontWeight: 600, cursor: "pointer",
+              }}>
+                <Terminal size={11} /> {isRunning ? "Live Logs" : "View Logs"}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress bar for running */}
+          {isRunning && step > 0 && (
+            <div style={{ marginTop: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                <span style={{ fontSize: "11px", color: "#f59e0b", fontWeight: 500 }}>
+                  Step {step}/9: {STEP_LABELS[step] || "Processing"}
+                </span>
+                <span style={{ fontSize: "11px", color: "#f59e0b", fontWeight: 600 }}>{pct}%</span>
+              </div>
+              <div style={{ height: "5px", background: "rgba(245,158,11,0.15)", borderRadius: "3px", overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", borderRadius: "3px", width: `${pct}%`,
+                  background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
+                  transition: "width 1.5s ease",
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {run.status === "failed" && run.errorMessage && (
+            <div style={{
+              marginTop: "10px", padding: "8px 12px", borderRadius: "7px",
+              background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
+              display: "flex", gap: "8px",
             }}>
-              <Icon size={10} style={isRunning ? { animation: "spin 1s linear infinite" } : {}} />
-              {cfg.label}
-            </span>
-            {/* Module type */}
-            <span style={{ fontSize: "11px", color: colors.textMuted, textTransform: "capitalize" }}>
-              {run.moduleType} pipeline
-            </span>
-          </div>
+              <AlertTriangle size={13} color="#ef4444" style={{ flexShrink: 0, marginTop: "1px" }} />
+              <p style={{ fontSize: "12px", color: "#ef4444", lineHeight: 1.5 }}>
+                {run.errorMessage}
+              </p>
+            </div>
+          )}
 
-          {/* Title */}
-          <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "4px" }}>
-            {run.title || run.niche || "Pipeline run"}
-          </p>
-
-          {/* Meta */}
-          <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "11px", color: colors.textMuted }}>
-              Started: {formatDate(run.startedAt || run.createdAt)}
-            </span>
-            {run.completedAt && (
-              <span style={{ fontSize: "11px", color: colors.textMuted }}>
-                Duration: {duration()}
-              </span>
-            )}
-            {run.totalCost && (
-              <span style={{ fontSize: "11px", color: colors.textMuted }}>
-                Cost: ~${run.totalCost.toFixed(2)}
-              </span>
-            )}
-          </div>
+          {/* Success */}
+          {(run.status === "complete" || run.status === "uploaded") && (
+            <div style={{
+              marginTop: "10px", padding: "8px 12px", borderRadius: "7px",
+              background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
+              display: "flex", alignItems: "center", gap: "8px",
+            }}>
+              <CheckCircle2 size={13} color="#22c55e" />
+              <p style={{ fontSize: "12px", color: "#22c55e" }}>
+                Video uploaded successfully in {duration()}
+              </p>
+            </div>
+          )}
         </div>
-
-        {/* YouTube link */}
-        {run.youtubeUrl && (
-          <a href={run.youtubeUrl} target="_blank" rel="noopener noreferrer" style={{
-            display: "flex", alignItems: "center", gap: "5px",
-            padding: "6px 10px", borderRadius: "7px", flexShrink: 0,
-            background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
-            color: "#ef4444", fontSize: "12px", fontWeight: 600, textDecoration: "none",
-          }}>
-            <FaYoutube size={13} />
-            Watch
-            <ExternalLink size={10} />
-          </a>
-        )}
       </div>
 
-      {/* Step progress for running */}
-      {isRunning && run.currentStep && (
-        <StepProgress current={run.currentStep} total={run.totalSteps || 9} />
-      )}
-
-      {/* Error message */}
-      {run.status === "failed" && run.errorMessage && (
-        <div style={{
-          marginTop: "10px", padding: "8px 12px", borderRadius: "7px",
-          background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
-          display: "flex", alignItems: "flex-start", gap: "8px",
-        }}>
-          <AlertTriangle size={13} color="#ef4444" style={{ marginTop: "1px", flexShrink: 0 }} />
-          <p style={{ fontSize: "12px", color: "#ef4444", lineHeight: 1.5 }}>
-            {run.errorMessage}
-          </p>
-        </div>
-      )}
-
-      {/* Complete success */}
-      {run.status === "complete" && (
-        <div style={{
-          marginTop: "10px", padding: "8px 12px", borderRadius: "7px",
-          background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
-          display: "flex", alignItems: "center", gap: "8px",
-        }}>
-          <CheckCircle2 size={13} color="#22c55e" />
-          <p style={{ fontSize: "12px", color: "#22c55e" }}>
-            Video uploaded successfully in {duration()}
-          </p>
-        </div>
-      )}
-    </div>
+      {showLogs && <LogDrawer run={run} onClose={() => setShowLogs(false)} isDark={isDark} />}
+    </>
   );
 }
 
+// ── Main Page ─────────────────────────────────────────────────
 export function PipelineLogsPage() {
   const { colors, isDark } = useTheme();
   const [runs, setRuns] = useState<PipelineRun[]>([]);
@@ -206,8 +353,7 @@ export function PipelineLogsPage() {
         api.get("/pipeline-runs?limit=20"),
         api.get("/pipeline-runs/stats"),
       ]);
-      const data = runsRes.data?.data || runsRes.data || [];
-      setRuns(data);
+      setRuns(runsRes.data?.data || runsRes.data || []);
       if (statsRes.data) setStats(statsRes.data);
     } catch {}
     if (!silent) setLoading(false);
@@ -215,16 +361,11 @@ export function PipelineLogsPage() {
 
   useEffect(() => {
     fetchRuns();
-    // Poll every 20 seconds if there's a running pipeline
-    pollRef.current = setInterval(() => {
-      fetchRuns(true);
-    }, 20000);
+    pollRef.current = setInterval(() => fetchRuns(true), 20000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
-  const hasRunning = runs.some(r => r.status === "running");
-
-  const inp = { padding: "8px 12px", borderRadius: "8px", fontSize: "13px", border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, outline: "none" };
+  const hasRunning = runs.some(r => r.status === "running" || r.status === "pending");
 
   return (
     <div>
@@ -234,7 +375,12 @@ export function PipelineLogsPage() {
           <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Pipeline Logs</h1>
           <p style={{ fontSize: "14px", color: colors.textMuted }}>
             Track your AI pipeline runs in real time.
-            {hasRunning && <span style={{ color: "#f59e0b", marginLeft: "8px" }}>● Pipeline running...</span>}
+            {hasRunning && (
+              <span style={{ marginLeft: "10px", display: "inline-flex", alignItems: "center", gap: "5px", color: "#f59e0b", fontSize: "13px", fontWeight: 500 }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#f59e0b", display: "inline-block", animation: "livePulse 1s infinite" }} />
+                Pipeline running
+              </span>
+            )}
           </p>
         </div>
         <button onClick={() => fetchRuns()} style={{
@@ -250,22 +396,22 @@ export function PipelineLogsPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "24px" }}>
         {[
-          { label: "Total Runs", value: stats.total, color: "#a78bfa" },
-          { label: "Completed", value: stats.completed, color: "#22c55e" },
-          { label: "Failed", value: stats.failed, color: "#ef4444" },
-          { label: "Running", value: stats.running, color: "#f59e0b" },
+          { label: "Total Runs", value: stats.total || runs.length, color: "#a78bfa", bg: "rgba(124,58,237,0.08)" },
+          { label: "Completed", value: stats.completed || runs.filter(r => r.status === "complete" || r.status === "uploaded").length, color: "#22c55e", bg: "rgba(34,197,94,0.08)" },
+          { label: "Failed", value: stats.failed || runs.filter(r => r.status === "failed").length, color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
+          { label: "Running", value: stats.running || runs.filter(r => r.status === "running").length, color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
         ].map((s, i) => (
           <div key={i} style={{
-            background: colors.bgCard, border: `1px solid ${colors.border}`,
+            background: s.bg, border: `1px solid ${s.color}25`,
             borderRadius: "10px", padding: "14px", textAlign: "center",
           }}>
-            <p style={{ fontSize: "22px", fontWeight: 700, color: s.color }}>{s.value}</p>
+            <p style={{ fontSize: "24px", fontWeight: 700, color: s.color, marginBottom: "2px" }}>{s.value}</p>
             <p style={{ fontSize: "12px", color: colors.textMuted }}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Runs list */}
+      {/* Runs */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px" }}>
           <Loader2 size={28} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
@@ -276,9 +422,7 @@ export function PipelineLogsPage() {
           borderRadius: "12px", padding: "60px 24px", textAlign: "center",
         }}>
           <Play size={40} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: colors.text, marginBottom: "8px" }}>
-            No pipeline runs yet
-          </h2>
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: colors.text, marginBottom: "8px" }}>No pipeline runs yet</h2>
           <p style={{ color: colors.textMuted, fontSize: "14px" }}>
             Go to My Modules → Configure & Run to start your first pipeline.
           </p>
@@ -286,18 +430,15 @@ export function PipelineLogsPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {runs.map(run => (
-            <RunCard
-              key={run._id}
-              run={run}
-              onRefresh={() => fetchRuns(true)}
-              colors={colors}
-              isDark={isDark}
-            />
+            <RunCard key={run._id} run={run} onRefresh={() => fetchRuns(true)} colors={colors} isDark={isDark} />
           ))}
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      `}</style>
     </div>
   );
 }
