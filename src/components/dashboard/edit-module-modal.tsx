@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
   X, ChevronRight, ChevronLeft,
-  Loader2, Check, Wand2, Calendar, Zap, Clock,
+  Loader2, Check, Wand2, Calendar, Zap, Clock, Cpu,
 } from "lucide-react";
 import { NicheSuggester } from "./niche-suggester";
 
@@ -19,6 +19,7 @@ interface UserModule {
   scheduleDays?: string[];
   customPrompt?: string;
   useCustomPrompt?: boolean;
+  videoModel?: string;
 }
 
 interface Props {
@@ -33,24 +34,32 @@ interface Props {
 const STEPS = ["Content", "Schedule", "Launch"];
 
 const DAYS_OF_WEEK = [
-  { value: "0", label: "Sun" },
-  { value: "1", label: "Mon" },
-  { value: "2", label: "Tue" },
-  { value: "3", label: "Wed" },
-  { value: "4", label: "Thu" },
-  { value: "5", label: "Fri" },
+  { value: "0", label: "Sun" }, { value: "1", label: "Mon" },
+  { value: "2", label: "Tue" }, { value: "3", label: "Wed" },
+  { value: "4", label: "Thu" }, { value: "5", label: "Fri" },
   { value: "6", label: "Sat" },
+];
+
+// Fallback models if API fails
+const FALLBACK_MODELS = [
+  { id: "auto", name: "Auto (Recommended)", provider: "LogicMate", pricePerClip: null, desc: "Best model selected automatically" },
+  { id: "alibaba/wan-2.6/text-to-video", name: "Wan 2.6", provider: "Alibaba", pricePerClip: 0.35, desc: "Cost-effective, good quality" },
+  { id: "bytedance/seedance-2.0-fast/text-to-video", name: "Seedance 2.0 Fast", provider: "ByteDance", pricePerClip: 0.78, desc: "Higher quality, faster" },
+  { id: "bytedance/seedance-2.0/text-to-video", name: "Seedance 2.0", provider: "ByteDance", pricePerClip: 0.97, desc: "Best quality, premium" },
 ];
 
 export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, isDark }: Props) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savingRun, setSavingRun] = useState(false);
+  const [models, setModels] = useState(FALLBACK_MODELS);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   const [form, setForm] = useState({
     niche: module.niche || "",
     customPrompt: module.customPrompt || "",
     useCustomPrompt: module.useCustomPrompt || false,
+    videoModel: (module as any).videoModel || "auto",
     scheduleFrequency: module.scheduleFrequency || "daily",
     scheduleTime: module.scheduleTime || "22:30",
     scheduleDays: (module as any).scheduleDays || ["1"],
@@ -67,6 +76,27 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     fontFamily: "inherit",
   };
 
+  // Fetch live models from Atlas
+  useEffect(() => {
+    fetchModels();
+  }, []);
+
+  const fetchModels = async () => {
+    setLoadingModels(true);
+    try {
+      const res = await api.get("/usermodules/atlas-models");
+      if (res.data?.models?.length > 0) {
+        setModels([
+          { id: "auto", name: "Auto (Recommended)", provider: "LogicMate", pricePerClip: null, desc: "Best model selected automatically" },
+          ...res.data.models,
+        ]);
+      }
+    } catch {
+      // Keep fallback models
+    }
+    setLoadingModels(false);
+  };
+
   const to12hr = (time: string) => {
     const [h, m] = time.split(":").map(Number);
     const ampm = h >= 12 ? "PM" : "AM";
@@ -78,13 +108,11 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     if (isManual) return null;
     const now = new Date();
     const [h, m] = form.scheduleTime.split(":").map(Number);
-
     if (form.scheduleFrequency === "daily") {
       const scheduled = new Date();
       scheduled.setHours(h, m, 0, 0);
       return `${scheduled > now ? "Today" : "Tomorrow"} at ${to12hr(form.scheduleTime)}`;
     }
-
     if (form.scheduleFrequency === "weekly") {
       const currentDay = now.getDay();
       const selectedDays = form.scheduleDays.map(Number).sort();
@@ -125,30 +153,26 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     scheduleDays: form.scheduleDays,
     customPrompt: form.customPrompt,
     useCustomPrompt: form.useCustomPrompt,
+    videoModel: form.videoModel,
   });
 
-  // Save schedule only
   const handleSaveSchedule = async () => {
     setSaving(true);
     try {
       await api.patch(`/usermodules/${module._id}`, getPayload());
       toast.success(isManual ? "Settings saved!" : `Schedule saved! Next run: ${getNextRunPreview() || "as scheduled"}`);
-      onSaved();
-      onClose();
+      onSaved(); onClose();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to save");
     }
     setSaving(false);
   };
 
-  // Save + run now
   const handleSaveAndRun = async () => {
     setSavingRun(true);
     try {
       await api.patch(`/usermodules/${module._id}`, getPayload());
-      onSaved();
-      onClose();
-      onRunNow();
+      onSaved(); onClose(); onRunNow();
       toast.success("Settings saved! Pipeline starting now...");
     } catch (err: any) {
       toast.error("Failed to save settings");
@@ -157,7 +181,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   };
 
   const summarySchedule = () => {
-    if (isManual) return "Manual only — run when you want";
+    if (isManual) return "Manual only";
     if (form.scheduleFrequency === "daily") return `Every day at ${to12hr(form.scheduleTime)}`;
     const dayLabels = form.scheduleDays
       .map((d: string) => DAYS_OF_WEEK.find(x => x.value === d)?.label)
@@ -166,6 +190,12 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   };
 
   const nextRun = getNextRunPreview();
+  const selectedModel = models.find(m => m.id === form.videoModel) || models[0];
+  const estimatedCost = form.videoModel === "auto"
+    ? "~$0.35–$0.78"
+    : selectedModel?.pricePerClip
+      ? `~$${(selectedModel.pricePerClip * 8).toFixed(2)}`
+      : "auto";
 
   return (
     <div onClick={onClose} style={{
@@ -173,43 +203,43 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
       background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: "24px",
     }}>
+      {/* Wider dialog */}
       <div onClick={(e) => e.stopPropagation()} style={{
         background: panelBg, border: `1px solid ${panelBorder}`,
-        borderRadius: "18px", width: "100%", maxWidth: "500px",
-        maxHeight: "90vh", display: "flex", flexDirection: "column",
+        borderRadius: "18px", width: "100%", maxWidth: "620px",
+        maxHeight: "92vh", display: "flex", flexDirection: "column",
         boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
       }}>
         {/* Header */}
-        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${panelBorder}` }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <div style={{ padding: "20px 28px", borderBottom: `1px solid ${panelBorder}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
             <div>
-              <p style={{ fontSize: "16px", fontWeight: 700, color: colors.text }}>{module.name}</p>
+              <p style={{ fontSize: "17px", fontWeight: 700, color: colors.text }}>{module.name}</p>
               <p style={{ fontSize: "12px", color: colors.textMuted }}>Configure your pipeline</p>
             </div>
             <button onClick={onClose} style={{
-              width: "28px", height: "28px", borderRadius: "7px",
+              width: "30px", height: "30px", borderRadius: "8px",
               border: `1px solid ${panelBorder}`, background: "transparent",
               color: colors.textMuted, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-            }}><X size={13} /></button>
+            }}><X size={14} /></button>
           </div>
-          {/* Step indicators */}
+          {/* Steppers */}
           <div style={{ display: "flex", alignItems: "center" }}>
             {STEPS.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
                 <button onClick={() => setStep(i)} style={{
                   display: "flex", alignItems: "center", gap: "6px",
-                  padding: "5px 8px", borderRadius: "20px", cursor: "pointer",
+                  padding: "5px 10px", borderRadius: "20px", cursor: "pointer",
                   border: "none", background: step === i ? "rgba(124,58,237,0.15)" : "transparent",
                   color: step === i ? "#a78bfa" : step > i ? "#22c55e" : colors.textMuted,
                   fontSize: "12px", fontWeight: step === i ? 600 : 400, whiteSpace: "nowrap",
                 }}>
                   <div style={{
-                    width: "20px", height: "20px", borderRadius: "50%", flexShrink: 0,
+                    width: "22px", height: "22px", borderRadius: "50%", flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: step > i ? "#22c55e" : step === i ? "#7c3aed" : (isDark ? "#333" : "#e5e5e5"),
-                    fontSize: "10px", fontWeight: 700,
-                    color: step >= i ? "white" : colors.textMuted,
+                    fontSize: "11px", fontWeight: 700, color: step >= i ? "white" : colors.textMuted,
                   }}>
                     {step > i ? <Check size={11} /> : i + 1}
                   </div>
@@ -224,11 +254,12 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflow: "auto", padding: "24px" }}>
+        <div style={{ flex: 1, overflow: "auto", padding: "24px 28px" }}>
 
           {/* ── Step 0: Content ── */}
           {step === 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              {/* Niche */}
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "6px" }}>
                   Content Niche
@@ -242,6 +273,65 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 />
                 <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>
                   Click 🔄 for AI-suggested niches
+                </p>
+              </div>
+
+              {/* Video Model Selector */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, display: "flex", alignItems: "center", gap: "5px" }}>
+                    <Cpu size={12} /> Video Generation Model
+                  </label>
+                  {loadingModels && <Loader2 size={12} color={colors.textMuted} style={{ animation: "spin 1s linear infinite" }} />}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {models.map((m) => {
+                    const selected = form.videoModel === m.id;
+                    return (
+                      <button key={m.id} onClick={() => setForm(f => ({ ...f, videoModel: m.id }))} style={{
+                        padding: "12px 14px", borderRadius: "10px", cursor: "pointer", textAlign: "left",
+                        border: `2px solid ${selected ? "#7c3aed" : colors.border}`,
+                        background: selected ? "rgba(124,58,237,0.07)" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
+                          <div style={{
+                            width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
+                            background: selected ? "rgba(124,58,237,0.15)" : colors.bg,
+                            border: `1px solid ${selected ? "rgba(124,58,237,0.3)" : colors.border}`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "14px",
+                          }}>
+                            {m.id === "auto" ? "⚡" : m.provider === "Alibaba" ? "🔮" : "🎬"}
+                          </div>
+                          <div>
+                            <p style={{ fontSize: "13px", fontWeight: 600, color: selected ? "#a78bfa" : colors.text }}>
+                              {m.name}
+                            </p>
+                            <p style={{ fontSize: "11px", color: colors.textMuted }}>{m.desc}</p>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          {m.pricePerClip ? (
+                            <>
+                              <p style={{ fontSize: "12px", fontWeight: 700, color: selected ? "#a78bfa" : colors.text }}>
+                                ${m.pricePerClip.toFixed(3)}/clip
+                              </p>
+                              <p style={{ fontSize: "10px", color: colors.textMuted }}>
+                                ~${(m.pricePerClip * 8).toFixed(2)}/video
+                              </p>
+                            </>
+                          ) : (
+                            <p style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>Smart select</p>
+                          )}
+                        </div>
+                        {selected && <Check size={15} color="#7c3aed" style={{ flexShrink: 0 }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "8px", padding: "8px 12px", background: "rgba(124,58,237,0.05)", borderRadius: "7px" }}>
+                  💡 Estimated cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (8 clips)
                 </p>
               </div>
 
@@ -288,7 +378,6 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
           {/* ── Step 1: Schedule ── */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {/* Frequency */}
               {[
                 { value: "manual", label: "Manual only", desc: "You control when it runs", icon: "👆" },
                 { value: "daily", label: "Daily", desc: "Runs every day at your chosen time", icon: "📅" },
@@ -302,36 +391,23 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 }}>
                   <span style={{ fontSize: "22px" }}>{opt.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "13px", fontWeight: 600, color: form.scheduleFrequency === opt.value ? "#a78bfa" : colors.text }}>
-                      {opt.label}
-                    </p>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: form.scheduleFrequency === opt.value ? "#a78bfa" : colors.text }}>{opt.label}</p>
                     <p style={{ fontSize: "11px", color: colors.textMuted }}>{opt.desc}</p>
                   </div>
                   {form.scheduleFrequency === opt.value && <Check size={16} color="#7c3aed" />}
                 </button>
               ))}
 
-              {/* Time picker */}
               {!isManual && (
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "6px" }}>
-                    Run Time
-                  </label>
-                  <input
-                    type="time"
-                    value={form.scheduleTime}
-                    onChange={(e) => setForm(f => ({ ...f, scheduleTime: e.target.value }))}
-                    style={inp}
-                  />
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "6px" }}>Run Time</label>
+                  <input type="time" value={form.scheduleTime} onChange={(e) => setForm(f => ({ ...f, scheduleTime: e.target.value }))} style={inp} />
                 </div>
               )}
 
-              {/* Day picker for weekly */}
               {form.scheduleFrequency === "weekly" && (
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px" }}>
-                    Run on these days
-                  </label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px" }}>Run on these days</label>
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {DAYS_OF_WEEK.map((day) => {
                       const selected = form.scheduleDays.includes(day.value);
@@ -341,18 +417,14 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                           border: `2px solid ${selected ? "#7c3aed" : colors.border}`,
                           background: selected ? "#7c3aed" : "transparent",
                           color: selected ? "white" : colors.textMuted,
-                          fontSize: "12px", fontWeight: selected ? 600 : 400,
-                          transition: "all 0.15s",
-                        }}>
-                          {day.label}
-                        </button>
+                          fontSize: "12px", fontWeight: selected ? 600 : 400, transition: "all 0.15s",
+                        }}>{day.label}</button>
                       );
                     })}
                   </div>
                 </div>
               )}
 
-              {/* Next run preview */}
               {nextRun && (
                 <div style={{
                   padding: "10px 14px", borderRadius: "8px",
@@ -360,9 +432,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                   display: "flex", alignItems: "center", gap: "8px",
                 }}>
                   <Clock size={13} color="#a78bfa" />
-                  <p style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 500 }}>
-                    Next run: {nextRun}
-                  </p>
+                  <p style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 500 }}>Next run: {nextRun}</p>
                 </div>
               )}
             </div>
@@ -371,11 +441,12 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
           {/* ── Step 2: Launch ── */}
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {/* Summary card */}
               <div style={{ padding: "16px", borderRadius: "10px", background: colors.bg, border: `1px solid ${colors.border}` }}>
                 <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "12px" }}>Summary</p>
                 {[
                   { label: "Niche", value: form.niche || "Not set" },
+                  { label: "Video model", value: selectedModel?.name || "Auto" },
+                  { label: "Est. cost/video", value: estimatedCost },
                   { label: "Custom scenes", value: form.useCustomPrompt ? "Yes — custom description" : "AI-generated" },
                   { label: "Schedule", value: summarySchedule() },
                   ...(nextRun ? [{ label: "Next run", value: nextRun }] : []),
@@ -390,73 +461,58 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 ))}
               </div>
 
-              {/* ── MANUAL: single Run Now button ── */}
+              {/* Manual: Run Now primary */}
               {isManual && (
                 <>
                   <button onClick={handleSaveAndRun} disabled={savingRun} style={{
-                    padding: "14px", borderRadius: "10px",
-                    cursor: savingRun ? "not-allowed" : "pointer",
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    color: "white", border: "none", fontSize: "14px", fontWeight: 700,
+                    padding: "14px", borderRadius: "10px", cursor: savingRun ? "not-allowed" : "pointer",
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white",
+                    border: "none", fontSize: "14px", fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                    boxShadow: "0 4px 16px rgba(124,58,237,0.4)",
-                    opacity: savingRun ? 0.7 : 1,
+                    boxShadow: "0 4px 16px rgba(124,58,237,0.4)", opacity: savingRun ? 0.7 : 1,
                   }}>
-                    {savingRun
-                      ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                      : <Zap size={16} />
-                    }
+                    {savingRun ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={16} />}
                     Save & Run Now
                   </button>
                   <button onClick={handleSaveSchedule} disabled={saving} style={{
-                    padding: "11px", borderRadius: "10px",
-                    cursor: saving ? "not-allowed" : "pointer",
+                    padding: "11px", borderRadius: "10px", cursor: saving ? "not-allowed" : "pointer",
                     background: "transparent", color: colors.textMuted,
                     border: `1px solid ${colors.border}`, fontSize: "13px",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                     opacity: saving ? 0.7 : 1,
                   }}>
-                    {saving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : null}
+                    {saving && <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />}
                     Save Only
                   </button>
                 </>
               )}
 
-              {/* ── SCHEDULED: Save Schedule primary + Run Now secondary ── */}
+              {/* Scheduled: Save Schedule primary */}
               {!isManual && (
                 <>
                   <button onClick={handleSaveSchedule} disabled={saving} style={{
-                    padding: "14px", borderRadius: "10px",
-                    cursor: saving ? "not-allowed" : "pointer",
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    color: "white", border: "none", fontSize: "14px", fontWeight: 700,
+                    padding: "14px", borderRadius: "10px", cursor: saving ? "not-allowed" : "pointer",
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white",
+                    border: "none", fontSize: "14px", fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                    boxShadow: "0 4px 16px rgba(124,58,237,0.4)",
-                    opacity: saving ? 0.7 : 1,
+                    boxShadow: "0 4px 16px rgba(124,58,237,0.4)", opacity: saving ? 0.7 : 1,
                   }}>
-                    {saving
-                      ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                      : <Calendar size={16} />
-                    }
+                    {saving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Calendar size={16} />}
                     Save Schedule
                   </button>
                   <button onClick={handleSaveAndRun} disabled={savingRun} style={{
-                    padding: "11px", borderRadius: "10px",
-                    cursor: savingRun ? "not-allowed" : "pointer",
+                    padding: "11px", borderRadius: "10px", cursor: savingRun ? "not-allowed" : "pointer",
                     background: "transparent", color: colors.text,
                     border: `1px solid ${colors.border}`, fontSize: "13px", fontWeight: 600,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                     opacity: savingRun ? 0.7 : 1,
                   }}>
-                    {savingRun
-                      ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
-                      : <Zap size={13} />
-                    }
+                    {savingRun ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={13} />}
                     Also Run Now
                   </button>
                   {nextRun && (
                     <p style={{ fontSize: "11px", color: colors.textMuted, textAlign: "center" }}>
-                      "Save Schedule" → cron runs automatically {nextRun}
+                      Cron will auto-run {nextRun}
                     </p>
                   )}
                 </>
@@ -467,7 +523,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
 
         {/* Footer nav */}
         {step < 2 && (
-          <div style={{ padding: "16px 24px", borderTop: `1px solid ${panelBorder}`, display: "flex", gap: "10px" }}>
+          <div style={{ padding: "16px 28px", borderTop: `1px solid ${panelBorder}`, display: "flex", gap: "10px" }}>
             {step > 0 && (
               <button onClick={() => setStep(s => s - 1)} style={{
                 flex: 1, padding: "10px", borderRadius: "8px", cursor: "pointer",
@@ -488,7 +544,6 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
             </button>
           </div>
         )}
-
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
