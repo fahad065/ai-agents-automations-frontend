@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -22,6 +22,16 @@ interface UserModule {
   videoModel?: string;
 }
 
+interface VideoModel {
+  id: string;
+  name: string;
+  provider: string;
+  pricePerClip: number | null;
+  desc: string;
+  tags: string[];
+  logo?: string | null;
+}
+
 interface Props {
   module: UserModule;
   onClose: () => void;
@@ -40,20 +50,20 @@ const DAYS_OF_WEEK = [
   { value: "6", label: "Sat" },
 ];
 
-// Fallback models if API fails
-const FALLBACK_MODELS = [
-  { id: "auto", name: "Auto (Recommended)", provider: "LogicMate", pricePerClip: null, desc: "Best model selected automatically" },
-  { id: "alibaba/wan-2.6/text-to-video", name: "Wan 2.6", provider: "Alibaba", pricePerClip: 0.35, desc: "Cost-effective, good quality" },
-  { id: "bytedance/seedance-2.0-fast/text-to-video", name: "Seedance 2.0 Fast", provider: "ByteDance", pricePerClip: 0.78, desc: "Higher quality, faster" },
-  { id: "bytedance/seedance-2.0/text-to-video", name: "Seedance 2.0", provider: "ByteDance", pricePerClip: 0.97, desc: "Best quality, premium" },
+const FALLBACK_MODELS: VideoModel[] = [
+  { id: "auto", name: "Auto (Recommended)", provider: "LogicMate", pricePerClip: null, desc: "Best model selected automatically", tags: [] },
+  { id: "alibaba/wan-2.6/text-to-video", name: "Wan 2.6", provider: "Alibaba", pricePerClip: 0.35, desc: "Cost-effective, good quality", tags: [] },
+  { id: "bytedance/seedance-2.0-fast/text-to-video", name: "Seedance 2.0 Fast", provider: "ByteDance", pricePerClip: 0.78, desc: "Higher quality, faster", tags: [] },
+  { id: "bytedance/seedance-2.0/text-to-video", name: "Seedance 2.0", provider: "ByteDance", pricePerClip: 0.97, desc: "Best quality, premium", tags: [] },
 ];
 
 export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, isDark }: Props) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savingRun, setSavingRun] = useState(false);
-  const [models, setModels] = useState(FALLBACK_MODELS);
+  const [models, setModels] = useState<VideoModel[]>(FALLBACK_MODELS);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [showAllModels, setShowAllModels] = useState(false);
 
   const [form, setForm] = useState({
     niche: module.niche || "",
@@ -76,26 +86,22 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     fontFamily: "inherit",
   };
 
-  // Fetch live models from Atlas
-  useEffect(() => {
-    fetchModels();
-  }, []);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     setLoadingModels(true);
     try {
-      const res = await api.get("/usermodules/atlas-models");
+      const res = await api.get(`/usermodules/atlas-models?type=${module.pipelineType}`);
       if (res.data?.models?.length > 0) {
-        setModels([
-          { id: "auto", name: "Auto (Recommended)", provider: "LogicMate", pricePerClip: null, desc: "Best model selected automatically" },
-          ...res.data.models,
-        ]);
+        setModels(res.data.models as VideoModel[]);
       }
     } catch {
       // Keep fallback models
     }
     setLoadingModels(false);
-  };
+  }, [module.pipelineType]);
+
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
   const to12hr = (time: string) => {
     const [h, m] = time.split(":").map(Number);
@@ -197,13 +203,20 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
       ? `~$${(selectedModel.pricePerClip * 8).toFixed(2)}`
       : "auto";
 
+  const getModelIcon = (m: VideoModel) => {
+    if (m.id === "auto") return "⚡";
+    if (["Alibaba", "QWEN"].includes(m.provider)) return "🔮";
+    if (m.provider === "BYTEDANCE") return "🎬";
+    if (m.provider === "GOOGLE") return "🌐";
+    return "🎥";
+  };
+
   return (
     <div onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 600,
       background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: "24px",
     }}>
-      {/* Wider dialog */}
       <div onClick={(e) => e.stopPropagation()} style={{
         background: panelBg, border: `1px solid ${panelBorder}`,
         borderRadius: "18px", width: "100%", maxWidth: "620px",
@@ -224,7 +237,6 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
               display: "flex", alignItems: "center", justifyContent: "center",
             }}><X size={14} /></button>
           </div>
-          {/* Steppers */}
           <div style={{ display: "flex", alignItems: "center" }}>
             {STEPS.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
@@ -259,6 +271,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
           {/* ── Step 0: Content ── */}
           {step === 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+
               {/* Niche */}
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "6px" }}>
@@ -282,56 +295,84 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                   <label style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, display: "flex", alignItems: "center", gap: "5px" }}>
                     <Cpu size={12} /> Video Generation Model
                   </label>
-                  {loadingModels && <Loader2 size={12} color={colors.textMuted} style={{ animation: "spin 1s linear infinite" }} />}
+                  {loadingModels && (
+                    <span style={{ fontSize: "10px", color: colors.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Fetching live models...
+                    </span>
+                  )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {models.map((m) => {
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {(showAllModels ? models : models.slice(0, 3)).map((m) => {
                     const selected = form.videoModel === m.id;
                     return (
                       <button key={m.id} onClick={() => setForm(f => ({ ...f, videoModel: m.id }))} style={{
-                        padding: "12px 14px", borderRadius: "10px", cursor: "pointer", textAlign: "left",
+                        padding: "10px 12px", borderRadius: "9px", cursor: "pointer", textAlign: "left",
                         border: `2px solid ${selected ? "#7c3aed" : colors.border}`,
                         background: selected ? "rgba(124,58,237,0.07)" : "transparent",
-                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+                        display: "flex", alignItems: "center", gap: "10px",
+                        transition: "border-color 0.15s",
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-                          <div style={{
-                            width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
-                            background: selected ? "rgba(124,58,237,0.15)" : colors.bg,
-                            border: `1px solid ${selected ? "rgba(124,58,237,0.3)" : colors.border}`,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: "14px",
-                          }}>
-                            {m.id === "auto" ? "⚡" : m.provider === "Alibaba" ? "🔮" : "🎬"}
-                          </div>
-                          <div>
-                            <p style={{ fontSize: "13px", fontWeight: 600, color: selected ? "#a78bfa" : colors.text }}>
+                        <div style={{
+                          width: "28px", height: "28px", borderRadius: "7px", flexShrink: 0,
+                          background: selected ? "rgba(124,58,237,0.15)" : colors.bg,
+                          border: `1px solid ${selected ? "rgba(124,58,237,0.3)" : colors.border}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "13px",
+                        }}>
+                          {getModelIcon(m)}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <p style={{ fontSize: "12px", fontWeight: 600, color: selected ? "#a78bfa" : colors.text }}>
                               {m.name}
                             </p>
-                            <p style={{ fontSize: "11px", color: colors.textMuted }}>{m.desc}</p>
+                            {m.tags.includes("HOT") && (
+                              <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 700 }}>HOT</span>
+                            )}
+                            {m.tags.includes("NEW") && (
+                              <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(34,197,94,0.12)", color: "#22c55e", fontWeight: 700 }}>NEW</span>
+                            )}
                           </div>
+                          <p style={{ fontSize: "10px", color: colors.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {m.desc}
+                          </p>
                         </div>
+
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
                           {m.pricePerClip ? (
-                            <>
-                              <p style={{ fontSize: "12px", fontWeight: 700, color: selected ? "#a78bfa" : colors.text }}>
-                                ${m.pricePerClip.toFixed(3)}/clip
-                              </p>
-                              <p style={{ fontSize: "10px", color: colors.textMuted }}>
-                                ~${(m.pricePerClip * 8).toFixed(2)}/video
-                              </p>
-                            </>
+                            <p style={{ fontSize: "11px", fontWeight: 700, color: selected ? "#a78bfa" : colors.text }}>
+                              ${(m.pricePerClip * 8).toFixed(2)}/video
+                            </p>
                           ) : (
-                            <p style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>Smart select</p>
+                            <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>Smart</p>
                           )}
                         </div>
-                        {selected && <Check size={15} color="#7c3aed" style={{ flexShrink: 0 }} />}
+
+                        {selected && <Check size={13} color="#7c3aed" style={{ flexShrink: 0 }} />}
                       </button>
                     );
                   })}
                 </div>
-                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "8px", padding: "8px 12px", background: "rgba(124,58,237,0.05)", borderRadius: "7px" }}>
-                  💡 Estimated cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (8 clips)
+
+                {models.length > 3 && (
+                  <button onClick={() => setShowAllModels(s => !s)} style={{
+                    width: "100%", padding: "7px", marginTop: "6px",
+                    borderRadius: "8px", cursor: "pointer", border: `1px dashed ${colors.border}`,
+                    background: "transparent", color: colors.textMuted, fontSize: "11px",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+                  }}>
+                    {showAllModels ? "▲ Show less" : `▼ Show ${models.length - 3} more models`}
+                  </button>
+                )}
+
+                <p style={{
+                  fontSize: "11px", color: colors.textMuted, marginTop: "8px",
+                  padding: "7px 10px", background: "rgba(124,58,237,0.05)",
+                  borderRadius: "7px", textAlign: "center",
+                }}>
+                  💡 Est. cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (8 clips + OpenAI)
                 </p>
               </div>
 
@@ -366,7 +407,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                   <textarea
                     value={form.customPrompt}
                     onChange={(e) => setForm(f => ({ ...f, customPrompt: e.target.value }))}
-                    placeholder={"Example: A dark room with a single candle. Shadowy figure writing in a journal. Close-up of eyes darting nervously."}
+                    placeholder="Example: A dark room with a single candle. Shadowy figure writing in a journal. Close-up of eyes darting nervously."
                     rows={4}
                     style={{ ...inp, resize: "vertical", lineHeight: 1.6, fontSize: "12px", marginTop: "4px" }}
                   />
@@ -461,8 +502,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 ))}
               </div>
 
-              {/* Manual: Run Now primary */}
-              {isManual && (
+              {isManual ? (
                 <>
                   <button onClick={handleSaveAndRun} disabled={savingRun} style={{
                     padding: "14px", borderRadius: "10px", cursor: savingRun ? "not-allowed" : "pointer",
@@ -485,10 +525,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                     Save Only
                   </button>
                 </>
-              )}
-
-              {/* Scheduled: Save Schedule primary */}
-              {!isManual && (
+              ) : (
                 <>
                   <button onClick={handleSaveSchedule} disabled={saving} style={{
                     padding: "14px", borderRadius: "10px", cursor: saving ? "not-allowed" : "pointer",
