@@ -58,6 +58,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; bg: string; label: string }> = {
     active:           { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Active" },
     complete:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },
+    completed:        { color: "#22c55e", bg: "rgba(34,197,94,0.1)", label: "Complete" },  // ← add this
     uploaded:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Uploaded" },
     running:          { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Running" },
     generating_clips: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Generating" },
@@ -211,8 +212,14 @@ export function DashboardOverview() {
         ...(tableType !== "all" && { moduleType: tableType }),
       });
       const res = await api.get(`/pipeline-runs?${params}`);
-      setTableData(res.data?.data || []);
-      setTableTotal(res.data?.total || 0);
+      // Handle both array response and {data, total} response
+      if (Array.isArray(res.data)) {
+        setTableData(res.data);
+        setTableTotal(res.data.length);
+      } else {
+        setTableData(res.data?.data || []);
+        setTableTotal(res.data?.total || 0);
+      }
     } catch {}
   };
 
