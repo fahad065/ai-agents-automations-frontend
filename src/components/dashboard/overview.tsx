@@ -131,10 +131,11 @@ export function DashboardOverview() {
   const [adminStats, setAdminStats] = useState({
     totalUsers: 0, totalAgents: 0, activeAgents: 0,
     totalAutomations: 0, activeAutomations: 0,
+    totalRuns: 0,  // ← add
   });
 
   const [userStats, setUserStats] = useState({
-    totalSubscribed: 0, totalAgents: 0, totalAutomations: 0, totalBilled: 0,
+    totalSubscribed: 0, totalAgents: 0, totalAutomations: 0, totalBilled: 0, totalRuns: 0, 
     billingByModule: [] as { name: string; amount: number }[],
   });
 
@@ -153,10 +154,11 @@ export function DashboardOverview() {
     setLoading(true);
     try {
       if (isAdmin) {
-        const [agentsRes, automationsRes, usersRes] = await Promise.all([
+        const [agentsRes, automationsRes, usersRes, runsRes] = await Promise.all([
           api.get("/usermodules?moduleType=agent&limit=1").catch(() => ({ data: { total: 0 } })),
           api.get("/usermodules?moduleType=automation&limit=1").catch(() => ({ data: { total: 0 } })),
           api.get("/users?limit=1").catch(() => ({ data: { total: 0 } })),
+          api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),  // ← add
         ]);
       
         const totalAgents = agentsRes.data?.total || 0;
@@ -168,14 +170,16 @@ export function DashboardOverview() {
           activeAgents: totalAgents,
           totalAutomations,
           activeAutomations: totalAutomations,
+          totalRuns: runsRes.data?.total || 0,  // ← add
         });
         setChartData({ agents: totalAgents, automations: totalAutomations });
       } else {
         // ── User: fetch own usermodules + billing summary ─────
-        const [agentsRes, automationsRes, billRes] = await Promise.all([
+        const [agentsRes, automationsRes, billRes, runsRes] = await Promise.all([
           api.get("/usermodules/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
+          api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),  // ← add
         ]);
 
         const agents = agentsRes.data?.data || [];
@@ -191,6 +195,7 @@ export function DashboardOverview() {
             name: m.name || m.moduleName,
             amount: m.amount || m.billingAmount || 0,
           })),
+          totalRuns: runsRes.data?.total || 0,  // ← add
         });
         setChartData({ agents: agents.length, automations: automations.length });
       }
@@ -259,7 +264,7 @@ export function DashboardOverview() {
             sub={`${adminStats.activeAutomations} active out of ${adminStats.totalAutomations}`}
             icon={Zap} color="#22c55e" loading={loading}
             onClick={() => router.push("/dashboard/subscriptions")} />
-          <StatCard label="Pipeline Runs" value={loading ? "—" : tableTotal}
+          <StatCard label="Pipeline Runs" value={loading ? "—" : adminStats.totalRuns}
             sub="All types combined" icon={TrendingUp} color="#f59e0b" loading={loading}
             onClick={() => router.push("/dashboard/pipeline-logs")} />
         </div>
@@ -290,6 +295,12 @@ export function DashboardOverview() {
             value={loading ? "—" : userStats.totalAutomations}
             sub="Active automations"
             icon={Zap} color="#22c55e" loading={loading} />
+          <StatCard
+            label="Pipeline Runs"
+            value={loading ? "—" : userStats.totalRuns}
+            sub="Total videos generated"
+            icon={TrendingUp} color="#a78bfa" loading={loading}
+            onClick={() => router.push("/dashboard/pipeline-logs")} />
         </div>
       )}
 
