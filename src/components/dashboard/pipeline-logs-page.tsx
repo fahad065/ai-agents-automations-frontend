@@ -168,8 +168,8 @@ export default function PipelineLogsPage() {
   const fetchRuns = async () => {
     try {
       const res = await api.get("/pipeline-runs/my?limit=20");
-      const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      setRuns(data);
+      const isArray = Array.isArray(res.data);
+      setRuns(isArray ? res.data : (res.data?.data || []));
     } catch {
       toast.error("Failed to load pipeline runs");
     }
