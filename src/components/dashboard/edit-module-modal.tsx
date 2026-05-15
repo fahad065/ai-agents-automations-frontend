@@ -198,9 +198,9 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   const nextRun = getNextRunPreview();
   const selectedModel = models.find(m => m.id === form.videoModel) || models[0];
   const estimatedCost = form.videoModel === "auto"
-    ? "~$0.35–$0.78"
+    ? "~$3.00–$5.00"
     : selectedModel?.pricePerClip
-      ? `~$${(selectedModel.pricePerClip * 8).toFixed(2)}`
+      ? `~$${(selectedModel.pricePerClip * 12 + 0.50).toFixed(2)}`
       : "auto";
 
   const getModelIcon = (m: VideoModel) => {
@@ -372,7 +372,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                   padding: "7px 10px", background: "rgba(124,58,237,0.05)",
                   borderRadius: "7px", textAlign: "center",
                 }}>
-                  💡 Est. cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (8 clips + OpenAI)
+                  💡 Est. cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (12 clips + OpenAI)
                 </p>
               </div>
 
