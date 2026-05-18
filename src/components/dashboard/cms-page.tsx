@@ -353,7 +353,7 @@ export function CmsPage() {
         setPosts(res.data?.posts || res.data?.data || []);
         setTotal(res.data?.total || 0);
       } else {
-        const slugs = ["about", "contact", "privacy", "terms", "cookies", "faq"];
+        const slugs = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"];
         const results = await Promise.allSettled(
           slugs.map(s => api.get(`/cms/admin/pages/${s}`))
         );
