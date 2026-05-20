@@ -7,6 +7,14 @@ export interface User {
     provider: "local" | "google";
     isActive: boolean;
     createdAt: string;
+    planType?: "trial" | "lifetime" | "pro" | "free";
+    isFreeForever?: boolean;
+    trialStartDate?: string;
+    trialEndDate?: string;
+    trialReminderSent?: boolean;
+    totalVideosGenerated?: number;
+    totalCreditsUsed?: number;
+    totalBilled?: number;
   }
   
   export interface Agent {

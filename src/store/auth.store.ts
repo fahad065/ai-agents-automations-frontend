@@ -8,6 +8,14 @@ interface User {
   role: "user" | "admin";
   avatar?: string;
   provider: string;
+  planType?: "trial" | "lifetime" | "pro" | "free";
+  isFreeForever?: boolean;
+  trialStartDate?: string;
+  trialEndDate?: string;
+  trialReminderSent?: boolean;
+  totalVideosGenerated?: number;
+  totalCreditsUsed?: number;
+  totalBilled?: number;
 }
 
 interface AuthState {
