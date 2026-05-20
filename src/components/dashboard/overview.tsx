@@ -13,6 +13,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
+import { TrialBanner } from "./trial-banner";
 
 // ── Stat Card ─────────────────────────────────────────────────
 function StatCard({ label, value, sub, icon: Icon, color, onClick, loading }: {
@@ -238,6 +239,7 @@ export function DashboardOverview() {
 
   return (
     <div>
+      <TrialBanner />
       {/* Greeting */}
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>

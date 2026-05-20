@@ -62,7 +62,7 @@ export function SignupForm() {
         localStorage.setItem("refreshToken", res.refreshToken);
         document.cookie = `accessToken=${res.accessToken}; path=/; max-age=900; SameSite=Lax`;
         setSuccess(true);
-        setTimeout(() => router.push("/dashboard"), 1200);
+        router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Registration failed. Please try again.";
       setErrors({ general: msg });
@@ -83,7 +83,7 @@ export function SignupForm() {
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <CheckCircle2 size={48} color="#22c55e" style={{ margin: "0 auto 16px" }} />
           <p style={{ color: colors.text, fontWeight: 500 }}>
-            Redirecting to your dashboard...
+            Check your inbox for a verification link!
           </p>
         </div>
       </AuthWrapper>
@@ -115,7 +115,7 @@ export function SignupForm() {
 
         <FormField
           label="Full name"
-          placeholder="Fahad Faheem"
+          placeholder="Enter your full name"
           value={name}
           onChange={setName}
           error={errors.name}
