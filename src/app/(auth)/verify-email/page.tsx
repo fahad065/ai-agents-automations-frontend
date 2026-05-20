@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
 import { Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
@@ -30,11 +30,11 @@ export default function VerifyEmailPage() {
     setStatus("verifying");
     try {
       const res = await authApi.verifyEmail(t);
-      if (res.data?.accessToken) {
-        setAuth(res.data.user, res.data.accessToken, res.data.refreshToken);
+      if (res.accessToken) {
+        setAuth(res.user, res.accessToken, res.refreshToken);
       }
       setStatus("success");
-      setMessage(res.data?.message || "Email verified successfully!");
+      setMessage(res.message || "Email verified successfully!");
       setTimeout(() => router.push("/dashboard"), 2500);
     } catch (err: any) {
       setStatus("error");
@@ -123,7 +123,7 @@ export default function VerifyEmailPage() {
           </>
         )}
 
-        {/* Idle — check email state */}
+        {/* Idle — check email */}
         {status === "idle" && (
           <>
             <div style={{
@@ -138,7 +138,8 @@ export default function VerifyEmailPage() {
               Check your inbox
             </h1>
             <p style={{ color: "#64748b", fontSize: "15px", lineHeight: 1.7, marginBottom: "28px" }}>
-              We sent a verification link to <strong style={{ color: "#a78bfa" }}>{email || "your email"}</strong>.
+              We sent a verification link to{" "}
+              <strong style={{ color: "#a78bfa" }}>{email || "your email"}</strong>.
               Click the link to activate your account.
             </p>
             <div style={{
@@ -153,7 +154,8 @@ export default function VerifyEmailPage() {
               <button onClick={resendEmail} disabled={resending} style={{
                 background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)",
                 color: "#a78bfa", padding: "12px 28px", borderRadius: "10px",
-                fontSize: "14px", fontWeight: 600, cursor: resending ? "not-allowed" : "pointer",
+                fontSize: "14px", fontWeight: 600,
+                cursor: resending ? "not-allowed" : "pointer",
                 width: "100%", marginBottom: "16px",
               }}>
                 {resending ? "Sending..." : "Resend verification email"}
@@ -176,5 +178,20 @@ export default function VerifyEmailPage() {
         @keyframes progress { from { width: 0% } to { width: 100% } }
       `}</style>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: "100vh", background: "#080808",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{ color: "#7c3aed", fontSize: "14px" }}>Loading...</div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
