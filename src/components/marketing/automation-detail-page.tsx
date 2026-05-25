@@ -82,7 +82,6 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
   const [automation, setAutomation] = useState<AutomationTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [billingAnnual, setBillingAnnual] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
 
@@ -146,7 +145,6 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     );
   }
 
-  const price = billingAnnual ? automation.pricing?.annual : automation.pricing?.monthly;
   const embedUrl = automation.demoVideoUrl
     ? automation.demoVideoUrl
         .replace("youtu.be/", "www.youtube.com/embed/")
@@ -620,133 +618,135 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       {/* Pricing */}
       {automation.pricing && (
         <section style={{ padding: "80px 24px", borderBottom: `1px solid ${colors.border}` }}>
-          <div style={{ maxWidth: "480px", margin: "0 auto", textAlign: "center" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
             <h2 style={{
               fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
               color: colors.text, marginBottom: "12px",
             }}>
               Simple pricing
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "32px" }}>
+            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "48px" }}>
               One plan. Everything included. Cancel anytime.
             </p>
 
-            {/* Billing toggle */}
             <div style={{
-              display: "inline-flex", alignItems: "center",
-              gap: "4px", marginBottom: "32px",
-              padding: "6px", borderRadius: "10px",
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
+              display: "grid",
+              gridTemplateColumns: automation.pricing?.hasCustomPlan
+                ? "repeat(3, 1fr)"
+                : "repeat(2, 1fr)",
+              gap: "16px",
+              maxWidth: automation.pricing?.hasCustomPlan ? "900px" : "640px",
+              margin: "0 auto",
             }}>
-              {[
-                { label: "Monthly", value: false },
-                { label: "Annual (save 34%)", value: true },
-              ].map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => setBillingAnnual(opt.value)}
-                  style={{
-                    padding: "7px 16px", borderRadius: "8px",
-                    fontSize: "13px", fontWeight: 500,
-                    cursor: "pointer", transition: "all 0.2s", border: "none",
-                    background: billingAnnual === opt.value
-                      ? "rgba(124,58,237,0.15)" : "transparent",
-                    color: billingAnnual === opt.value ? "#a78bfa" : colors.textMuted,
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
 
-            {/* Pricing card */}
-            <div style={{
-              background: colors.bgCard,
-              border: "1px solid rgba(124,58,237,0.3)",
-              borderRadius: "16px", padding: "32px",
-              boxShadow: "0 0 40px rgba(124,58,237,0.08)",
-            }}>
-              <div style={{ marginBottom: "24px" }}>
-                <span style={{ fontSize: "48px", fontWeight: 800, color: colors.text }}>
-                  ${price}
-                </span>
-                <span style={{ fontSize: "16px", color: colors.textMuted }}>/month</span>
-                {billingAnnual && (
-                  <p style={{ fontSize: "13px", color: "#22c55e", marginTop: "4px" }}>
-                    Billed annually — save $
-                    {(automation.pricing.monthly - automation.pricing.annual) * 12}/year
-                  </p>
-                )}
-              </div>
-
-              <ul style={{ listStyle: "none", padding: 0, marginBottom: "28px" }}>
-                {automation.pricing.features.map((feature) => (
-                  <li key={feature} style={{
-                    display: "flex", alignItems: "center", gap: "10px",
-                    padding: "8px 0",
-                    borderBottom: `1px solid ${colors.border}`,
-                    fontSize: "14px", color: colors.text,
-                  }}>
-                    <CheckCircle2 size={14} color="#22c55e" style={{ flexShrink: 0 }} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={isAuthenticated ? "/dashboard" : "/auth/signup"}
-                style={{
-                  display: "flex", alignItems: "center",
-                  justifyContent: "center", gap: "8px",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "14px", borderRadius: "10px",
-                  fontSize: "15px", fontWeight: 600, textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-                }}
-              >
-                {automation.badge === "Live"
-                  ? (isAuthenticated ? "Open dashboard" : "Start free trial")
-                  : "Join waitlist"
-                }
-                <ArrowRight size={15} />
-              </Link>
-              <p style={{ fontSize: "12px", color: colors.textMuted, marginTop: "14px" }}>
-                No credit card required · Cancel anytime
-              </p>
-            </div>
-
-            {automation.pricing?.hasCustomPlan && (
+              {/* Monthly */}
               <div style={{
-                background: colors.bgCard,
-                border: `1px solid ${colors.border}`,
-                borderRadius: "16px", padding: "32px",
-                marginTop: "16px", textAlign: "center",
+                background: colors.bg, border: `1px solid ${colors.border}`,
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
               }}>
-                <div style={{
-                  width: "48px", height: "48px", borderRadius: "12px",
-                  background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 16px", fontSize: "22px",
-                }}>
-                  🏢
+                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Monthly</p>
+                <div style={{ marginBottom: "20px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.monthly}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
                 </div>
-                <p style={{ fontSize: "18px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
-                  Custom / Enterprise
-                </p>
-                <p style={{ fontSize: "14px", color: colors.textMuted, marginBottom: "24px", lineHeight: 1.6 }}>
-                  {automation.pricing.customLabel || "Need a custom solution? We'll build it for you."}
-                </p>
-                <a href="mailto:hello@logicmate.io" style={{
-                  display: "inline-flex", alignItems: "center", gap: "8px",
-                  border: "1px solid rgba(124,58,237,0.3)",
-                  background: "rgba(124,58,237,0.06)",
-                  color: "#a78bfa", padding: "12px 28px", borderRadius: "10px",
+                <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>Billed monthly. Cancel anytime.</p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {automation.pricing.features.slice(0, 5).map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  border: `1px solid ${colors.border}`, background: colors.bgCard,
+                  color: colors.text, padding: "12px", borderRadius: "10px",
                   fontSize: "14px", fontWeight: 600, textDecoration: "none",
                 }}>
-                  Contact us →
-                </a>
+                  {automation.badge === "Live" ? (isAuthenticated ? "Open dashboard" : "Get started") : "Join waitlist"}
+                </Link>
               </div>
-            )}
+
+              {/* Annual — highlighted */}
+              <div style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
+                border: "2px solid rgba(124,58,237,0.4)",
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
+                position: "relative", boxShadow: "0 0 40px rgba(124,58,237,0.1)",
+              }}>
+                <div style={{
+                  position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", padding: "4px 16px", borderRadius: "9999px",
+                  fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
+                }}>
+                  ⭐ Most Popular
+                </div>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Annual</p>
+                <div style={{ marginBottom: "4px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.annual}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                </div>
+                <p style={{ fontSize: "12px", color: "#22c55e", marginBottom: "20px", fontWeight: 600 }}>
+                  Save ${(automation.pricing.monthly - automation.pricing.annual) * 12}/year — billed annually
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {automation.pricing.features.map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", padding: "12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                  boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
+                }}>
+                  {automation.badge === "Live" ? (isAuthenticated ? "Open dashboard" : "Start free trial") : "Join waitlist"}
+                  <ArrowRight size={14} />
+                </Link>
+                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>No credit card required</p>
+              </div>
+
+              {/* Enterprise */}
+              {automation.pricing?.hasCustomPlan && (
+                <div style={{
+                  background: colors.bg, border: `1px solid ${colors.border}`,
+                  borderRadius: "16px", padding: "28px",
+                  textAlign: "left", display: "flex", flexDirection: "column",
+                }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Enterprise</p>
+                  <div style={{ marginBottom: "20px" }}>
+                    <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>Custom</span>
+                  </div>
+                  <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                    {automation.pricing.customLabel || "Need a tailored solution for your team or business?"}
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                    {["Custom pipeline configuration", "Dedicated support", "SLA guarantee", "Custom integrations", "Team management"].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                        <CheckCircle2 size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="mailto:hello@logicmate.io" style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
+                    color: "#a78bfa", padding: "12px", borderRadius: "10px",
+                    fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                  }}>
+                    Contact us →
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}

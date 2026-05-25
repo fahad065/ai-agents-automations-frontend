@@ -20,15 +20,9 @@ interface AgentTemplate {
   pricing?: { monthly: number; annual: number };
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  all: "All agents",
-  youtube: "YouTube",
-  fitness: "Fitness",
-  marketing: "Marketing",
-  education: "Education",
-  ecommerce: "E-commerce",
-  custom: "Custom",
-};
+const formatCategory = (val: string) =>
+  val === "all" ? "All agents" :
+  val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function AgentsListPage() {
   const { colors } = useTheme();
@@ -148,7 +142,7 @@ export function AgentsListPage() {
                 color: category === cat ? "#a78bfa" : colors.textMuted,
               }}
             >
-              {CATEGORY_LABELS[cat] || cat}
+              {formatCategory(cat)}
             </button>
           ))}
         </div>

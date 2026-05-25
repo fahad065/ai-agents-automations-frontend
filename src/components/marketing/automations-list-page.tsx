@@ -19,15 +19,9 @@ interface AutomationTemplate {
   pricing?: { monthly: number; annual: number };
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  all: "All automations",
-  content: "Content",
-  social: "Social Media",
-  email: "Email",
-  ecommerce: "E-commerce",
-  repurposing: "Repurposing",
-  podcast: "Podcast",
-};
+const formatCategory = (val: string) =>
+  val === "all" ? "All automations" :
+  val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function AutomationsListPage() {
   const { colors } = useTheme();
@@ -145,7 +139,7 @@ export function AutomationsListPage() {
                 color: category === cat ? "#a78bfa" : colors.textMuted,
               }}
             >
-              {CATEGORY_LABELS[cat] || cat}
+              {formatCategory(cat)}
             </button>
           ))}
         </div>
