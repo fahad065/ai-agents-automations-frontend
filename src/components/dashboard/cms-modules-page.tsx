@@ -9,11 +9,8 @@ import { toast } from "sonner";
 import {
   Bot, Plus, Pencil, Trash2, Search, Loader2,
   X, Save, ChevronRight, ChevronLeft, Check,
-  Star, HelpCircle, Play, Users, DollarSign,
-  Zap, ArrowUp, ArrowDown, Trash,
+  Trash,
 } from "lucide-react";
-
-// ── Constants ─────────────────────────────────────────────────
 
 const MODULE_TYPES = [
   { value: "agent",      label: "Agent",      desc: "AI agent that runs tasks automatically", icon: "🤖" },
@@ -21,35 +18,49 @@ const MODULE_TYPES = [
 ];
 
 const CATEGORIES = [
-  { value: "youtube",    label: "YouTube",      icon: "🎬" },
-  { value: "podcast",    label: "Podcast",      icon: "🎙️" },
-  { value: "marketing",  label: "Marketing",    icon: "📢" },
-  { value: "realestate", label: "Real Estate",  icon: "🏠" },
-  { value: "ecommerce",  label: "E-commerce",   icon: "🛒" },
-  { value: "education",  label: "Education",    icon: "🎓" },
-  { value: "fitness",    label: "Fitness",      icon: "💪" },
-  { value: "social",     label: "Social Media", icon: "📱" },
-  { value: "leads",      label: "Lead Gen",     icon: "🎯" },
-  { value: "custom",     label: "Custom",       icon: "⚙️" },
+  { value: "youtube",      label: "YouTube",      icon: "🎬" },
+  { value: "instagram",    label: "Instagram",    icon: "📸" },
+  { value: "tiktok",       label: "TikTok",       icon: "🎵" },
+  { value: "arabic",       label: "Arabic",       icon: "🌍" },
+  { value: "podcast",      label: "Podcast",      icon: "🎙️" },
+  { value: "sales",        label: "Sales",        icon: "💰" },
+  { value: "real_estate",  label: "Real Estate",  icon: "🏠" },
+  { value: "support",      label: "Support",      icon: "🎧" },
+  // { value: "social",       label: "Social Media", icon: "📱" },
+  { value: "social_media", label: "Social Media", icon: "📲" },
+  { value: "email",        label: "Email",        icon: "📧" },
+  { value: "content",      label: "Content",      icon: "📝" },
+  { value: "marketing",    label: "Marketing",    icon: "📢" },
+  { value: "operations",   label: "Operations",   icon: "⚙️" },
+  { value: "finance",      label: "Finance",      icon: "💹" },
+  { value: "custom",       label: "Custom",       icon: "🔧" },
 ];
 
 const PIPELINE_TYPES = [
-  { value: "youtube",    label: "YouTube Pipeline",     desc: "Working ✅" },
-  { value: "podcast",    label: "Podcast Pipeline",     desc: "Coming soon" },
-  { value: "marketing",  label: "Marketing Pipeline",   desc: "Coming soon" },
-  { value: "realestate", label: "Real Estate Pipeline", desc: "Coming soon" },
-  { value: "social",     label: "Social Media Pipeline",desc: "Coming soon" },
-  { value: "leads",      label: "Lead Gen Pipeline",    desc: "Coming soon" },
-  { value: "custom",     label: "Custom / Manual",      desc: "No auto pipeline" },
+  { value: "youtube",             label: "YouTube",              desc: "✅ Live" },
+  { value: "instagram",           label: "Instagram",            desc: "Built, not connected" },
+  { value: "tiktok",              label: "TikTok",               desc: "Coming soon" },
+  { value: "arabic",              label: "Arabic Content",       desc: "Coming soon" },
+  { value: "podcast",             label: "Podcast",              desc: "Coming soon" },
+  { value: "whatsapp",            label: "WhatsApp",             desc: "Planned" },
+  { value: "real_estate",         label: "Real Estate",          desc: "Planned" },
+  { value: "support",             label: "Customer Support",     desc: "Planned" },
+  { value: "social_scheduler",    label: "Social Scheduler",     desc: "Coming soon" },
+  { value: "email_marketing",     label: "Email Marketing",      desc: "Coming soon" },
+  { value: "lead_generation",     label: "Lead Generation",      desc: "Coming soon" },
+  { value: "content_repurposing", label: "Content Repurposing",  desc: "Coming soon" },
+  { value: "custom",              label: "Custom / Manual",      desc: "No auto pipeline" },
 ];
 
 const OUTPUT_TYPES = [
-  { value: "video",       label: "Video",        icon: "🎬" },
-  { value: "audio",       label: "Audio",        icon: "🎙️" },
-  { value: "text",        label: "Text Content", icon: "📝" },
-  { value: "email",       label: "Email",        icon: "📧" },
-  { value: "social_post", label: "Social Post",  icon: "📱" },
-  { value: "report",      label: "Report",       icon: "📊" },
+  { value: "video",    label: "Video",        icon: "🎬" },
+  { value: "audio",    label: "Audio",        icon: "🎙️" },
+  { value: "messages", label: "Messages",     icon: "💬" },
+  { value: "leads",    label: "Leads",        icon: "🎯" },
+  { value: "posts",    label: "Social Posts", icon: "📱" },
+  { value: "emails",   label: "Emails",       icon: "📧" },
+  { value: "content",  label: "Content",      icon: "📝" },
+  { value: "reports",  label: "Reports",      icon: "📊" },
 ];
 
 const API_KEYS_OPTIONS = [
@@ -58,8 +69,12 @@ const API_KEYS_OPTIONS = [
   { value: "atlas",     label: "Atlas Cloud" },
   { value: "youtube",   label: "YouTube API" },
   { value: "instagram", label: "Instagram API" },
+  { value: "tiktok",    label: "TikTok API" },
+  { value: "whatsapp",  label: "WhatsApp API" },
+  { value: "spotify",   label: "Spotify API" },
+  { value: "linkedin",  label: "LinkedIn API" },
   { value: "twitter",   label: "Twitter API" },
-  { value: "sendgrid",  label: "SendGrid" },
+  { value: "facebook",  label: "Facebook API" },
 ];
 
 const PLATFORMS = [
@@ -70,24 +85,31 @@ const PLATFORMS = [
   { value: "facebook",  label: "Facebook" },
   { value: "linkedin",  label: "LinkedIn" },
   { value: "spotify",   label: "Spotify" },
+  { value: "whatsapp",  label: "WhatsApp" },
   { value: "email",     label: "Email" },
+  { value: "web",       label: "Web" },
 ];
 
 const ICON_OPTIONS = [
   "🎬","🎙️","📢","🏠","🛒","🎓","💪","📱","🎯","🤖",
   "⚡","📝","📊","📧","🔑","💡","🚀","💰","🌍","⚙️",
   "🔥","✨","🎵","📸","🎭","🧠","💼","🏆","🌟","📌",
+  "💬","🎧","🏙️","♻️","📅","💹","🔧","🌐","🤝","🔗",
 ];
 
 const COLOR_PRESETS = [
   "#7c3aed","#ef4444","#22c55e","#3b82f6",
   "#f59e0b","#ec4899","#06b6d4","#8b5cf6",
   "#10b981","#f97316","#6366f1","#14b8a6",
+  "#e1306c","#25d366","#0088cc","#000000",
 ];
 
-const BADGE_OPTIONS = ["New","Popular","Beta","Pro","Coming Soon","Free","Hot","Featured"];
+const BADGE_OPTIONS = ["Live", "New", "Popular", "Beta", "Pro", "Coming Soon", "Free", "Hot", "Featured"];
 
-const STEPS = ["Basics","Pipeline","Content","Pricing","Detail Pages"];
+const STEPS = ["Basics", "Pipeline", "Content", "Pricing", "Detail Pages"];
+
+const formatCategoryLabel = (val: string) =>
+  val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 interface AgentTemplate {
   _id: string;
@@ -109,7 +131,7 @@ interface AgentTemplate {
   platforms: string[];
   capabilities: string[];
   sortOrder: number;
-  pricing?: { monthly: number; annual: number; features: string[] };
+  pricing?: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   heroStats?: { label: string; value: string }[];
   features?: { title: string; description: string; icon: string }[];
   howItWorks?: { step: string; title: string; description: string }[];
@@ -120,14 +142,12 @@ interface AgentTemplate {
   totalRunsCount: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────
 const autoSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const toggleArr = (arr: string[], item: string) =>
   arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item];
 
-// ── Stepper ───────────────────────────────────────────────────
 function Stepper({ step, colors }: { step: number; colors: any }) {
   return (
     <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
@@ -142,7 +162,8 @@ function Stepper({ step, colors }: { step: number; colors: any }) {
                 width: "26px", height: "26px", borderRadius: "50%", flexShrink: 0,
                 background: done ? "#22c55e" : active ? "#7c3aed" : colors.border,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "11px", fontWeight: 700, color: done || active ? "white" : colors.textMuted,
+                fontSize: "11px", fontWeight: 700,
+                color: done || active ? "white" : colors.textMuted,
               }}>
                 {done ? <Check size={12} /> : num}
               </div>
@@ -166,7 +187,6 @@ function Stepper({ step, colors }: { step: number; colors: any }) {
   );
 }
 
-// ── Module Modal ──────────────────────────────────────────────
 function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDark }: {
   template?: AgentTemplate;
   nextSortOrder: number;
@@ -180,7 +200,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    // Step 1 — Basics
     name: template?.name || "",
     slug: template?.slug || "",
     tagline: template?.tagline || "",
@@ -189,33 +208,27 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
     category: template?.category || "custom",
     icon: template?.icon || "🤖",
     color: template?.color || "#7c3aed",
-    badge: template?.badge || "New",
+    badge: template?.badge || "Coming Soon",
     isActive: template?.isActive ?? true,
     isComingSoon: template?.isComingSoon ?? false,
     sortOrder: template?.sortOrder ?? nextSortOrder,
-
-    // Step 2 — Pipeline
     pipelineType: template?.pipelineType || "custom",
     outputType: template?.outputType || "video",
     requiredApiKeys: template?.requiredApiKeys || [] as string[],
     platforms: template?.platforms || [] as string[],
     estimatedCostPerRun: template?.estimatedCostPerRun || "",
     capabilities: (template?.capabilities || []).join("\n"),
-
-    // Step 3 — Content (hero stats + features + how it works)
     heroStats: template?.heroStats || [{ label: "", value: "" }] as { label: string; value: string }[],
     features: template?.features || [{ title: "", description: "", icon: "✅" }] as { title: string; description: string; icon: string }[],
     howItWorks: template?.howItWorks || [{ step: "1", title: "", description: "" }] as { step: string; title: string; description: string }[],
     demoVideoUrl: template?.demoVideoUrl || "",
-
-    // Step 4 — Pricing
     monthlyPrice: template?.pricing?.monthly ?? 0,
     annualPrice: template?.pricing?.annual ?? 0,
     pricingFeatures: (template?.pricing?.features || []).join("\n"),
-
-    // Step 5 — Detail pages (testimonials + FAQ)
+    hasCustomPlan: template?.pricing?.hasCustomPlan ?? false,
+    customLabel: template?.pricing?.customLabel || "Contact us for custom pricing",
     testimonials: template?.testimonials || [] as { name: string; role: string; avatar: string; text: string; rating: number }[],
-    faq: template?.faq || [{ question: "", answer: "" }] as { question: string; answer: string }[],
+    faq: template?.faq || [{ question: "", answer: "" }] as { question: string; answer: string }[]
   });
 
   const panelBg = isDark ? "#161616" : "#ffffff";
@@ -276,6 +289,8 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
           monthly: form.monthlyPrice,
           annual: form.annualPrice,
           features: form.pricingFeatures.split("\n").map(f => f.trim()).filter(Boolean),
+          hasCustomPlan: (form as any).hasCustomPlan,
+          customLabel: (form as any).customLabel,
         },
         testimonials: form.testimonials.filter(t => t.name && t.text),
         faq: form.faq.filter(f => f.question && f.answer),
@@ -322,7 +337,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
         height: "92vh", display: "flex", flexDirection: "column",
         boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
       }}>
-
         {/* Header */}
         <div style={{ padding: "20px 28px 16px", borderBottom: `1px solid ${panelBorder}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
@@ -343,14 +357,12 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
           <Stepper step={step} colors={colors} />
         </div>
 
-        {/* Form */}
+        {/* Form body */}
         <div style={{ flex: 1, overflow: "auto", padding: "20px 28px" }}>
 
           {/* ── STEP 1: BASICS ── */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-              {/* Module type */}
               <div>
                 {lbl("Module Type *")}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
@@ -368,7 +380,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Name + Slug */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   {lbl("Name *")}
@@ -386,21 +397,18 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Tagline */}
               <div>
                 {lbl("Tagline")}
                 <input value={form.tagline} onChange={(e) => setForm(f => ({ ...f, tagline: e.target.value }))}
                   style={inp} placeholder="Automate your YouTube channel with AI" />
               </div>
 
-              {/* Description */}
               <div>
                 {lbl("Description")}
                 <textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3} style={{ ...inp, resize: "vertical" as const }} placeholder="Full description..." />
               </div>
 
-              {/* Category */}
               <div>
                 {lbl("Category")}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -413,13 +421,12 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Icon + Color */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   {lbl("Icon", `— selected: ${form.icon}`)}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
-                    {ICON_OPTIONS.map((ic) => (
-                      <button key={ic} onClick={() => setForm(f => ({ ...f, icon: ic }))} style={{
+                    {ICON_OPTIONS.map((ic, idx) => (
+                      <button key={`${ic}-${idx}`} onClick={() => setForm(f => ({ ...f, icon: ic }))} style={{
                         width: "34px", height: "34px", borderRadius: "7px", fontSize: "17px",
                         cursor: "pointer",
                         border: `2px solid ${form.icon === ic ? "#7c3aed" : colors.border}`,
@@ -436,8 +443,7 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                       <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{
                         width: "26px", height: "26px", borderRadius: "50%", background: c,
                         cursor: "pointer", border: `3px solid ${form.color === c ? "white" : "transparent"}`,
-                        boxShadow: form.color === c ? `0 0 0 2px ${c}` : "none",
-                        outline: "none",
+                        boxShadow: form.color === c ? `0 0 0 2px ${c}` : "none", outline: "none",
                       }} />
                     ))}
                   </div>
@@ -451,7 +457,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Badge + Sort Order */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "16px", alignItems: "start" }}>
                 <div>
                   {lbl("Badge")}
@@ -471,7 +476,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Toggles */}
               <div style={{ display: "flex", gap: "10px" }}>
                 {[
                   { key: "isActive", label: "Published", desc: "Visible on marketplace" },
@@ -506,8 +510,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
           {/* ── STEP 2: PIPELINE ── */}
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-              {/* Pipeline type */}
               <div>
                 {lbl("Pipeline Type", "— tells Python which script to run")}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
@@ -526,9 +528,8 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Output type */}
               <div>
-                {lbl("Output Type", "— display label only, doesn't affect pipeline")}
+                {lbl("Output Type")}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {OUTPUT_TYPES.map((o) => (
                     <button key={o.value} onClick={() => setForm(f => ({ ...f, outputType: o.value }))}
@@ -539,7 +540,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Required API keys */}
               <div>
                 {lbl("Required API Keys", "— shown to users before setup")}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -553,7 +553,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Platforms */}
               <div>
                 {lbl("Publishes To")}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -567,24 +566,19 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 </div>
               </div>
 
-              {/* Estimated cost */}
               <div>
                 {lbl("Estimated Cost Per Run")}
                 <input value={form.estimatedCostPerRun}
                   onChange={(e) => setForm(f => ({ ...f, estimatedCostPerRun: e.target.value }))}
-                  style={inp} placeholder="e.g. $1.32 per video" />
-                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>
-                  Reference costs: YouTube $1.32 · Reels $0.80 · Podcast $0.60 · Real Estate $2.50
-                </p>
+                  style={inp} placeholder="e.g. $3-5 per video" />
               </div>
 
-              {/* Capabilities */}
               <div>
                 {lbl("Capabilities", "— one per line")}
                 <textarea value={form.capabilities}
                   onChange={(e) => setForm(f => ({ ...f, capabilities: e.target.value }))}
                   rows={6} style={{ ...inp, resize: "vertical" as const, lineHeight: 1.7 }}
-                  placeholder={"Auto-generate video scripts\nSeedance AI video clips\nAutomatic YouTube upload\nSubtitle generation"} />
+                  placeholder={"Auto-generate video scripts\nAI video clips\nAutomatic upload\nSubtitle generation"} />
               </div>
             </div>
           )}
@@ -592,22 +586,19 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
           {/* ── STEP 3: CONTENT ── */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-              {/* Demo video URL */}
               <div>
-                {lbl("Demo Video URL", "— shown in 'See it in action' section")}
+                {lbl("Demo Video URL")}
                 <input value={form.demoVideoUrl}
                   onChange={(e) => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))}
-                  style={inp} placeholder="https://youtube.com/watch?v=..." />
+                  style={inp} placeholder="https://youtu.be/..." />
               </div>
 
-              {/* Hero stats */}
               <div>
                 {lbl("Hero Stats", "— 4 numbers shown at top of detail page")}
                 {form.heroStats.map((stat, i) => (
                   <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
                     <input value={stat.value} onChange={(e) => updateItem("heroStats", i, "value", e.target.value)}
-                      style={{ ...inp, width: "120px" }} placeholder="4,821" />
+                      style={{ ...inp, width: "120px" }} placeholder="20+" />
                     <input value={stat.label} onChange={(e) => updateItem("heroStats", i, "label", e.target.value)}
                       style={inp} placeholder="Videos generated" />
                     <button onClick={() => removeItem("heroStats", i)} style={{
@@ -620,12 +611,10 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                   </div>
                 ))}
                 <button onClick={() => addItem("heroStats", { label: "", value: "" })} style={{
-                  fontSize: "12px", color: "#7c3aed", background: "none", border: "none",
-                  cursor: "pointer", padding: "4px 0",
+                  fontSize: "12px", color: "#7c3aed", background: "none", border: "none", cursor: "pointer", padding: "4px 0",
                 }}>+ Add stat</button>
               </div>
 
-              {/* Features */}
               <div>
                 {lbl("Features", "— 'Everything included' section")}
                 {form.features.map((feat, i) => (
@@ -650,7 +639,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                 }}>+ Add feature</button>
               </div>
 
-              {/* How it works */}
               <div>
                 {lbl("How It Works", "— pipeline steps shown on detail page")}
                 {form.howItWorks.map((h, i) => (
@@ -683,13 +671,13 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   {lbl("Monthly Price ($)")}
-                  <input type="number" value={form.monthlyPrice} min={0} step={0.01}
+                  <input type="number" value={form.monthlyPrice} min={0}
                     onChange={(e) => setForm(f => ({ ...f, monthlyPrice: parseFloat(e.target.value) || 0 }))}
                     style={inp} placeholder="49" />
                 </div>
                 <div>
                   {lbl("Annual Price ($)", "— per month billed annually")}
-                  <input type="number" value={form.annualPrice} min={0} step={0.01}
+                  <input type="number" value={form.annualPrice} min={0}
                     onChange={(e) => setForm(f => ({ ...f, annualPrice: parseFloat(e.target.value) || 0 }))}
                     style={inp} placeholder="39" />
                 </div>
@@ -698,16 +686,51 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
               <div style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", borderRadius: "9px", padding: "12px 14px" }}>
                 <p style={{ fontSize: "12px", color: "#a78bfa" }}>
                   💡 Set to <strong>0</strong> for free.
-                  {form.monthlyPrice > 0 && ` Suggested annual: $${Math.round(form.monthlyPrice * 0.83)}/mo (≈17% discount)`}
+                  {form.monthlyPrice > 0 && ` Annual saves: $${(form.monthlyPrice - form.annualPrice) * 12}/year`}
                 </p>
               </div>
 
               <div>
-                {lbl("Pricing Features", "— one per line, shown under pricing on detail page")}
+                {lbl("Pricing Features", "— one per line")}
                 <textarea value={form.pricingFeatures}
                   onChange={(e) => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
                   rows={8} style={{ ...inp, resize: "vertical" as const, lineHeight: 1.7 }}
-                  placeholder={"30-day free trial\nUnlimited pipeline runs\nYouTube auto-upload\nShorts generation included\nEmail notifications\nPriority support"} />
+                  placeholder={"Unlimited pipeline runs\nDaily trend discovery\nAuto YouTube upload\nEmail notifications\nPriority support"} />
+              </div>
+
+              <div style={{ marginTop: "16px" }}>
+                {lbl("Custom / Enterprise Plan")}
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "12px 14px", background: colors.bg,
+                  border: `1px solid ${colors.border}`, borderRadius: "8px",
+                  marginBottom: "10px",
+                }}>
+                  <div>
+                    <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text }}>Show Custom Pricing Option</p>
+                    <p style={{ fontSize: "11px", color: colors.textMuted }}>Shows "Contact us" card alongside standard pricing</p>
+                  </div>
+                  <button onClick={() => setForm(f => ({ ...f, hasCustomPlan: !(f as any).hasCustomPlan }))} style={{
+                    width: "38px", height: "20px", borderRadius: "10px", border: "none",
+                    cursor: "pointer", position: "relative",
+                    background: (form as any).hasCustomPlan ? "#7c3aed" : colors.border,
+                    transition: "background 0.2s",
+                  }}>
+                    <div style={{
+                      width: "14px", height: "14px", borderRadius: "50%", background: "white",
+                      position: "absolute", top: "3px",
+                      left: (form as any).hasCustomPlan ? "21px" : "3px", transition: "left 0.2s",
+                    }} />
+                  </button>
+                </div>
+                {(form as any).hasCustomPlan && (
+                  <input
+                    value={(form as any).customLabel || ""}
+                    onChange={e => setForm(f => ({ ...f, customLabel: e.target.value }))}
+                    style={inp}
+                    placeholder="Contact us for custom pricing"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -715,10 +738,8 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
           {/* ── STEP 5: DETAIL PAGES ── */}
           {step === 5 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-              {/* Testimonials */}
               <div>
-                {lbl("Testimonials", "— 'What creators say' section")}
+                {lbl("Testimonials", "— 'What creators say' section. Only add real ones.")}
                 {form.testimonials.map((t, i) => (
                   <div key={i} style={{
                     background: colors.bg, border: `1px solid ${colors.border}`,
@@ -728,10 +749,10 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                       <input value={t.name} onChange={(e) => updateItem("testimonials", i, "name", e.target.value)}
                         style={{ ...inp, flex: 1 }} placeholder="Creator name" />
                       <input value={t.role} onChange={(e) => updateItem("testimonials", i, "role", e.target.value)}
-                        style={{ ...inp, flex: 1 }} placeholder="YouTube Creator, 50K subs" />
+                        style={{ ...inp, flex: 1 }} placeholder="YouTube Creator, Dubai" />
                       <select value={t.rating} onChange={(e) => updateItem("testimonials", i, "rating", parseInt(e.target.value))}
                         style={{ ...inp, width: "80px" }}>
-                        {[5,4,3].map(r => <option key={r} value={r}>{"⭐".repeat(r)}</option>)}
+                        {[5, 4, 3].map(r => <option key={r} value={r}>{"⭐".repeat(r)}</option>)}
                       </select>
                       <button onClick={() => removeItem("testimonials", i)} style={{
                         width: "30px", height: "30px", borderRadius: "6px", cursor: "pointer", flexShrink: 0,
@@ -746,12 +767,11 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                       placeholder="This agent completely changed how I create content..." />
                   </div>
                 ))}
-                <button onClick={() => addItem("testimonials", { name: "", role: "", avatar: "", text: "", rating: 5 })} style={{
+                <button onClick={() => addItem("testimonials", { name: "", role: "", avatar: "👤", text: "", rating: 5 })} style={{
                   fontSize: "12px", color: "#7c3aed", background: "none", border: "none", cursor: "pointer", padding: "4px 0",
                 }}>+ Add testimonial</button>
               </div>
 
-              {/* FAQ */}
               <div>
                 {lbl("FAQ", "— frequently asked questions")}
                 {form.faq.map((f, i) => (
@@ -761,7 +781,7 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
                   }}>
                     <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
                       <input value={f.question} onChange={(e) => updateItem("faq", i, "question", e.target.value)}
-                        style={inp} placeholder="What API keys do I need?" />
+                        style={inp} placeholder="e.g. What API keys do I need?" />
                       <button onClick={() => removeItem("faq", i)} style={{
                         width: "30px", height: "30px", borderRadius: "6px", cursor: "pointer", flexShrink: 0,
                         border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#ef4444",
@@ -839,7 +859,6 @@ function TemplateModal({ template, nextSortOrder, onClose, onSave, colors, isDar
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────
 export function CmsModulesPage() {
   const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
@@ -864,7 +883,6 @@ export function CmsModulesPage() {
       const res = await api.get("/modules/admin/all");
       const data = res.data?.data || res.data || [];
       setTemplates(data);
-      // Auto sort order = last sort order + 1
       if (data.length > 0) {
         const maxSort = Math.max(...data.map((t: AgentTemplate) => t.sortOrder || 0));
         setNextSortOrder(maxSort + 1);
@@ -939,7 +957,7 @@ export function CmsModulesPage() {
           <option value="agent">Agents</option>
           <option value="automation">Automations</option>
         </select>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ ...inputStyle, minWidth: "140px" }}>
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ ...inputStyle, minWidth: "160px" }}>
           <option value="all">All Categories</option>
           {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
         </select>
@@ -954,8 +972,8 @@ export function CmsModulesPage() {
       ) : filtered.length === 0 ? (
         <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "60px 24px", textAlign: "center" }}>
           <Bot size={36} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
-          <p style={{ fontSize: "15px", fontWeight: 500, color: colors.text, marginBottom: "6px" }}>No modules yet</p>
-          <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>Create your first module template for the marketplace.</p>
+          <p style={{ fontSize: "15px", fontWeight: 500, color: colors.text, marginBottom: "6px" }}>No modules found</p>
+          <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>Try adjusting your filters or create a new module.</p>
           <button onClick={() => { setEditTemplate(undefined); setShowModal(true); }} style={{
             display: "inline-flex", alignItems: "center", gap: "8px", padding: "9px 18px",
             borderRadius: "8px", background: "#7c3aed", color: "white", border: "none",
@@ -968,62 +986,109 @@ export function CmsModulesPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "14px" }}>
           {filtered.map((t) => (
             <div key={t._id} style={{
-              background: colors.bgCard, border: `1px solid ${t.isActive ? colors.border : "rgba(239,68,68,0.15)"}`,
-              borderRadius: "12px", padding: "18px 20px", opacity: t.isActive ? 1 : 0.75,
+              background: colors.bgCard,
+              border: `1px solid ${t.isActive ? colors.border : "rgba(239,68,68,0.15)"}`,
+              borderRadius: "12px", padding: "20px 22px",
+              opacity: t.isActive ? 1 : 0.75,
+              minHeight: "230px",
+              display: "flex", flexDirection: "column", justifyContent: "space-between",
             }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{
-                    width: "42px", height: "42px", borderRadius: "10px", flexShrink: 0,
-                    background: `${t.color}15`, border: `1px solid ${t.color}25`,
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px",
-                  }}>
-                    {t.icon}
+              {/* Top content */}
+              <div>
+                {/* Card header — icon + name + badge */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      width: "42px", height: "42px", borderRadius: "10px", flexShrink: 0,
+                      background: `${t.color}15`, border: `1px solid ${t.color}25`,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px",
+                    }}>
+                      {t.icon}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{
+                        fontSize: "14px", fontWeight: 600, color: colors.text,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>
+                        {t.name}
+                      </p>
+                      <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                        {t.moduleType.charAt(0).toUpperCase() + t.moduleType.slice(1)}
+                        {" · "}
+                        {formatCategoryLabel(t.category)}
+                        {" · "}
+                        #{t.sortOrder}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>{t.name}</p>
-                    <p style={{ fontSize: "11px", color: colors.textMuted, textTransform: "capitalize" }}>
-                      {t.moduleType} · {t.category} · #{t.sortOrder}
-                    </p>
+
+                  {/* Badge — single, no overlap */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0, alignItems: "flex-end" }}>
+                    <span style={{
+                      fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "9999px",
+                      whiteSpace: "nowrap",
+                      background: t.isComingSoon
+                        ? "rgba(245,158,11,0.1)"
+                        : t.badge === "Live"
+                        ? "rgba(34,197,94,0.1)"
+                        : `${t.color}15`,
+                      color: t.isComingSoon
+                        ? "#f59e0b"
+                        : t.badge === "Live"
+                        ? "#22c55e"
+                        : t.color,
+                    }}>
+                      {t.isComingSoon ? "Coming Soon" : t.badge || "Active"}
+                    </span>
+                    {!t.isActive && (
+                      <span style={{
+                        fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "9999px",
+                        background: "rgba(239,68,68,0.1)", color: "#ef4444", whiteSpace: "nowrap",
+                      }}>
+                        Hidden
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                  {t.badge && (
-                    <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "9999px", background: `${t.color}15`, color: t.color }}>
-                      {t.badge}
+
+                {/* Description */}
+                <p style={{
+                  fontSize: "12px", color: colors.textMuted, lineHeight: 1.5, marginBottom: "10px",
+                  display: "-webkit-box", WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical" as const, overflow: "hidden",
+                }}>
+                  {t.description || t.tagline || "No description"}
+                </p>
+
+                {/* Info chips */}
+                <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "12px" }}>
+                  <span style={{
+                    fontSize: "10px", color: "#a78bfa",
+                    background: "rgba(124,58,237,0.08)",
+                    padding: "2px 7px", borderRadius: "5px",
+                  }}>
+                    {formatCategoryLabel(t.pipelineType || "custom")}
+                  </span>
+                  {t.estimatedCostPerRun && (
+                    <span style={{
+                      fontSize: "10px", color: "#f59e0b",
+                      background: "rgba(245,158,11,0.08)",
+                      padding: "2px 7px", borderRadius: "5px",
+                    }}>
+                      ~{t.estimatedCostPerRun}
                     </span>
                   )}
                   <span style={{
-                    fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "9999px",
-                    background: t.isActive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-                    color: t.isActive ? "#22c55e" : "#ef4444",
+                    fontSize: "10px", color: colors.textMuted,
+                    background: colors.bg, padding: "2px 7px",
+                    borderRadius: "5px", border: `1px solid ${colors.border}`,
                   }}>
-                    {t.isComingSoon ? "Soon" : t.isActive ? "Live" : "Hidden"}
+                    {t.pricing?.monthly ? `$${t.pricing.monthly}/mo` : "Free"}
                   </span>
                 </div>
               </div>
 
-              <p style={{
-                fontSize: "12px", color: colors.textMuted, lineHeight: 1.5, marginBottom: "10px",
-                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden",
-              }}>
-                {t.description || t.tagline || "No description"}
-              </p>
-
-              <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "12px" }}>
-                <span style={{ fontSize: "10px", color: "#a78bfa", background: "rgba(124,58,237,0.08)", padding: "2px 7px", borderRadius: "5px" }}>
-                  {t.pipelineType}
-                </span>
-                {t.estimatedCostPerRun && (
-                  <span style={{ fontSize: "10px", color: "#f59e0b", background: "rgba(245,158,11,0.08)", padding: "2px 7px", borderRadius: "5px" }}>
-                    ~{t.estimatedCostPerRun}
-                  </span>
-                )}
-                <span style={{ fontSize: "10px", color: colors.textMuted, background: colors.bg, padding: "2px 7px", borderRadius: "5px", border: `1px solid ${colors.border}` }}>
-                  {t.pricing?.monthly ? `$${t.pricing.monthly}/mo` : "Free"}
-                </span>
-              </div>
-
+              {/* Action buttons — always at bottom */}
               <div style={{ display: "flex", gap: "6px" }}>
                 <button onClick={() => { setEditTemplate(t); setShowModal(true); }} style={{
                   flex: 1, padding: "7px", borderRadius: "7px", cursor: "pointer",

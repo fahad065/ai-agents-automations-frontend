@@ -58,7 +58,7 @@ export function CtaSection() {
           lineHeight: 1.7, maxWidth: "520px", margin: "0 auto 40px",
         }}>
           Deploy your first AI agent in minutes. No technical knowledge required.
-          Join thousands of businesses already running on LogicMate.
+          Start automating content, social media and marketing today.
         </p>
 
         <div style={{
@@ -90,7 +90,7 @@ export function CtaSection() {
           display: "flex", flexWrap: "wrap",
           gap: "20px", justifyContent: "center",
         }}>
-          {["No credit card required", "Cancel anytime", "SOC 2 compliant"].map((item) => (
+          {["No credit card required", "30-day free trial", "Cancel anytime"].map((item) => (
             <div key={item} style={{
               display: "flex", alignItems: "center", gap: "6px",
               fontSize: "13px", color: colors.textMuted,

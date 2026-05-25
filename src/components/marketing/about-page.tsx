@@ -99,7 +99,7 @@ export function AboutPage() {
       </div>
 
       {/* Team */}
-      {page?.teamMembers && page.teamMembers.length > 0 && (
+      {/* {page?.teamMembers && page.teamMembers.length > 0 && (
         <div>
           <h2 style={{
             fontSize: "24px", fontWeight: 700,
@@ -144,7 +144,7 @@ export function AboutPage() {
             ))}
           </div>
         </div>
-      )}
+      )} */}
     </CmsPage>
   );
 }

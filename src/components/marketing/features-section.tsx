@@ -54,10 +54,10 @@ const steps = [
     color: "#f59e0b",
     title: "Track and optimise",
     description: "Monitor performance across all your agents from one dashboard. See what's working and scale it.",
-    detail: "Real-time analytics on views, engagement, revenue and ROI. The agent learns from performance data and continuously improves its output over time.",
+    detail: "Monitor all your agents from one dashboard. See real-time logs, costs, published content and next scheduled runs — across every platform.",
     visual: {
       type: "stats",
-      items: ["Views: 48.2K", "Revenue: $284", "Engagement: 6.8%", "Growth: +142%"],
+      items: ["Pipeline logs: Live", "Agents running: 3", "Posts published: ✓", "Next run: Tonight"],
     },
   },
 ];

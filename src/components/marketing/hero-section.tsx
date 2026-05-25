@@ -74,34 +74,10 @@ export function HeroSection() {
 
   // Use live stats if available, fallback to placeholder numbers
   const displayStats = [
-    {
-      label: "Active modules",
-      value: stats?.totalModules ?? 3,
-      suffix: "+",
-      icon: Bot,
-      color: "#7c3aed",
-    },
-    {
-      label: "Pipeline runs",
-      value: stats?.totalRuns ?? 0,
-      suffix: "+",
-      icon: Zap,
-      color: "#22c55e",
-    },
-    {
-      label: "Hours saved",
-      value: stats ? Math.max(stats.totalRuns * 4, 100) : 382,
-      suffix: "h+",
-      icon: BarChart3,
-      color: "#3b82f6",
-    },
-    {
-      label: "Success rate",
-      value: stats?.successRate ?? 98,
-      suffix: "%",
-      icon: BarChart3,
-      color: "#f59e0b",
-    },
+    { label: "Agents available", value: "4+", icon: Bot, color: "#7c3aed" },
+    { label: "Platforms supported", value: "5+", icon: Zap, color: "#22c55e" },
+    { label: "Countries served", value: "GCC+", icon: BarChart3, color: "#3b82f6" },
+    { label: "Free trial", value: "30 days", icon: BarChart3, color: "#f59e0b" },
   ];
 
   return (
@@ -148,7 +124,7 @@ export function HeroSection() {
             fontSize: "13px", fontWeight: 500,
           }}>
             <Sparkles size={13} />
-            Introducing LogicMate — AI automation for everyone
+            Introducing LogicMate — AI agents and automations for everyone
           </span>
         </div>
 
@@ -159,7 +135,7 @@ export function HeroSection() {
           letterSpacing: "-0.03em",
           color: colors.text, marginBottom: "24px",
         }}>
-          Automate your entire
+          Automate your business
           <br />
           <span style={{
             background: "linear-gradient(135deg, #a78bfa 0%, #7c3aed 50%, #6d28d9 100%)",
@@ -167,7 +143,7 @@ export function HeroSection() {
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
           }}>
-            business with AI agents
+            with intelligent AI agents
           </span>
         </h1>
 
@@ -177,8 +153,8 @@ export function HeroSection() {
           color: colors.textMuted,
           maxWidth: "580px", margin: "0 auto 40px",
         }}>
-          Deploy intelligent agents that handle content creation, social media,
-          marketing, and more — running 24/7 without you lifting a finger.
+          Deploy pre-built AI agents that handle content creation, social media,
+          marketing and more — running 24/7 across every platform, in any language.
         </p>
 
         {/* CTAs */}
@@ -208,7 +184,7 @@ export function HeroSection() {
 
         {/* Trust badges */}
         <p style={{ fontSize: "13px", color: colors.textSubtle, marginBottom: "48px" }}>
-          No credit card required · Cancel anytime · 98% pipeline success rate
+          No credit card required · 30-day free trial · Cancel anytime
         </p>
 
         {/* ── Live Stats Bar ── */}
@@ -224,9 +200,7 @@ export function HeroSection() {
               padding: "20px 16px", textAlign: "center",
             }}>
               <p style={{ fontSize: "22px", fontWeight: 800, color: colors.text, lineHeight: 1, marginBottom: "4px" }}>
-                {stats !== null
-                  ? <AnimatedCount target={s.value} suffix={s.suffix} />
-                  : `${s.value}${s.suffix}`}
+                {s.value}
               </p>
               <p style={{ fontSize: "12px", color: colors.textMuted }}>{s.label}</p>
             </div>
@@ -287,7 +261,7 @@ export function HeroSection() {
                     {stat.label}
                   </p>
                   <p style={{ fontSize: "20px", fontWeight: 700, color: stat.color }}>
-                    {stat.value}{stat.suffix}
+                    {stat.value}
                   </p>
                 </div>
               ))}

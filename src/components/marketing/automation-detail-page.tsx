@@ -29,10 +29,11 @@ interface AutomationTemplate {
   features: { title: string; description: string; icon: string }[];
   howItWorks: { step: string; title: string; description: string }[];
   testimonials: { name: string; role: string; avatar: string; text: string; rating: number }[];
-  pricing: { monthly: number; annual: number; features: string[] };
+  pricing: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   faq: { question: string; answer: string }[];
   integrations: { name: string; icon: string; description: string }[];
   demoVideoUrl?: string;
+  isComingSoon?: boolean;
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -275,6 +276,49 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {/* Coming Soon */}
+      {automation.isComingSoon && (
+        <section style={{
+          padding: "32px 24px",
+          background: `${automation.color}08`,
+          borderBottom: `1px solid ${automation.color}20`,
+        }}>
+          <div style={{
+            maxWidth: "1100px", margin: "0 auto",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexWrap: "wrap", gap: "16px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div style={{
+                width: "44px", height: "44px", borderRadius: "12px",
+                background: `${automation.color}15`, border: `1px solid ${automation.color}30`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "20px", flexShrink: 0,
+              }}>
+                🚀
+              </div>
+              <div>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+                  This automation is coming soon
+                </p>
+                <p style={{ fontSize: "13px", color: colors.textMuted }}>
+                  We're actively building this. Join the waitlist to get notified and receive 40% off at launch.
+                </p>
+              </div>
+            </div>
+            <Link href="/auth/signup" style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              background: `linear-gradient(135deg, ${automation.color}, ${automation.color}cc)`,
+              color: "white", padding: "11px 24px", borderRadius: "10px",
+              fontSize: "14px", fontWeight: 600, textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}>
+              Join waitlist <ArrowRight size={14} />
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Demo video */}
       {automation.demoVideoUrl && embedUrl && (
         <section style={{
@@ -321,6 +365,47 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             >
               <ExternalLink size={13} /> Watch on YouTube
             </a>
+          </div>
+        </section>
+      )}
+
+      {/* Capabilities */}
+      {automation.capabilities?.length > 0 && (
+        <section style={{ padding: "64px 24px", borderBottom: `1px solid ${colors.border}` }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: "40px" }}>
+              <h2 style={{
+                fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700,
+                color: colors.text, marginBottom: "8px",
+              }}>
+                What {automation.name} does
+              </h2>
+              <p style={{ fontSize: "15px", color: colors.textMuted }}>
+                Everything handled automatically — no manual work required.
+              </p>
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "12px",
+            }}>
+              {automation.capabilities.map((cap) => (
+                <div key={cap} style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: "10px", padding: "14px 16px",
+                }}>
+                  <div style={{
+                    width: "8px", height: "8px", borderRadius: "50%",
+                    background: automation.color, flexShrink: 0,
+                  }} />
+                  <span style={{ fontSize: "13px", color: colors.text, fontWeight: 500 }}>
+                    {cap}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -629,6 +714,39 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                 No credit card required · Cancel anytime
               </p>
             </div>
+
+            {automation.pricing?.hasCustomPlan && (
+              <div style={{
+                background: colors.bgCard,
+                border: `1px solid ${colors.border}`,
+                borderRadius: "16px", padding: "32px",
+                marginTop: "16px", textAlign: "center",
+              }}>
+                <div style={{
+                  width: "48px", height: "48px", borderRadius: "12px",
+                  background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 16px", fontSize: "22px",
+                }}>
+                  🏢
+                </div>
+                <p style={{ fontSize: "18px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
+                  Custom / Enterprise
+                </p>
+                <p style={{ fontSize: "14px", color: colors.textMuted, marginBottom: "24px", lineHeight: 1.6 }}>
+                  {automation.pricing.customLabel || "Need a custom solution? We'll build it for you."}
+                </p>
+                <a href="mailto:hello@logicmate.io" style={{
+                  display: "inline-flex", alignItems: "center", gap: "8px",
+                  border: "1px solid rgba(124,58,237,0.3)",
+                  background: "rgba(124,58,237,0.06)",
+                  color: "#a78bfa", padding: "12px 28px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                }}>
+                  Contact us →
+                </a>
+              </div>
+            )}
           </div>
         </section>
       )}

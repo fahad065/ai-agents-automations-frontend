@@ -4,15 +4,39 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTheme } from "@/hooks/use-theme";
-import { TrendingUp, Users, Globe, Clock } from "lucide-react";
+import { TrendingUp, Users, Globe, Clock, Bot, Zap } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
-  { icon: TrendingUp, value: 4821, suffix: "+", label: "Tasks automated daily", color: "#7c3aed" },
-  { icon: Users, value: 2400, suffix: "+", label: "Businesses using LogicMate", color: "#22c55e" },
-  { icon: Globe, value: 47, suffix: "", label: "Countries served", color: "#3b82f6" },
-  { icon: Clock, value: 98, suffix: "%", label: "Uptime guarantee", color: "#f59e0b" },
+  {
+    icon: Bot,
+    value: "4+",
+    label: "AI agents live",
+    sub: "YouTube, Instagram, Arabic content and more",
+    color: "#7c3aed",
+  },
+  {
+    icon: Zap,
+    value: "100%",
+    label: "Automated pipeline",
+    sub: "From research to publishing — zero manual work",
+    color: "#22c55e",
+  },
+  {
+    icon: Globe,
+    value: "GCC & beyond",
+    label: "Built for the region",
+    sub: "Arabic content support, global publishing",
+    color: "#3b82f6",
+  },
+  {
+    icon: Clock,
+    value: "30 days",
+    label: "Free trial",
+    sub: "No credit card required to get started",
+    color: "#f59e0b",
+  },
 ];
 
 export function StatsSection() {
@@ -77,15 +101,16 @@ export function StatsSection() {
                   <IconComponent size={20} color={stat.color} />
                 </div>
                 <div style={{
-                  fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 800,
-                  color: colors.text, lineHeight: 1, marginBottom: "8px",
-                  fontVariantNumeric: "tabular-nums",
+                  fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800,
+                  color: colors.text, lineHeight: 1, marginBottom: "6px",
                 }}>
-                  <span ref={(el) => { countersRef.current[i] = el; }}>0</span>
-                  <span style={{ color: stat.color }}>{stat.suffix}</span>
+                  {stat.value}
                 </div>
-                <p style={{ color: colors.textMuted, fontSize: "14px" }}>
+                <p style={{ color: colors.textMuted, fontSize: "14px", marginBottom: "4px" }}>
                   {stat.label}
+                </p>
+                <p style={{ color: colors.textSubtle, fontSize: "12px" }}>
+                  {stat.sub}
                 </p>
               </div>
             );

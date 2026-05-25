@@ -10,7 +10,7 @@ const links = {
     { label: "Automations", href: "/automations" },
     { label: "AI Agents", href: "/agents" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Changelog", href: "/changelog" },
+    // { label: "Changelog", href: "/changelog" },
   ],
   Company: [
     { label: "About", href: "/about" },
@@ -125,14 +125,16 @@ export function Footer() {
           borderTop: `1px solid ${colors.border}`,
           paddingTop: "24px",
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "12px",
-          textAlign: "center",
         }}>
           <p style={{ color: colors.textMuted, fontSize: "12px" }}>
             © {new Date().getFullYear()} LogicMate. All rights reserved.
+          </p>
+          <p style={{ color: colors.textMuted, fontSize: "12px" }}>
+            Built for creators and businesses 🚀
           </p>
         </div>
       </div>
