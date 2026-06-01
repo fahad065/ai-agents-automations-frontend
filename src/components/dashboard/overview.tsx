@@ -10,7 +10,7 @@ import {
   Bot, Zap, Users, Package, TrendingUp,
   Eye, Trash2, FileText,
   ChevronLeft, ChevronRight,
-  CreditCard,
+  CreditCard, Activity, Video, DollarSign,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { TrialBanner } from "./trial-banner";
@@ -59,7 +59,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; bg: string; label: string }> = {
     active:           { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Active" },
     complete:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },
-    completed:        { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },  // ← add this
+    completed:        { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },
     uploaded:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Uploaded" },
     running:          { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Running" },
     generating_clips: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Generating" },
@@ -121,6 +121,50 @@ function DonutChart({ agents, automations, colors }: { agents: number; automatio
   );
 }
 
+// ── Bar Chart ─────────────────────────────────────────────────
+function BarChart({ data, color, label }: {
+  data: { _id: string; count: number }[];
+  color: string; label: string;
+}) {
+  const { colors } = useTheme();
+  if (!data?.length) return (
+    <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "20px" }}>
+      <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "16px" }}>{label}</p>
+      <div style={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ fontSize: "13px", color: colors.textMuted }}>No data yet</p>
+      </div>
+    </div>
+  );
+  const max = Math.max(...data.map(d => d.count), 1);
+  const last14 = data.slice(-14);
+  return (
+    <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>{label}</p>
+        <p style={{ fontSize: "12px", color: colors.textMuted }}>
+          Total: {data.reduce((s, d) => s + d.count, 0)}
+        </p>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "80px" }}>
+        {last14.map(d => (
+          <div key={d._id} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+            <div
+              title={`${d._id}: ${d.count}`}
+              style={{
+                width: "100%", height: `${Math.max(4, (d.count / max) * 72)}px`,
+                background: color, borderRadius: "3px", opacity: 0.85, transition: "height 0.3s",
+              }}
+            />
+            <span style={{ fontSize: "9px", color: colors.textMuted, transform: "rotate(-45deg)", transformOrigin: "center", display: "block", whiteSpace: "nowrap" }}>
+              {d._id.slice(5)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────
 export function DashboardOverview() {
   const { colors } = useTheme();
@@ -131,13 +175,21 @@ export function DashboardOverview() {
   const [loading, setLoading] = useState(true);
 
   const [adminStats, setAdminStats] = useState({
-    totalUsers: 0, totalAgents: 0, activeAgents: 0,
-    totalAutomations: 0, activeAutomations: 0,
-    totalRuns: 0,  // ← add
+    totalUsers: 0, activeUsers: 0, newUsersThisMonth: 0,
+    trialUsers: 0, freeForeverUsers: 0,
+    totalAgents: 0, activeAgents: 0,
+    uploadedVideos: 0, totalPipelines: 0,
+    failedPipelines: 0, successRate: 0, totalApiCost: 0,
   });
 
+  const [adminCharts, setAdminCharts] = useState<{
+    videosByDay: { _id: string; count: number }[];
+    usersByDay: { _id: string; count: number }[];
+  }>({ videosByDay: [], usersByDay: [] });
+
   const [userStats, setUserStats] = useState({
-    totalSubscribed: 0, totalAgents: 0, totalAutomations: 0, totalBilled: 0, totalRuns: 0, 
+    totalSubscribed: 0, totalAgents: 0, totalAutomations: 0,
+    totalBilled: 0, totalRuns: 0,
     billingByModule: [] as { name: string; amount: number }[],
   });
 
@@ -156,32 +208,40 @@ export function DashboardOverview() {
     setLoading(true);
     try {
       if (isAdmin) {
-        const [agentsRes, automationsRes, usersRes, runsRes] = await Promise.all([
-          api.get("/usermodules?moduleType=agent&limit=1").catch(() => ({ data: { total: 0 } })),
-          api.get("/usermodules?moduleType=automation&limit=1").catch(() => ({ data: { total: 0 } })),
-          api.get("/users?limit=1").catch(() => ({ data: { total: 0 } })),
-          api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),  // ← add
-        ]);
-      
-        const totalAgents = agentsRes.data?.total || 0;
-        const totalAutomations = automationsRes.data?.total || 0;
-      
-        setAdminStats({
-          totalUsers: usersRes.data?.total || 0,
-          totalAgents,
-          activeAgents: totalAgents,
-          totalAutomations,
-          activeAutomations: totalAutomations,
-          totalRuns: runsRes.data?.total || 0,  // ← add
-        });
-        setChartData({ agents: totalAgents, automations: totalAutomations });
+        // ── Single call to /admin/overview ────────────────────
+        const res = await api.get("/admin/overview").catch(() => ({ data: null }));
+        const overview = res.data;
+        if (overview?.stats) {
+          setAdminStats({
+            totalUsers: overview.stats.totalUsers || 0,
+            activeUsers: overview.stats.activeUsers || 0,
+            newUsersThisMonth: overview.stats.newUsersThisMonth || 0,
+            trialUsers: overview.stats.trialUsers || 0,
+            freeForeverUsers: overview.stats.freeForeverUsers || 0,
+            totalAgents: overview.stats.totalAgents || 0,
+            activeAgents: overview.stats.activeAgents || 0,
+            uploadedVideos: overview.stats.uploadedVideos || 0,
+            totalPipelines: overview.stats.totalPipelines || 0,
+            failedPipelines: overview.stats.failedPipelines || 0,
+            successRate: overview.stats.successRate || 0,
+            totalApiCost: overview.stats.totalApiCost || 0,
+          });
+          setAdminCharts({
+            videosByDay: overview.charts?.videosByDay || [],
+            usersByDay: overview.charts?.usersByDay || [],
+          });
+          setChartData({
+            agents: overview.stats.totalAgents || 0,
+            automations: 0,
+          });
+        }
       } else {
-        // ── User: fetch own usermodules + billing summary ─────
+        // ── User: fetch own modules + billing summary ─────────
         const [agentsRes, automationsRes, billRes, runsRes] = await Promise.all([
           api.get("/usermodules/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
-          api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),  // ← add
+          api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),
         ]);
 
         const agents = agentsRes.data?.data || [];
@@ -197,7 +257,7 @@ export function DashboardOverview() {
             name: m.name || m.moduleName,
             amount: m.amount || m.billingAmount || 0,
           })),
-          totalRuns: runsRes.data?.total || 0,  // ← add
+          totalRuns: runsRes.data?.total || 0,
         });
         setChartData({ agents: agents.length, automations: automations.length });
       }
@@ -240,6 +300,7 @@ export function DashboardOverview() {
   return (
     <div>
       <TrialBanner />
+
       {/* Greeting */}
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
@@ -252,26 +313,52 @@ export function DashboardOverview() {
 
       {/* ── ADMIN STATS ── */}
       {isAdmin && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "24px" }}>
-          <StatCard label="Total Users" value={loading ? "—" : adminStats.totalUsers}
-            sub="Registered accounts" icon={Users} color="#3b82f6" loading={loading}
-            onClick={() => router.push("/dashboard/users")} />
-          <StatCard
-            label="Total Agents"
-            value={loading ? "—" : `${adminStats.activeAgents}/${adminStats.totalAgents}`}
-            sub={`${adminStats.activeAgents} active out of ${adminStats.totalAgents}`}
-            icon={Bot} color="#7c3aed" loading={loading}
-            onClick={() => router.push("/dashboard/subscriptions")} />
-          <StatCard
-            label="Total Automations"
-            value={loading ? "—" : `${adminStats.activeAutomations}/${adminStats.totalAutomations}`}
-            sub={`${adminStats.activeAutomations} active out of ${adminStats.totalAutomations}`}
-            icon={Zap} color="#22c55e" loading={loading}
-            onClick={() => router.push("/dashboard/subscriptions")} />
-          <StatCard label="Pipeline Runs" value={loading ? "—" : adminStats.totalRuns}
-            sub="All types combined" icon={TrendingUp} color="#f59e0b" loading={loading}
-            onClick={() => router.push("/dashboard/pipeline-logs")} />
-        </div>
+        <>
+          {/* Stats grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "14px", marginBottom: "16px" }}>
+            <StatCard label="Total Users" value={loading ? "—" : adminStats.totalUsers}
+              sub={`+${adminStats.newUsersThisMonth} this month`}
+              icon={Users} color="#3b82f6" loading={loading}
+              onClick={() => router.push("/dashboard/users")} />
+            <StatCard label="Active Users" value={loading ? "—" : adminStats.activeUsers}
+              sub="With active account"
+              icon={Activity} color="#22c55e" loading={loading} />
+            <StatCard label="Trial Users" value={loading ? "—" : adminStats.trialUsers}
+              sub={`${adminStats.freeForeverUsers} free forever`}
+              icon={Package} color="#f59e0b" loading={loading} />
+            <StatCard label="Total Agents" value={loading ? "—" : adminStats.totalAgents}
+              sub={`${adminStats.activeAgents} active`}
+              icon={Bot} color="#7c3aed" loading={loading}
+              onClick={() => router.push("/dashboard/subscriptions")} />
+            <StatCard label="Videos Generated" value={loading ? "—" : adminStats.uploadedVideos}
+              sub={`${adminStats.successRate}% success rate`}
+              icon={Video} color="#ec4899" loading={loading}
+              onClick={() => router.push("/dashboard/pipeline-logs")} />
+            <StatCard label="Pipeline Runs" value={loading ? "—" : adminStats.totalPipelines}
+              sub={`${adminStats.failedPipelines} failed`}
+              icon={TrendingUp} color="#a78bfa" loading={loading}
+              onClick={() => router.push("/dashboard/pipeline-logs")} />
+            <StatCard label="Total API Cost" value={loading ? "—" : `$${adminStats.totalApiCost?.toFixed(2)}`}
+              sub="All users combined"
+              icon={DollarSign} color="#f59e0b" loading={loading} />
+          </div>
+
+          {/* Charts */}
+          {!loading && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+              <BarChart
+                data={adminCharts.videosByDay}
+                color="#7c3aed"
+                label="Videos uploaded (last 30 days)"
+              />
+              <BarChart
+                data={adminCharts.usersByDay}
+                color="#22c55e"
+                label="New signups (last 30 days)"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* ── USER STATS ── */}
@@ -302,7 +389,7 @@ export function DashboardOverview() {
           <StatCard
             label="Pipeline Runs"
             value={loading ? "—" : userStats.totalRuns}
-            sub="Total videos generated"
+            sub="Total runs"
             icon={TrendingUp} color="#a78bfa" loading={loading}
             onClick={() => router.push("/dashboard/pipeline-logs")} />
         </div>
@@ -324,6 +411,7 @@ export function DashboardOverview() {
               <select value={tableType} onChange={(e) => { setTableType(e.target.value); setTablePage(1); }} style={inputStyle}>
                 <option value="all">All Types</option>
                 <option value="youtube">YouTube</option>
+                <option value="instagram">Instagram</option>
                 <option value="podcast">Podcast</option>
                 <option value="marketing">Marketing</option>
               </select>
@@ -434,37 +522,66 @@ export function DashboardOverview() {
           )}
         </div>
 
-        {/* Right column — Donut chart */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>
-              {isAdmin ? "Modules Breakdown" : "My Modules Breakdown"}
-            </h2>
-          </div>
-          <DonutChart agents={chartData.agents} automations={chartData.automations} colors={colors} />
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
+          {/* Donut chart */}
+          <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+              <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>
+                {isAdmin ? "Modules Breakdown" : "My Modules Breakdown"}
+              </h2>
+            </div>
+            <DonutChart agents={chartData.agents} automations={chartData.automations} colors={colors} />
+          </div>
+
+          {/* Admin — revenue summary */}
+          {isAdmin && (
+            <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Cost Summary</h2>
+              </div>
+              <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[
+                  { label: "Total API Cost", value: `$${adminStats.totalApiCost?.toFixed(2)}`, color: "#f59e0b" },
+                  { label: "Success Rate", value: `${adminStats.successRate}%`, color: "#22c55e" },
+                  { label: "Failed Pipelines", value: adminStats.failedPipelines, color: "#ef4444" },
+                  { label: "Videos Generated", value: adminStats.uploadedVideos, color: "#7c3aed" },
+                ].map((item) => (
+                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.label}</span>
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: item.color }}>{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* User — billing breakdown */}
           {!isAdmin && userStats.billingByModule.length > 0 && (
-            <div style={{ padding: "0 16px 16px" }}>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "10px" }}>
-                Billing Breakdown
-              </p>
-              {userStats.billingByModule.map((b, i) => (
-                <div key={i} style={{
+            <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Billing Breakdown</h2>
+              </div>
+              <div style={{ padding: "0 16px 16px" }}>
+                {userStats.billingByModule.map((b, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "8px 0", borderBottom: i < userStats.billingByModule.length - 1 ? `1px solid ${colors.border}` : "none",
+                  }}>
+                    <span style={{ fontSize: "12px", color: colors.textMuted }}>{b.name}</span>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b" }}>${b.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "8px 0", borderBottom: i < userStats.billingByModule.length - 1 ? `1px solid ${colors.border}` : "none",
+                  marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${colors.border}`,
                 }}>
-                  <span style={{ fontSize: "12px", color: colors.textMuted }}>{b.name}</span>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b" }}>${b.amount.toFixed(2)}</span>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Total</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#f59e0b" }}>
+                    ${userStats.totalBilled.toFixed(2)}
+                  </span>
                 </div>
-              ))}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${colors.border}`,
-              }}>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Total</span>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "#f59e0b" }}>
-                  ${userStats.totalBilled.toFixed(2)}
-                </span>
               </div>
             </div>
           )}
