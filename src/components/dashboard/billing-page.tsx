@@ -124,6 +124,33 @@ export function BillingPage() {
         <p style={{ fontSize: "14px", color: colors.textMuted }}>Manage your subscriptions and payment history.</p>
       </div>
 
+      {/* Manual payment banner */}
+      <div style={{
+        background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)",
+        borderRadius: "10px", padding: "14px 18px", marginBottom: "24px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexWrap: "wrap", gap: "12px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "20px" }}>💳</span>
+          <div>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+              Ready to subscribe?
+            </p>
+            <p style={{ fontSize: "12px", color: colors.textMuted }}>
+              We accept manual bank transfer payments. View instructions and notify us after payment.
+            </p>
+          </div>
+        </div>
+        <a href="/dashboard/payment-instructions" style={{
+          padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
+          background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+          color: "white", textDecoration: "none", whiteSpace: "nowrap",
+        }}>
+          View Payment Instructions →
+        </a>
+      </div>
+
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "24px" }}>
         {/* Total this month */}

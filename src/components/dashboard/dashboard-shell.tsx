@@ -33,7 +33,7 @@ const adminNavItems = [
   { label: "My Modules", href: "/dashboard/modules", icon: Package },
   { label: "Pipeline Logs", href: "/dashboard/pipeline-logs", icon: FileText },
   { label: "Subscriptions", href: "/dashboard/subscriptions", icon: BarChart3 },
-  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { label: "Billing", href: "/dashboard/payment-instructions", icon: CreditCard },
   { label: "API Keys", href: "/dashboard/api-keys", icon: Key },
   { label: "Users", href: "/dashboard/users", icon: Users },
   { label: "Notifications", href: "/dashboard/notifications", icon: Bell },

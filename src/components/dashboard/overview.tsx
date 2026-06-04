@@ -375,7 +375,7 @@ export function DashboardOverview() {
             value={loading ? "—" : `$${userStats.totalBilled.toFixed(2)}`}
             sub="Across all services"
             icon={CreditCard} color="#f59e0b" loading={loading}
-            onClick={() => router.push("/dashboard/billing")} />
+            onClick={() => router.push("/dashboard/payment-instructions")} />
           <StatCard
             label="Agents"
             value={loading ? "—" : userStats.totalAgents}
