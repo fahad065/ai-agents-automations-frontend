@@ -21,7 +21,7 @@ const userNavItems = [
   { label: "My Modules", href: "/dashboard/modules", icon: Package },
   { label: "Pipeline Logs", href: "/dashboard/pipeline-logs", icon: FileText },
   { label: "API Keys", href: "/dashboard/api-keys", icon: Key },
-  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { label: "Billing", href: "/dashboard/payment-instructions", icon: CreditCard },
   { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
@@ -269,7 +269,7 @@ function UserDropdown({ user, onLogout, colors, isDark, isAdmin }: {
 
           {[
             { label: "Profile & Settings", href: "/dashboard/settings", icon: Settings },
-            { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+            { label: "Billing", href: "/dashboard/payment-instructions", icon: CreditCard },
           ].map((item) => {
             const Icon = item.icon;
             return (
