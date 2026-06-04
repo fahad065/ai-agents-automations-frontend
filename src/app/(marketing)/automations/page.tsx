@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { AutomationsListPage } from "@/components/marketing/automations-list-page";
 
 export const metadata: Metadata = {
-  title: "Automations — LogicMate",
-  description:
-    "Browse pre-built AI automation pipelines. YouTube, social media, email, e-commerce, content repurposing and podcast — all ready to deploy.",
+  title: "AI Automations",
+  description: "Browse LogicMate's AI automations. Automate social media scheduling, email marketing, lead generation, content repurposing and more.",
   openGraph: {
-    title: "Automations — LogicMate",
-    description: "Pre-built AI automation pipelines ready to deploy in minutes.",
+    title: "AI Automations — LogicMate",
+    description: "Workflow automations powered by AI. Social media, email marketing, lead generation and more.",
+    url: "https://www.logicmate.io/automations",
   },
 };
 

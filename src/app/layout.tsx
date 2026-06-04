@@ -3,8 +3,7 @@ import "@/styles/globals.css";
 import { Providers } from "@/components/layout/providers";
 import { Toaster } from "sonner";
 import { KeepAlive } from "@/components/keep-alive";
-
-// Replace your src/app/layout.tsx metadata export with this:
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: {
@@ -49,9 +48,7 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     shortcut: "/favicon.svg",
   },
   manifest: "/site.webmanifest",
@@ -66,6 +63,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="bottom-right" theme="dark" richColors closeButton />
         </Providers>
         <KeepAlive />
+        <Script
+          id="schema-org"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "LogicMate",
+              "url": "https://www.logicmate.io",
+              "description": "AI automation platform for YouTube, Instagram, WhatsApp and more.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD",
+                "description": "30-day free trial",
+              },
+              "creator": {
+                "@type": "Organization",
+                "name": "LogicMate",
+                "url": "https://www.logicmate.io",
+              },
+            }),
+          }}
+        />
       </body>
     </html>
   );
