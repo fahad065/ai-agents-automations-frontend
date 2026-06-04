@@ -20,6 +20,7 @@ interface UserModule {
   customPrompt?: string;
   useCustomPrompt?: boolean;
   videoModel?: string;
+  config?: Record<string, any>;
 }
 
 interface VideoModel {
@@ -65,6 +66,8 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   const [loadingModels, setLoadingModels] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);
 
+  const isInstagram = module.pipelineType === "instagram";
+
   const [form, setForm] = useState({
     niche: module.niche || "",
     customPrompt: module.customPrompt || "",
@@ -73,6 +76,8 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     scheduleFrequency: module.scheduleFrequency || "daily",
     scheduleTime: module.scheduleTime || "22:30",
     scheduleDays: (module as any).scheduleDays || ["1"],
+    instagramAccountId: module.config?.instagramAccountId || "",
+    instagramAccessToken: module.config?.instagramAccessToken || "",
   });
 
   const panelBg = isDark ? "#161616" : "#ffffff";
@@ -87,21 +92,18 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   };
 
   const fetchModels = useCallback(async () => {
+    if (isInstagram) return;
     setLoadingModels(true);
     try {
       const res = await api.get(`/usermodules/atlas-models?type=${module.pipelineType}`);
       if (res.data?.models?.length > 0) {
         setModels(res.data.models as VideoModel[]);
       }
-    } catch {
-      // Keep fallback models
-    }
+    } catch {}
     setLoadingModels(false);
   }, [module.pipelineType]);
 
-  useEffect(() => {
-    fetchModels();
-  }, [fetchModels]);
+  useEffect(() => { fetchModels(); }, [fetchModels]);
 
   const to12hr = (time: string) => {
     const [h, m] = time.split(":").map(Number);
@@ -160,6 +162,12 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     customPrompt: form.customPrompt,
     useCustomPrompt: form.useCustomPrompt,
     videoModel: form.videoModel,
+    ...(isInstagram && {
+      config: {
+        instagramAccountId: form.instagramAccountId,
+        instagramAccessToken: form.instagramAccessToken,
+      },
+    }),
   });
 
   const handleSaveSchedule = async () => {
@@ -197,11 +205,13 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
 
   const nextRun = getNextRunPreview();
   const selectedModel = models.find(m => m.id === form.videoModel) || models[0];
-  const estimatedCost = form.videoModel === "auto"
+  const estimatedCost = isInstagram
+    ? "~$0.80–$1.50"
+    : form.videoModel === "auto"
     ? "~$3.00–$5.00"
     : selectedModel?.pricePerClip
-      ? `~$${(selectedModel.pricePerClip * 12 + 0.50).toFixed(2)}`
-      : "auto";
+    ? `~$${(selectedModel.pricePerClip * 12 + 0.50).toFixed(2)}`
+    : "auto";
 
   const getModelIcon = (m: VideoModel) => {
     if (m.id === "auto") return "⚡";
@@ -289,94 +299,144 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 </p>
               </div>
 
-              {/* Video Model Selector */}
-              <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Cpu size={12} /> Video Generation Model
-                  </label>
-                  {loadingModels && (
-                    <span style={{ fontSize: "10px", color: colors.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Fetching live models...
-                    </span>
-                  )}
+              {/* ── Instagram credentials ── */}
+              {isInstagram && (
+                <div style={{
+                  padding: "14px", borderRadius: "10px",
+                  border: "1px solid rgba(225,48,108,0.2)",
+                  background: "rgba(225,48,108,0.04)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                    <span style={{ fontSize: "16px" }}>📱</span>
+                    <div>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Instagram Credentials</p>
+                      <p style={{ fontSize: "11px", color: colors.textMuted }}>Required to publish Reels to your account</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "11px", fontWeight: 500, color: colors.textMuted, marginBottom: "4px" }}>
+                        Instagram Business Account ID
+                      </label>
+                      <input
+                        value={form.instagramAccountId}
+                        onChange={(e) => setForm(f => ({ ...f, instagramAccountId: e.target.value }))}
+                        style={inp}
+                        placeholder="e.g. 17841400455970996"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "11px", fontWeight: 500, color: colors.textMuted, marginBottom: "4px" }}>
+                        Instagram Access Token
+                      </label>
+                      <input
+                        type="password"
+                        value={form.instagramAccessToken}
+                        onChange={(e) => setForm(f => ({ ...f, instagramAccessToken: e.target.value }))}
+                        style={inp}
+                        placeholder="EAAxxxxxxxxxxxxxxx"
+                      />
+                    </div>
+                    <div style={{
+                      padding: "8px 10px", borderRadius: "7px",
+                      background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)",
+                    }}>
+                      <p style={{ fontSize: "11px", color: "#f59e0b", lineHeight: 1.6 }}>
+                        ⚠️ Get these from <strong>Facebook Developer Console</strong> → Your App → Instagram Basic Display.<br />
+                        Account must be an <strong>Instagram Business Account</strong> linked to a Facebook Page.
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {(showAllModels ? models : models.slice(0, 3)).map((m) => {
-                    const selected = form.videoModel === m.id;
-                    return (
-                      <button key={m.id} onClick={() => setForm(f => ({ ...f, videoModel: m.id }))} style={{
-                        padding: "10px 12px", borderRadius: "9px", cursor: "pointer", textAlign: "left",
-                        border: `2px solid ${selected ? "#7c3aed" : colors.border}`,
-                        background: selected ? "rgba(124,58,237,0.07)" : "transparent",
-                        display: "flex", alignItems: "center", gap: "10px",
-                        transition: "border-color 0.15s",
-                      }}>
-                        <div style={{
-                          width: "28px", height: "28px", borderRadius: "7px", flexShrink: 0,
-                          background: selected ? "rgba(124,58,237,0.15)" : colors.bg,
-                          border: `1px solid ${selected ? "rgba(124,58,237,0.3)" : colors.border}`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "13px",
+              {/* ── Video Model Selector — YouTube only ── */}
+              {!isInstagram && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, display: "flex", alignItems: "center", gap: "5px" }}>
+                      <Cpu size={12} /> Video Generation Model
+                    </label>
+                    {loadingModels && (
+                      <span style={{ fontSize: "10px", color: colors.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Fetching live models...
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {(showAllModels ? models : models.slice(0, 3)).map((m) => {
+                      const selected = form.videoModel === m.id;
+                      return (
+                        <button key={m.id} onClick={() => setForm(f => ({ ...f, videoModel: m.id }))} style={{
+                          padding: "10px 12px", borderRadius: "9px", cursor: "pointer", textAlign: "left",
+                          border: `2px solid ${selected ? "#7c3aed" : colors.border}`,
+                          background: selected ? "rgba(124,58,237,0.07)" : "transparent",
+                          display: "flex", alignItems: "center", gap: "10px",
+                          transition: "border-color 0.15s",
                         }}>
-                          {getModelIcon(m)}
-                        </div>
-
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                            <p style={{ fontSize: "12px", fontWeight: 600, color: selected ? "#a78bfa" : colors.text }}>
-                              {m.name}
+                          <div style={{
+                            width: "28px", height: "28px", borderRadius: "7px", flexShrink: 0,
+                            background: selected ? "rgba(124,58,237,0.15)" : colors.bg,
+                            border: `1px solid ${selected ? "rgba(124,58,237,0.3)" : colors.border}`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "13px",
+                          }}>
+                            {getModelIcon(m)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                              <p style={{ fontSize: "12px", fontWeight: 600, color: selected ? "#a78bfa" : colors.text }}>
+                                {m.name}
+                              </p>
+                              {m.tags.includes("HOT") && (
+                                <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 700 }}>HOT</span>
+                              )}
+                              {m.tags.includes("NEW") && (
+                                <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(34,197,94,0.12)", color: "#22c55e", fontWeight: 700 }}>NEW</span>
+                              )}
+                            </div>
+                            <p style={{ fontSize: "10px", color: colors.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {m.desc}
                             </p>
-                            {m.tags.includes("HOT") && (
-                              <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 700 }}>HOT</span>
-                            )}
-                            {m.tags.includes("NEW") && (
-                              <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(34,197,94,0.12)", color: "#22c55e", fontWeight: 700 }}>NEW</span>
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            {m.pricePerClip ? (
+                              <p style={{ fontSize: "11px", fontWeight: 700, color: selected ? "#a78bfa" : colors.text }}>
+                                ${(m.pricePerClip * 8).toFixed(2)}/video
+                              </p>
+                            ) : (
+                              <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>Smart</p>
                             )}
                           </div>
-                          <p style={{ fontSize: "10px", color: colors.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {m.desc}
-                          </p>
-                        </div>
+                          {selected && <Check size={13} color="#7c3aed" style={{ flexShrink: 0 }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          {m.pricePerClip ? (
-                            <p style={{ fontSize: "11px", fontWeight: 700, color: selected ? "#a78bfa" : colors.text }}>
-                              ${(m.pricePerClip * 8).toFixed(2)}/video
-                            </p>
-                          ) : (
-                            <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>Smart</p>
-                          )}
-                        </div>
+                  {models.length > 3 && (
+                    <button onClick={() => setShowAllModels(s => !s)} style={{
+                      width: "100%", padding: "7px", marginTop: "6px",
+                      borderRadius: "8px", cursor: "pointer", border: `1px dashed ${colors.border}`,
+                      background: "transparent", color: colors.textMuted, fontSize: "11px",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+                    }}>
+                      {showAllModels ? "▲ Show less" : `▼ Show ${models.length - 3} more models`}
+                    </button>
+                  )}
 
-                        {selected && <Check size={13} color="#7c3aed" style={{ flexShrink: 0 }} />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {models.length > 3 && (
-                  <button onClick={() => setShowAllModels(s => !s)} style={{
-                    width: "100%", padding: "7px", marginTop: "6px",
-                    borderRadius: "8px", cursor: "pointer", border: `1px dashed ${colors.border}`,
-                    background: "transparent", color: colors.textMuted, fontSize: "11px",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+                  <p style={{
+                    fontSize: "11px", color: colors.textMuted, marginTop: "8px",
+                    padding: "7px 10px", background: "rgba(124,58,237,0.05)",
+                    borderRadius: "7px", textAlign: "center",
                   }}>
-                    {showAllModels ? "▲ Show less" : `▼ Show ${models.length - 3} more models`}
-                  </button>
-                )}
+                    💡 Est. cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (12 clips + OpenAI)
+                  </p>
+                </div>
+              )}
 
-                <p style={{
-                  fontSize: "11px", color: colors.textMuted, marginTop: "8px",
-                  padding: "7px 10px", background: "rgba(124,58,237,0.05)",
-                  borderRadius: "7px", textAlign: "center",
-                }}>
-                  💡 Est. cost: <strong style={{ color: "#a78bfa" }}>{estimatedCost}</strong> per video (12 clips + OpenAI)
-                </p>
-              </div>
-
-              {/* Custom scene toggle */}
+              {/* ── Custom scene toggle ── */}
               <div style={{
                 padding: "14px", borderRadius: "10px",
                 border: `1px solid ${form.useCustomPrompt ? "rgba(124,58,237,0.3)" : colors.border}`,
@@ -486,8 +546,13 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
                 <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "12px" }}>Summary</p>
                 {[
                   { label: "Niche", value: form.niche || "Not set" },
-                  { label: "Video model", value: selectedModel?.name || "Auto" },
-                  { label: "Est. cost/video", value: estimatedCost },
+                  ...(isInstagram ? [
+                    { label: "Instagram Account", value: form.instagramAccountId ? `${form.instagramAccountId.slice(0, 8)}...` : "❌ Not set" },
+                    { label: "Access Token", value: form.instagramAccessToken ? "✅ Set" : "❌ Not set" },
+                  ] : [
+                    { label: "Video model", value: selectedModel?.name || "Auto" },
+                    { label: "Est. cost/video", value: estimatedCost },
+                  ]),
                   { label: "Custom scenes", value: form.useCustomPrompt ? "Yes — custom description" : "AI-generated" },
                   { label: "Schedule", value: summarySchedule() },
                   ...(nextRun ? [{ label: "Next run", value: nextRun }] : []),
@@ -581,6 +646,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
             </button>
           </div>
         )}
+
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>

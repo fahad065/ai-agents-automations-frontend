@@ -66,7 +66,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
   const [form, setForm] = useState({
     name: module.name, niche: "",
     scheduleFrequency: "daily", scheduleTime: "22:30",
-    apiKeyMode: "own_keys", instagramAccountId: "",
+    apiKeyMode: "own_keys", instagramAccountId: "", instagramAccessToken: "",
   });
 
   const panelBg = isDark ? "#161616" : "#ffffff";
@@ -86,7 +86,10 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
         moduleType: module.moduleType, pipelineType: module.pipelineType,
         name: form.name, niche: form.niche, apiKeyMode: form.apiKeyMode,
         scheduleFrequency: form.scheduleFrequency, scheduleTime: form.scheduleTime,
-        config: { instagramAccountId: form.instagramAccountId },
+        config: {
+          instagramAccountId: form.instagramAccountId,
+          instagramAccessToken: form.instagramAccessToken,
+        },
       });
       toast.success("Module added — 30-day trial started!");
       onSuccess(); onClose();
@@ -97,7 +100,7 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
   };
 
   const needsYouTube = module.pipelineType === "youtube" || module.platforms?.includes("youtube");
-  const needsInstagram = module.pipelineType === "social" || module.platforms?.includes("instagram");
+  const needsInstagram = module.pipelineType === "instagram" || module.platforms?.includes("instagram");
 
   return (
     <div onClick={onClose} style={{
@@ -212,7 +215,12 @@ function SubscribeModal({ module, onClose, onSuccess, colors, isDark }: {
                     <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Instagram Account ID</p>
                   </div>
                   <input value={form.instagramAccountId} onChange={(e) => setForm(f => ({ ...f, instagramAccountId: e.target.value }))}
-                    style={inp} placeholder="Your Instagram Business Account ID" />
+                    style={{ ...inp, marginBottom: "8px" }} placeholder="Instagram Business Account ID" />
+                  <input value={form.instagramAccessToken} onChange={(e) => setForm(f => ({ ...f, instagramAccessToken: e.target.value }))}
+                    style={inp} placeholder="Instagram Access Token (from Facebook App)" />
+                  <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>
+                    Get these from your Facebook Developer App → Instagram Basic Display API
+                  </p>
                 </div>
               )}
 
@@ -523,6 +531,20 @@ export function MyModulesPage() {
                 {isYouTube && (
                   <div style={{ marginBottom: "10px" }}>
                     <YouTubeConnectButton colors={colors} compact />
+                  </div>
+                )}
+
+                {/* Instagram config warning */}
+                {module.pipelineType === "instagram" && (
+                  <div style={{
+                    marginBottom: "10px", padding: "8px 12px", borderRadius: "8px",
+                    background: "rgba(225,48,108,0.06)", border: "1px solid rgba(225,48,108,0.2)",
+                    display: "flex", alignItems: "center", gap: "8px",
+                  }}>
+                    <FaInstagram size={13} color="#e1306c" />
+                    <p style={{ fontSize: "11px", color: "#e1306c", fontWeight: 500 }}>
+                      Configure Instagram credentials in settings
+                    </p>
                   </div>
                 )}
  
