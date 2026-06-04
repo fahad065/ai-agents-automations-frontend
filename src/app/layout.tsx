@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "LogicMate" }],
   creator: "LogicMate",
+  verification: {
+    google: "NpWD2QVcnljXXLBxWCFUKHUbLebUU1DGHhUulTMxg8o",
+  },
   metadataBase: new URL("https://www.logicmate.io"),
   openGraph: {
     type: "website",
