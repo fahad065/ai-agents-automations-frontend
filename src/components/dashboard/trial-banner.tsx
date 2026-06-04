@@ -89,8 +89,8 @@ export function TrialBanner() {
         </p>
         <p style={{ fontSize: "12px", color: colors.textMuted }}>
           {daysLeft <= 0
-            ? "Upgrade now to continue using your agents"
-            : "Upgrade before your trial ends to keep your agents running"}
+            ? "Pay manually to reactivate — bank transfer accepted"
+            : "Continue via manual payment — bank transfer accepted"}
         </p>
       </div>
 
@@ -109,7 +109,7 @@ export function TrialBanner() {
         }} />
       </div>
 
-      <Link href="/dashboard/billing" style={{
+      <Link href="/dashboard/payment-instructions" style={{
         background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
         color: "#fff", padding: "8px 16px", borderRadius: "8px",
         textDecoration: "none", fontSize: "13px", fontWeight: 600,
@@ -117,7 +117,7 @@ export function TrialBanner() {
         display: "flex", alignItems: "center", gap: "6px",
       }}>
         <Zap size={12} />
-        Upgrade now
+        {daysLeft <= 0 ? "Reactivate now" : "Continue plan"}
       </Link>
 
       {daysLeft > 3 && (
