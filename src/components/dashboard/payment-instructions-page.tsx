@@ -9,9 +9,9 @@ import { Copy, Check, CreditCard, Mail, CheckCircle2 } from "lucide-react";
 
 const BANK_DETAILS = {
   bankName: "Emirates NBD",       // ← replace with your bank
-  accountName: "Fahad Faheem",    // ← replace with your name
-  accountNumber: "XXXX-XXXX-XXXX", // ← replace with your account
-  iban: "AE00 0000 0000 0000 000", // ← replace with your IBAN
+  accountName: "Fahad Abdul Faheem",    // ← replace with your name
+  accountNumber: "1015821777301", // ← replace with your account
+  iban: "AE720260001015821777301", // ← replace with your IBAN
   swiftCode: "EBILAEAD",          // ← replace with your SWIFT
   currency: "AED / USD",
 };
