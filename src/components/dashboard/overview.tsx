@@ -454,7 +454,7 @@ export function DashboardOverview() {
 
           {/* Charts */}
           {!loading && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
               <BarChart
                 data={adminCharts.videosByDay}
                 color="#7c3aed"
@@ -505,7 +505,7 @@ export function DashboardOverview() {
       )}
 
       {/* ── TWO COLUMN LAYOUT ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "16px", marginBottom: "24px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px", marginBottom: "24px", alignItems: "start" }}>
 
         {/* Pipelines table */}
         <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
@@ -532,11 +532,11 @@ export function DashboardOverview() {
 
           {/* Table header */}
           <div style={{
-            display: "grid", gridTemplateColumns: "40px 80px 1fr 90px 90px",
+            display: "grid", gridTemplateColumns: "1fr 90px 80px",
             gap: "10px", padding: "10px 18px",
             background: colors.bg, borderBottom: `1px solid ${colors.border}`,
           }}>
-            {["S.No", "Type", "Title / Niche", "Status", "Actions"].map((h) => (
+            {["Title / Niche", "Status", "Actions"].map((h) => (
               <span key={h} style={{ fontSize: "11px", fontWeight: 600, color: colors.textMuted }}>{h}</span>
             ))}
           </div>
@@ -579,21 +579,20 @@ export function DashboardOverview() {
           ) : (
             tableData.map((run, i) => (
               <div key={run._id} style={{
-                display: "grid", gridTemplateColumns: "40px 80px 1fr 90px 90px",
+                display: "grid", gridTemplateColumns: "1fr 90px 80px",
                 gap: "10px", padding: "12px 18px", alignItems: "center",
                 borderBottom: i < tableData.length - 1 ? `1px solid ${colors.border}` : "none",
               }}>
-                <span style={{ fontSize: "13px", color: colors.textMuted }}>
-                  {(tablePage - 1) * tableLimit + i + 1}
-                </span>
-                <span style={{
-                  fontSize: "11px", fontWeight: 600, padding: "3px 8px",
-                  borderRadius: "6px", background: "rgba(124,58,237,0.08)",
-                  color: "#a78bfa", display: "inline-block",
-                }}>
-                  {run.moduleType || "youtube"}
-                </span>
                 <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                    <span style={{
+                      fontSize: "10px", fontWeight: 600, padding: "2px 6px",
+                      borderRadius: "4px", background: "rgba(124,58,237,0.08)",
+                      color: "#a78bfa", flexShrink: 0,
+                    }}>
+                      {run.moduleType || "youtube"}
+                    </span>
+                  </div>
                   <p style={{ fontSize: "13px", color: colors.text, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {run.title || "Untitled"}
                   </p>
