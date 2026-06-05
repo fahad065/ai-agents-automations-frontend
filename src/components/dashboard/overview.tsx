@@ -325,29 +325,26 @@ export function DashboardOverview() {
                   {
                     step: "1",
                     title: "Add your API keys",
-                    desc: "OpenAI and Atlas Cloud keys are required to run the pipeline",
+                    desc: "OpenAI and Atlas Cloud keys are required to run any pipeline",
                     href: "/dashboard/api-keys",
                     cta: "Add keys →",
                     color: "#f59e0b",
-                    done: false,
                   },
                   {
                     step: "2",
-                    title: "Add YouTube Agent",
-                    desc: "Browse the marketplace and add your first AI agent",
+                    title: "Choose an AI agent or automation",
+                    desc: "Browse our marketplace — YouTube, Instagram, Podcast and more",
                     href: "/dashboard/modules",
-                    cta: "Browse modules →",
+                    cta: "Browse marketplace →",
                     color: "#7c3aed",
-                    done: false,
                   },
                   {
                     step: "3",
                     title: "Run your first pipeline",
-                    desc: "Click 'Run Now' — your first video uploads in 20-40 minutes",
+                    desc: "Click 'Configure & Run' — results delivered automatically",
                     href: "/dashboard/modules",
                     cta: "Get started →",
                     color: "#22c55e",
-                    done: false,
                   },
                 ].map((item) => (
                   <div key={item.step} style={{
@@ -393,11 +390,11 @@ export function DashboardOverview() {
                 What you get
               </p>
               {[
-                { emoji: "🎬", text: "1 video/day" },
-                { emoji: "📱", text: "3 Shorts/day" },
-                { emoji: "💰", text: "$3-5 per video" },
-                { emoji: "🤖", text: "100% automated" },
-                { emoji: "📧", text: "Email on complete" },
+                { emoji: "🤖", text: "AI agents & automations" },
+                { emoji: "🔄", text: "Runs on your schedule" },
+                { emoji: "💰", text: "Bring your own API keys" },
+                { emoji: "📧", text: "Email notifications" },
+                { emoji: "⚡", text: "100% automated" },
                 { emoji: "🆓", text: "30-day free trial" },
               ].map((item) => (
                 <div key={item.text} style={{
