@@ -183,9 +183,56 @@ export function HeroSection() {
         </div>
 
         {/* Trust badges */}
-        <p style={{ fontSize: "13px", color: colors.textSubtle, marginBottom: "48px" }}>
+        <p style={{ fontSize: "13px", color: colors.textSubtle, marginBottom: "24px" }}>
           No credit card required · 30-day free trial · Cancel anytime
         </p>
+
+        {/* Social proof bar */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "10px",
+          padding: "10px 20px", borderRadius: "9999px", marginBottom: "48px",
+          background: colors.bgCard, border: `1px solid ${colors.border}`,
+          flexWrap: "wrap", justifyContent: "center",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{
+              width: "8px", height: "8px", borderRadius: "50%",
+              background: "#22c55e", animation: "pulse-dot 2s infinite",
+            }} />
+            <span style={{ fontSize: "13px", color: colors.textMuted }}>
+              Live on
+            </span>
+          </div>
+          
+            <a href="https://www.youtube.com/@knowledgetruth9287"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              fontSize: "13px", fontWeight: 600, color: "#ef4444",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ef4444">
+              <path d="M23.5 6.2s-.2-1.6-.9-2.3c-.9-.9-1.9-.9-2.3-1C17.1 2.7 12 2.7 12 2.7s-5.1 0-8.3.2c-.4.1-1.4.1-2.3 1-.7.7-.9 2.3-.9 2.3S.2 8 .2 9.8v1.7c0 1.8.3 3.6.3 3.6s.2 1.6.9 2.3c.9.9 2 .9 2.6 1 1.9.2 8 .2 8 .2s5.1 0 8.3-.2c.4-.1 1.4-.1 2.3-1 .7-.7.9-2.3.9-2.3s.3-1.8.3-3.6V9.8c0-1.8-.3-3.6-.3-3.6zM9.7 15.5V8.1l6.6 3.7-6.6 3.7z"/>
+            </svg>
+            Knowledge Truth
+          </a>
+          <span style={{
+            width: "1px", height: "16px",
+            background: colors.border,
+          }} />
+          <span style={{ fontSize: "13px", color: colors.textMuted }}>
+            Powered by LogicMate
+          </span>
+          <span style={{
+            fontSize: "11px", fontWeight: 600, padding: "2px 8px",
+            borderRadius: "9999px", background: "rgba(34,197,94,0.1)",
+            color: "#22c55e",
+          }}>
+            Real channel
+          </span>
+        </div>
 
         {/* ── Live Stats Bar ── */}
         <div ref={statsRef} style={{
@@ -326,6 +373,12 @@ export function HeroSection() {
         background: `linear-gradient(to top, ${colors.bg}, transparent)`,
         pointerEvents: "none",
       }} />
+      <style>{`
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.4); }
+      }
+    `}</style>
     </section>
   );
 }
