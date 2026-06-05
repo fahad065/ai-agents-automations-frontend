@@ -301,6 +301,118 @@ export function DashboardOverview() {
     <div>
       <TrialBanner />
 
+      {/* ── ONBOARDING BANNER — shows only for new users with 0 modules ── */}
+      {!isAdmin && !loading && userStats.totalSubscribed === 0 && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
+          border: "1px solid rgba(124,58,237,0.2)",
+          borderRadius: "14px", padding: "28px 32px",
+          marginBottom: "24px",
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "20px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "28px" }}>🚀</span>
+                <h2 style={{ fontSize: "18px", fontWeight: 700, color: colors.text }}>
+                  Welcome to LogicMate!
+                </h2>
+              </div>
+              <p style={{ fontSize: "14px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                You're on a <strong style={{ color: "#f59e0b" }}>30-day free trial</strong>. Get your first AI video live tonight by following these 3 steps:
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {[
+                  {
+                    step: "1",
+                    title: "Add your API keys",
+                    desc: "OpenAI and Atlas Cloud keys are required to run the pipeline",
+                    href: "/dashboard/api-keys",
+                    cta: "Add keys →",
+                    color: "#f59e0b",
+                    done: false,
+                  },
+                  {
+                    step: "2",
+                    title: "Add YouTube Agent",
+                    desc: "Browse the marketplace and add your first AI agent",
+                    href: "/dashboard/modules",
+                    cta: "Browse modules →",
+                    color: "#7c3aed",
+                    done: false,
+                  },
+                  {
+                    step: "3",
+                    title: "Run your first pipeline",
+                    desc: "Click 'Run Now' — your first video uploads in 20-40 minutes",
+                    href: "/dashboard/modules",
+                    cta: "Get started →",
+                    color: "#22c55e",
+                    done: false,
+                  },
+                ].map((item) => (
+                  <div key={item.step} style={{
+                    display: "flex", alignItems: "center", gap: "14px",
+                    padding: "12px 16px", borderRadius: "10px",
+                    background: colors.bgCard, border: `1px solid ${colors.border}`,
+                  }}>
+                    <div style={{
+                      width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
+                      background: `${item.color}15`, border: `1px solid ${item.color}30`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "12px", fontWeight: 700, color: item.color,
+                    }}>
+                      {item.step}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+                        {item.title}
+                      </p>
+                      <p style={{ fontSize: "12px", color: colors.textMuted }}>{item.desc}</p>
+                    </div>
+                    <Link href={item.href} style={{
+                      fontSize: "12px", fontWeight: 600, color: item.color,
+                      textDecoration: "none", whiteSpace: "nowrap",
+                      padding: "6px 12px", borderRadius: "7px",
+                      border: `1px solid ${item.color}30`,
+                      background: `${item.color}08`,
+                    }}>
+                      {item.cta}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right side — cost info */}
+            <div style={{
+              background: colors.bgCard, border: `1px solid ${colors.border}`,
+              borderRadius: "12px", padding: "20px", minWidth: "200px",
+              flexShrink: 0,
+            }}>
+              <p style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                What you get
+              </p>
+              {[
+                { emoji: "🎬", text: "1 video/day" },
+                { emoji: "📱", text: "3 Shorts/day" },
+                { emoji: "💰", text: "$3-5 per video" },
+                { emoji: "🤖", text: "100% automated" },
+                { emoji: "📧", text: "Email on complete" },
+                { emoji: "🆓", text: "30-day free trial" },
+              ].map((item) => (
+                <div key={item.text} style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "5px 0",
+                }}>
+                  <span style={{ fontSize: "14px" }}>{item.emoji}</span>
+                  <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Greeting */}
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
