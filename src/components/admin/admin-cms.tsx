@@ -26,9 +26,11 @@ export function AdminCmsPage() {
   const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [blogLoading, setBlogLoading] = useState(false);
   const [showNewPost, setShowNewPost] = useState(false);
+  const [editingPost, setEditingPost] = useState<any>(null);
   const [newPost, setNewPost] = useState({
     title: "", excerpt: "", content: "",
     category: "tutorial", tags: "", isPublished: false,
+    readTimeMinutes: 5, metaTitle: "", metaDescription: "",
   });
   const [postSaving, setPostSaving] = useState(false);
 
@@ -73,7 +75,21 @@ export function AdminCmsPage() {
         tags: newPost.tags.split(",").map((t) => t.trim()).filter(Boolean),
       });
       setShowNewPost(false);
-      setNewPost({ title: "", excerpt: "", content: "", category: "tutorial", tags: "", isPublished: false });
+      setNewPost({ title: "", excerpt: "", content: "", category: "tutorial", tags: "", isPublished: false, readTimeMinutes: 5, metaTitle: "", metaDescription: "" });      fetchBlogPosts();
+    } catch {}
+    setPostSaving(false);
+  };
+
+  const updatePost = async () => {
+    setPostSaving(true);
+    try {
+      await api.put(`/cms/admin/blog/${editingPost._id}`, {
+        ...editingPost,
+        tags: typeof editingPost.tags === "string"
+          ? editingPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+          : editingPost.tags,
+      });
+      setEditingPost(null);
       fetchBlogPosts();
     } catch {}
     setPostSaving(false);
@@ -383,6 +399,11 @@ export function AdminCmsPage() {
               </div>
               <input value={newPost.excerpt} onChange={(e) => setNewPost((p) => ({ ...p, excerpt: e.target.value }))} placeholder="Short excerpt" style={inputStyle} />
               <input value={newPost.tags} onChange={(e) => setNewPost((p) => ({ ...p, tags: e.target.value }))} placeholder="Tags (comma separated)" style={inputStyle} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={newPost.metaTitle} onChange={(e) => setNewPost((p) => ({ ...p, metaTitle: e.target.value }))} placeholder="Meta title (SEO)" style={inputStyle} />
+                <input value={newPost.metaDescription} onChange={(e) => setNewPost((p) => ({ ...p, metaDescription: e.target.value }))} placeholder="Meta description (SEO)" style={inputStyle} />
+              </div>
+              <input type="number" value={newPost.readTimeMinutes} onChange={(e) => setNewPost((p) => ({ ...p, readTimeMinutes: Number(e.target.value) }))} placeholder="Read time (minutes)" style={{ ...inputStyle, width: "120px" }} />
               <textarea value={newPost.content} onChange={(e) => setNewPost((p) => ({ ...p, content: e.target.value }))} placeholder="Content (HTML supported)" rows={10} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
@@ -394,6 +415,57 @@ export function AdminCmsPage() {
                   Save post
                 </button>
                 <button onClick={() => setShowNewPost(false)} style={{ padding: "9px 16px", borderRadius: "8px", border: `1px solid ${colors.border}`, background: "none", color: colors.textMuted, cursor: "pointer", fontSize: "13px" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Edit post modal */}
+          {editingPost && (
+            <div style={{
+              background: colors.bgCard,
+              border: "1px solid rgba(124,58,237,0.3)",
+              borderRadius: "12px", padding: "20px",
+              marginBottom: "20px",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 600, color: colors.text }}>
+                  Edit: {editingPost.title?.slice(0, 40)}...
+                </h3>
+                <button onClick={() => setEditingPost(null)} style={{
+                  background: "transparent", border: "none",
+                  cursor: "pointer", color: colors.textMuted,
+                }}>✕</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={editingPost.title || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, title: e.target.value }))} placeholder="Post title *" style={inputStyle} />
+                <select value={editingPost.category || "tutorial"} onChange={(e) => setEditingPost((p: any) => ({ ...p, category: e.target.value }))} style={inputStyle}>
+                  <option value="product">Product</option>
+                  <option value="tutorial">Tutorial</option>
+                  <option value="case-study">Case study</option>
+                  <option value="news">News</option>
+                  <option value="tips">Tips</option>
+                </select>
+              </div>
+              <input value={editingPost.excerpt || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, excerpt: e.target.value }))} placeholder="Short excerpt" style={inputStyle} />
+              <input value={typeof editingPost.tags === "string" ? editingPost.tags : (editingPost.tags || []).join(", ")} onChange={(e) => setEditingPost((p: any) => ({ ...p, tags: e.target.value }))} placeholder="Tags (comma separated)" style={inputStyle} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={editingPost.metaTitle || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, metaTitle: e.target.value }))} placeholder="Meta title (SEO)" style={inputStyle} />
+                <input value={editingPost.metaDescription || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, metaDescription: e.target.value }))} placeholder="Meta description (SEO)" style={inputStyle} />
+              </div>
+              <input type="number" value={editingPost.readTimeMinutes || 5} onChange={(e) => setEditingPost((p: any) => ({ ...p, readTimeMinutes: Number(e.target.value) }))} placeholder="Read time (minutes)" style={{ ...inputStyle, width: "120px" }} />
+              <textarea value={editingPost.content || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, content: e.target.value }))} placeholder="Content (HTML supported)" rows={12} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
+                  <input type="checkbox" checked={editingPost.isPublished || false} onChange={(e) => setEditingPost((p: any) => ({ ...p, isPublished: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
+                  Published
+                </label>
+                <button onClick={updatePost} disabled={postSaving} style={{ padding: "9px 20px", borderRadius: "8px", background: "#7c3aed", color: "white", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                  {postSaving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={13} />}
+                  Update post
+                </button>
+                <button onClick={() => setEditingPost(null)} style={{ padding: "9px 16px", borderRadius: "8px", border: `1px solid ${colors.border}`, background: "none", color: colors.textMuted, cursor: "pointer", fontSize: "13px" }}>
                   Cancel
                 </button>
               </div>
@@ -446,6 +518,17 @@ export function AdminCmsPage() {
                     }}
                   >
                     {post.isPublished ? "Published" : "Draft"}
+                  </button>
+                  <button onClick={() => setEditingPost({
+                    ...post,
+                    tags: (post.tags || []).join(", "),
+                  })} style={{
+                    width: "28px", height: "28px", borderRadius: "6px",
+                    border: `1px solid ${colors.border}`, background: "transparent",
+                    color: colors.textMuted, display: "flex", alignItems: "center",
+                    justifyContent: "center", cursor: "pointer",
+                  }}>
+                    <Pencil size={12} />
                   </button>
                   <Link href={`/blog/${post.slug}`} target="_blank" style={{ color: colors.textMuted }}>
                     <Eye size={14} />

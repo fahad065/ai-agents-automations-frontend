@@ -544,8 +544,37 @@ export function DashboardOverview() {
           {/* Table rows */}
           {tableData.length === 0 ? (
             <div style={{ padding: "40px", textAlign: "center" }}>
-              <FileText size={28} color={colors.textMuted} style={{ margin: "0 auto 10px" }} />
-              <p style={{ fontSize: "13px", color: colors.textMuted }}>No pipeline runs yet</p>
+              <FileText size={28} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
+              <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "6px" }}>
+                {!isAdmin && userStats.totalSubscribed === 0
+                  ? "No modules added yet"
+                  : "No pipeline runs yet"}
+              </p>
+              <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "16px" }}>
+                {!isAdmin && userStats.totalSubscribed === 0
+                  ? "Add a module and run your first pipeline to see results here"
+                  : "Your first video will appear here after the pipeline runs"}
+              </p>
+              {!isAdmin && userStats.totalSubscribed === 0 && (
+                <Link href="/dashboard/modules" style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "9px 18px", borderRadius: "8px",
+                  background: "#7c3aed", color: "white",
+                  textDecoration: "none", fontSize: "13px", fontWeight: 600,
+                }}>
+                  Browse marketplace →
+                </Link>
+              )}
+              {!isAdmin && userStats.totalSubscribed > 0 && (
+                <Link href="/dashboard/modules" style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "9px 18px", borderRadius: "8px",
+                  border: `1px solid ${colors.border}`, background: colors.bgCard,
+                  color: colors.textMuted, textDecoration: "none", fontSize: "13px",
+                }}>
+                  Go to my modules →
+                </Link>
+              )}
             </div>
           ) : (
             tableData.map((run, i) => (
