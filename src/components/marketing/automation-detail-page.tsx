@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
+import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -17,40 +18,48 @@ gsap.registerPlugin(ScrollTrigger);
 interface AutomationTemplate {
   _id: string;
   name: string;
+  name_ar?: string;
   slug: string;
   tagline: string;
+  tagline_ar?: string;
   description: string;
+  description_ar?: string;
   category: string;
   icon: string;
   color: string;
   badge: string;
   capabilities: string[];
+  capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
   features: { title: string; description: string; icon: string }[];
   howItWorks: { step: string; title: string; description: string }[];
   testimonials: { name: string; role: string; avatar: string; text: string; rating: number }[];
-  pricing: { monthly: number; annual: number; features: string[] };
+  pricing: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   faq: { question: string; answer: string }[];
   integrations: { name: string; icon: string; description: string }[];
   demoVideoUrl?: string;
+  isComingSoon?: boolean;
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [open, setOpen] = useState(false);
+  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   return (
     <div style={{
-      border: `1px solid ${colors.border}`,
-      borderRadius: "10px", overflow: "hidden", marginBottom: "8px",
+      border: `1px solid ${open ? "rgba(124,58,237,0.25)" : border}`,
+      borderRadius: "12px", overflow: "hidden", marginBottom: "8px",
+      background: open ? "rgba(124,58,237,0.04)" : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)"),
+      transition: "all 0.2s",
     }}>
       <button
         onClick={() => setOpen(!open)}
         style={{
-          width: "100%", padding: "16px 20px",
+          width: "100%", padding: "18px 22px",
           display: "flex", alignItems: "center",
           justifyContent: "space-between",
-          background: colors.bgCard, border: "none",
-          cursor: "pointer", textAlign: "left", gap: "12px",
+          background: "transparent", border: "none",
+          cursor: "pointer", textAlign: "left", gap: "16px",
         }}
       >
         <span style={{ fontSize: "14px", fontWeight: 500, color: colors.text }}>
@@ -63,7 +72,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
       </button>
       {open && (
         <div style={{
-          padding: "0 20px 16px", background: colors.bgCard,
+          padding: "0 20px 16px", background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
           borderTop: `1px solid ${colors.border}`,
         }}>
           <p style={{ fontSize: "14px", color: colors.textMuted, lineHeight: 1.7, paddingTop: "12px" }}>
@@ -76,12 +85,12 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function AutomationDetailPage({ slug }: { slug: string }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { isAr } = useLang();
   const { isAuthenticated } = useAuthStore();
   const [automation, setAutomation] = useState<AutomationTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [billingAnnual, setBillingAnnual] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +98,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     const fetchAutomation = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/automations/templates/${slug}`);
+        const res = await fetch(`${apiUrl}/modules/${slug}`);
         if (!res.ok) throw new Error("Not found");
         const data = await res.json();
         setAutomation(data);
@@ -145,7 +154,6 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     );
   }
 
-  const price = billingAnnual ? automation.pricing?.annual : automation.pricing?.monthly;
   const embedUrl = automation.demoVideoUrl
     ? automation.demoVideoUrl
         .replace("youtu.be/", "www.youtube.com/embed/")
@@ -155,14 +163,14 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
   return (
     <div>
       {/* Hero */}
-      <section ref={heroRef} style={{ padding: "100px 24px 64px", borderBottom: `1px solid ${colors.border}` }}>
+      <section ref={heroRef} style={{ padding: "100px 24px 72px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <Link href="/automations" style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             color: colors.textMuted, textDecoration: "none",
             fontSize: "13px", marginBottom: "32px",
           }}>
-            <ArrowLeft size={14} /> All automations
+            <ArrowLeft size={14} /> {isAr ? "كل الأتمتة" : "All automations"}
           </Link>
 
           <div style={{
@@ -198,19 +206,19 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
               <h1 style={{
                 fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800,
                 color: colors.text, marginBottom: "12px",
-                letterSpacing: "-0.02em", lineHeight: 1.1,
+                letterSpacing: "-0.04em", lineHeight: 1.05,
               }}>
-                {automation.name}
+                {(isAr && automation.name_ar) ? automation.name_ar : automation.name}
               </h1>
 
-              {automation.tagline && (
+              {((isAr && automation.tagline_ar) ? automation.tagline_ar : automation.tagline) && (
                 <p style={{ fontSize: "18px", color: automation.color, fontWeight: 500, marginBottom: "16px" }}>
-                  {automation.tagline}
+                  {(isAr && automation.tagline_ar) ? automation.tagline_ar : automation.tagline}
                 </p>
               )}
 
               <p style={{ fontSize: "16px", color: colors.textMuted, lineHeight: 1.7, marginBottom: "32px" }}>
-                {automation.description}
+                {(isAr && automation.description_ar) ? automation.description_ar : automation.description}
               </p>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -225,8 +233,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                   }}
                 >
                   {automation.badge === "Live"
-                    ? (isAuthenticated ? "Open dashboard" : "Get started free")
-                    : "Join waitlist"
+                    ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free"))
+                    : (isAr ? "انضم للقائمة" : "Join waitlist")
                   }
                   <ArrowRight size={15} />
                 </Link>
@@ -238,14 +246,14 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                     rel="noopener noreferrer"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "8px",
-                      border: `1px solid ${colors.border}`,
+                      border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
                       color: colors.textMuted, padding: "13px 28px",
                       borderRadius: "10px", fontSize: "15px",
                       fontWeight: 500, textDecoration: "none",
-                      background: colors.bgCard,
+                      background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
                     }}
                   >
-                    <Play size={14} /> Watch demo
+                    <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
                 )}
               </div>
@@ -256,8 +264,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {automation.heroStats.map((stat) => (
                   <div key={stat.label} style={{
-                    background: colors.bgCard,
-                    border: `1px solid ${colors.border}`,
+                    background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                    border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
                     borderRadius: "12px", padding: "20px", textAlign: "center",
                   }}>
                     <p style={{
@@ -275,12 +283,55 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {/* Coming Soon */}
+      {automation.isComingSoon && (
+        <section style={{
+          padding: "32px 24px",
+          background: `${automation.color}08`,
+          borderBottom: `1px solid ${automation.color}20`,
+        }}>
+          <div style={{
+            maxWidth: "1100px", margin: "0 auto",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexWrap: "wrap", gap: "16px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div style={{
+                width: "44px", height: "44px", borderRadius: "12px",
+                background: `${automation.color}15`, border: `1px solid ${automation.color}30`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "20px", flexShrink: 0,
+              }}>
+                🚀
+              </div>
+              <div>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+                  This automation is coming soon
+                </p>
+                <p style={{ fontSize: "13px", color: colors.textMuted }}>
+                  We're actively building this. Join the waitlist to get notified and receive 40% off at launch.
+                </p>
+              </div>
+            </div>
+            <Link href="/auth/signup" style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              background: `linear-gradient(135deg, ${automation.color}, ${automation.color}cc)`,
+              color: "white", padding: "11px 24px", borderRadius: "10px",
+              fontSize: "14px", fontWeight: 600, textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}>
+              Join waitlist <ArrowRight size={14} />
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Demo video */}
       {automation.demoVideoUrl && embedUrl && (
         <section style={{
           padding: "64px 24px",
-          borderBottom: `1px solid ${colors.border}`,
-          background: colors.bgCard,
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
         }}>
           <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
             <h2 style={{
@@ -295,7 +346,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             <div style={{
               position: "relative", paddingBottom: "56.25%",
               borderRadius: "14px", overflow: "hidden",
-              border: `1px solid ${colors.border}`,
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
               boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
             }}>
               <iframe
@@ -325,19 +376,60 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         </section>
       )}
 
+      {/* Capabilities */}
+      {automation.capabilities?.length > 0 && (
+        <section style={{ padding: "64px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: "40px" }}>
+              <h2 style={{
+                fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700,
+                color: colors.text, marginBottom: "8px",
+              }}>
+                {isAr ? `ما تفعله ${(isAr && automation.name_ar) ? automation.name_ar : automation.name}` : `What ${automation.name} does`}
+              </h2>
+              <p style={{ fontSize: "15px", color: colors.textMuted }}>
+                {isAr ? "يتم التعامل مع كل شيء تلقائياً — لا يلزم أي عمل يدوي." : "Everything handled automatically — no manual work required."}
+              </p>
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "12px",
+            }}>
+              {((isAr && automation.capabilities_ar?.length) ? automation.capabilities_ar : automation.capabilities).map((cap) => (
+                <div key={cap} style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                  borderRadius: "10px", padding: "14px 16px",
+                }}>
+                  <div style={{
+                    width: "8px", height: "8px", borderRadius: "50%",
+                    background: automation.color, flexShrink: 0,
+                  }} />
+                  <span style={{ fontSize: "13px", color: colors.text, fontWeight: 500 }}>
+                    {cap}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Features */}
       {automation.features?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${colors.border}` }}>
+        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
               <h2 style={{
                 fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
                 color: colors.text, marginBottom: "12px",
               }}>
-                Everything included
+                {isAr ? "كل شيء مشمول" : "Everything included"}
               </h2>
               <p style={{ fontSize: "16px", color: colors.textMuted }}>
-                No extra tools needed. The automation handles everything.
+                {isAr ? "لا حاجة لأدوات إضافية. الأتمتة تتولى كل شيء." : "No extra tools needed. The automation handles everything."}
               </p>
             </div>
             <div ref={featuresRef} style={{
@@ -347,8 +439,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             }}>
               {automation.features.map((feature) => (
                 <div key={feature.title} style={{
-                  background: colors.bgCard,
-                  border: `1px solid ${colors.border}`,
+                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
                   borderRadius: "12px", padding: "22px",
                 }}>
                   <div style={{ fontSize: "24px", marginBottom: "12px" }}>{feature.icon}</div>
@@ -369,8 +461,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       {automation.howItWorks?.length > 0 && (
         <section style={{
           padding: "80px 24px",
-          background: colors.bgCard,
-          borderBottom: `1px solid ${colors.border}`,
+          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
         }}>
           <div style={{ maxWidth: "800px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -378,10 +470,10 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                 fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
                 color: colors.text, marginBottom: "12px",
               }}>
-                How it works
+                {isAr ? "كيف يعمل" : "How it works"}
               </h2>
               <p style={{ fontSize: "16px", color: colors.textMuted }}>
-                Up and running in under 10 minutes.
+                {isAr ? "جاهز للعمل في أقل من 10 دقائق." : "Up and running in under 10 minutes."}
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
@@ -432,7 +524,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Integrations */}
       {automation.integrations?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${colors.border}` }}>
+        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "40px" }}>
               <h2 style={{
@@ -452,8 +544,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             }}>
               {automation.integrations.map((integration) => (
                 <div key={integration.name} style={{
-                  background: colors.bgCard,
-                  border: `1px solid ${colors.border}`,
+                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
                   borderRadius: "12px", padding: "16px", textAlign: "center",
                 }}>
                   <div style={{ fontSize: "28px", marginBottom: "8px" }}>{integration.icon}</div>
@@ -474,8 +566,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       {automation.testimonials?.length > 0 && (
         <section style={{
           padding: "80px 24px",
-          background: colors.bgCard,
-          borderBottom: `1px solid ${colors.border}`,
+          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
         }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -494,7 +586,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
               {automation.testimonials.map((t) => (
                 <div key={t.name} style={{
                   background: colors.bg,
-                  border: `1px solid ${colors.border}`,
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
                   borderRadius: "12px", padding: "22px",
                 }}>
                   <div style={{ display: "flex", gap: "3px", marginBottom: "14px" }}>
@@ -534,100 +626,135 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Pricing */}
       {automation.pricing && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${colors.border}` }}>
-          <div style={{ maxWidth: "480px", margin: "0 auto", textAlign: "center" }}>
+        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
             <h2 style={{
               fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
               color: colors.text, marginBottom: "12px",
             }}>
-              Simple pricing
+              {isAr ? "تسعير بسيط" : "Simple pricing"}
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "32px" }}>
-              One plan. Everything included. Cancel anytime.
+            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "48px" }}>
+              {isAr ? "خطة واحدة. كل شيء مشمول. إلغاء في أي وقت." : "One plan. Everything included. Cancel anytime."}
             </p>
 
-            {/* Billing toggle */}
             <div style={{
-              display: "inline-flex", alignItems: "center",
-              gap: "4px", marginBottom: "32px",
-              padding: "6px", borderRadius: "10px",
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
+              display: "grid",
+              gridTemplateColumns: automation.pricing?.hasCustomPlan
+                ? "repeat(3, 1fr)"
+                : "repeat(2, 1fr)",
+              gap: "16px",
+              maxWidth: automation.pricing?.hasCustomPlan ? "900px" : "640px",
+              margin: "0 auto",
             }}>
-              {[
-                { label: "Monthly", value: false },
-                { label: "Annual (save 34%)", value: true },
-              ].map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => setBillingAnnual(opt.value)}
-                  style={{
-                    padding: "7px 16px", borderRadius: "8px",
-                    fontSize: "13px", fontWeight: 500,
-                    cursor: "pointer", transition: "all 0.2s", border: "none",
-                    background: billingAnnual === opt.value
-                      ? "rgba(124,58,237,0.15)" : "transparent",
-                    color: billingAnnual === opt.value ? "#a78bfa" : colors.textMuted,
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
 
-            {/* Pricing card */}
-            <div style={{
-              background: colors.bgCard,
-              border: "1px solid rgba(124,58,237,0.3)",
-              borderRadius: "16px", padding: "32px",
-              boxShadow: "0 0 40px rgba(124,58,237,0.08)",
-            }}>
-              <div style={{ marginBottom: "24px" }}>
-                <span style={{ fontSize: "48px", fontWeight: 800, color: colors.text }}>
-                  ${price}
-                </span>
-                <span style={{ fontSize: "16px", color: colors.textMuted }}>/month</span>
-                {billingAnnual && (
-                  <p style={{ fontSize: "13px", color: "#22c55e", marginTop: "4px" }}>
-                    Billed annually — save $
-                    {(automation.pricing.monthly - automation.pricing.annual) * 12}/year
-                  </p>
-                )}
+              {/* Monthly */}
+              <div style={{
+                background: colors.bg, border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
+              }}>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "شهري" : "Monthly"}</p>
+                <div style={{ marginBottom: "20px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.monthly}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                </div>
+                <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {automation.pricing.features.slice(0, 5).map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                  color: colors.text, padding: "12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                }}>
+                  {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                </Link>
               </div>
 
-              <ul style={{ listStyle: "none", padding: 0, marginBottom: "28px" }}>
-                {automation.pricing.features.map((feature) => (
-                  <li key={feature} style={{
-                    display: "flex", alignItems: "center", gap: "10px",
-                    padding: "8px 0",
-                    borderBottom: `1px solid ${colors.border}`,
-                    fontSize: "14px", color: colors.text,
-                  }}>
-                    <CheckCircle2 size={14} color="#22c55e" style={{ flexShrink: 0 }} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={isAuthenticated ? "/dashboard" : "/auth/signup"}
-                style={{
-                  display: "flex", alignItems: "center",
-                  justifyContent: "center", gap: "8px",
+              {/* Annual — highlighted */}
+              <div style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
+                border: "2px solid rgba(124,58,237,0.4)",
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
+                position: "relative", boxShadow: "0 0 40px rgba(124,58,237,0.1)",
+              }}>
+                <div style={{
+                  position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
                   background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "14px", borderRadius: "10px",
-                  fontSize: "15px", fontWeight: 600, textDecoration: "none",
+                  color: "white", padding: "4px 16px", borderRadius: "9999px",
+                  fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
+                }}>
+                  ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
+                </div>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "سنوي" : "Annual"}</p>
+                <div style={{ marginBottom: "4px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.annual}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                </div>
+                <p style={{ fontSize: "12px", color: "#22c55e", marginBottom: "20px", fontWeight: 600 }}>
+                  Save ${(automation.pricing.monthly - automation.pricing.annual) * 12}/year — billed annually
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {automation.pricing.features.map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", padding: "12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
                   boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-                }}
-              >
-                {automation.badge === "Live"
-                  ? (isAuthenticated ? "Open dashboard" : "Start free trial")
-                  : "Join waitlist"
-                }
-                <ArrowRight size={15} />
-              </Link>
-              <p style={{ fontSize: "12px", color: colors.textMuted, marginTop: "14px" }}>
-                No credit card required · Cancel anytime
-              </p>
+                }}>
+                  {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                  <ArrowRight size={14} />
+                </Link>
+                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
+              </div>
+
+              {/* Enterprise */}
+              {automation.pricing?.hasCustomPlan && (
+                <div style={{
+                  background: colors.bg, border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                  borderRadius: "16px", padding: "28px",
+                  textAlign: "left", display: "flex", flexDirection: "column",
+                }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "مؤسسي" : "Enterprise"}</p>
+                  <div style={{ marginBottom: "20px" }}>
+                    <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>Custom</span>
+                  </div>
+                  <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                    {automation.pricing.customLabel || "Need a tailored solution for your team or business?"}
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                    {["Custom pipeline configuration", "Dedicated support", "SLA guarantee", "Custom integrations", "Team management"].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                        <CheckCircle2 size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="mailto:hello@logicmate.io" style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
+                    color: "#a78bfa", padding: "12px", borderRadius: "10px",
+                    fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                  }}>
+                    Contact us →
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -635,14 +762,14 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* FAQ */}
       {automation.faq?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${colors.border}` }}>
+        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
           <div style={{ maxWidth: "680px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "40px" }}>
               <h2 style={{
                 fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
                 color: colors.text, marginBottom: "12px",
               }}>
-                Frequently asked questions
+                {isAr ? "الأسئلة الشائعة" : "Frequently asked questions"}
               </h2>
             </div>
             {automation.faq.map((item) => (
@@ -665,15 +792,15 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
             color: colors.text, marginBottom: "12px",
           }}>
-            Ready to deploy {automation.name}?
+            {isAr ? `هل أنت مستعد لنشر ${(isAr && automation.name_ar) ? automation.name_ar : automation.name}؟` : `Ready to deploy ${automation.name}?`}
           </h2>
           <p style={{
             fontSize: "16px", color: colors.textMuted,
             marginBottom: "28px", lineHeight: 1.7,
           }}>
             {automation.badge === "Live"
-              ? "Get started in minutes. No technical setup required."
-              : "Join the waitlist and get 40% off when we launch."
+              ? (isAr ? "ابدأ في دقائق. لا يلزم إعداد تقني." : "Get started in minutes. No technical setup required.")
+              : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
           <Link
@@ -687,8 +814,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             }}
           >
             {automation.badge === "Live"
-              ? (isAuthenticated ? "Open dashboard" : "Start free")
-              : "Join waitlist"
+              ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Start free"))
+              : (isAr ? "انضم للقائمة" : "Join waitlist")
             }
             <ArrowRight size={15} />
           </Link>

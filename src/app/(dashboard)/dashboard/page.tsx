@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardOverview } from "@/components/dashboard/overview";
 
 export const metadata: Metadata = {
-  title: "Dashboard — NexAgent",
+  title: "Dashboard — LogicMate",
   description: "Manage your AI automation agents and monitor pipeline runs.",
 };
 

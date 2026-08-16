@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/use-theme";
+import { useLang } from "@/hooks/use-lang";
 import { CmsPage } from "./cms-page";
 import { Loader2 } from "lucide-react";
 
 export function LegalPage({ slug }: { slug: string }) {
   const { colors } = useTheme();
+  const { isAr } = useLang();
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,11 +30,16 @@ export function LegalPage({ slug }: { slug: string }) {
     );
   }
 
+  const title = (isAr && page?.title_ar) ? page.title_ar : (page?.title || slug);
+  const subtitle = (isAr && page?.subtitle_ar) ? page.subtitle_ar : page?.subtitle;
+  const content = (isAr && page?.content_ar) ? page.content_ar : page?.content;
+
   return (
-    <CmsPage title={page?.title || slug} subtitle={page?.subtitle}>
-      {page?.content && (
+    <CmsPage title={title} subtitle={subtitle}>
+      {content && (
         <div
-          dangerouslySetInnerHTML={{ __html: page.content }}
+          dir={isAr ? "rtl" : "ltr"}
+          dangerouslySetInnerHTML={{ __html: content }}
           style={{
             fontSize: "15px", lineHeight: 1.8,
             color: colors.textMuted,

@@ -3,14 +3,19 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
+import { useLang } from "@/hooks/use-lang";
 import { ArrowRight, Bot, Loader2, Search } from "lucide-react";
+import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 
 interface AgentTemplate {
   _id: string;
   name: string;
+  name_ar?: string;
   slug: string;
   tagline: string;
+  tagline_ar?: string;
   description: string;
+  description_ar?: string;
   category: string;
   icon: string;
   color: string;
@@ -20,18 +25,13 @@ interface AgentTemplate {
   pricing?: { monthly: number; annual: number };
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  all: "All agents",
-  youtube: "YouTube",
-  fitness: "Fitness",
-  marketing: "Marketing",
-  education: "Education",
-  ecommerce: "E-commerce",
-  custom: "Custom",
-};
+const formatCategory = (val: string) =>
+  val === "all" ? "All agents" :
+  val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function AgentsListPage() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { isAr } = useLang();
   const [agents, setAgents] = useState<AgentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,12 +44,12 @@ export function AgentsListPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiUrl}/agents/templates`, {
+      const res = await fetch(`${apiUrl}/modules?moduleType=agent`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setAgents(data);
+      setAgents(data.data || data);
     } catch {
       setError("Failed to load agents. Please try again.");
     } finally {
@@ -78,49 +78,66 @@ export function AgentsListPage() {
   return (
     <div style={{ minHeight: "100vh", background: colors.bg }}>
 
+      {/* Breadcrumb */}
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "90px 24px 0" }}>
+        <BreadcrumbNav items={[{ label: "Agents" }]} />
+      </div>
+
       {/* Hero */}
-      <section style={{ padding: "120px 24px 48px", textAlign: "center" }}>
+      <section style={{ padding: "24px 24px 56px", textAlign: "center", maxWidth: "720px", margin: "0 auto", position: "relative" }}>
+        <div style={{
+          position: "absolute", top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "500px", height: "500px",
+          background: "rgba(124,58,237,0.06)",
+          borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
+        }} />
         <div style={{
           display: "inline-flex", alignItems: "center", gap: "6px",
           border: "1px solid rgba(124,58,237,0.3)",
           background: "rgba(124,58,237,0.08)",
-          color: "#a78bfa", padding: "4px 14px",
-          borderRadius: "9999px", fontSize: "12px",
-          fontWeight: 500, marginBottom: "20px",
+          color: "#a78bfa", padding: "6px 16px",
+          borderRadius: "9999px", fontSize: "13px",
+          fontWeight: 500, marginBottom: "24px",
         }}>
-          <Bot size={11} /> AI Agent Marketplace
+          <Bot size={12} /> {isAr ? "سوق الوكلاء الذكيين" : "AI Agent Marketplace"}
         </div>
         <h1 style={{
-          fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 800,
-          color: colors.text, marginBottom: "16px",
-          letterSpacing: "-0.02em", lineHeight: 1.1,
+          fontSize: "clamp(34px, 5.5vw, 60px)", fontWeight: 800,
+          color: colors.text, marginBottom: "18px",
+          letterSpacing: "-0.04em", lineHeight: 1.05,
         }}>
-          Agents built for every niche
+          {isAr ? "وكلاء مصممون لـ" : "Agents built for"}
+          <br />
+          <span style={{
+            background: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+          }}>{isAr ? "قطاعك." : "your industry."}</span>
         </h1>
         <p style={{
-          fontSize: "18px", color: colors.textMuted,
-          maxWidth: "520px", margin: "0 auto 40px", lineHeight: 1.7,
+          fontSize: "17px", color: colors.textMuted,
+          maxWidth: "500px", margin: "0 auto 40px", lineHeight: 1.7,
         }}>
-          Specialised AI agents trained on your industry. Plug in, configure
-          your niche, and let them run 24/7.
+          {isAr ? "وكلاء ذكاء اصطناعي متخصصون في مجالك. اشترك، اضبط الإعدادات، ودعهم يعملون 24/7." : "Specialised AI agents trained on your niche. Subscribe, configure, and let them run 24/7."}
         </p>
 
         {/* Search */}
-        <div style={{ maxWidth: "440px", margin: "0 auto", position: "relative" }}>
-          <Search size={16} color={colors.textMuted} style={{
-            position: "absolute", left: "14px", top: "50%",
-            transform: "translateY(-50%)",
+        <div style={{ maxWidth: "460px", margin: "0 auto", position: "relative" }}>
+          <Search size={15} color={colors.textMuted} style={{
+            position: "absolute", left: "16px", top: "50%",
+            transform: "translateY(-50%)", pointerEvents: "none",
           }} />
           <input
-            placeholder="Search agents..."
+            placeholder={isAr ? "ابحث عن وكيل..." : "Search agents..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
-              width: "100%", padding: "12px 14px 12px 42px",
-              borderRadius: "10px", fontSize: "14px",
-              border: `1px solid ${colors.border}`,
-              background: colors.bgCard, color: colors.text,
-              outline: "none", boxSizing: "border-box" as const,
+              width: "100%", padding: "13px 16px 13px 44px",
+              borderRadius: "11px", fontSize: "14px",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+              background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+              color: colors.text, outline: "none",
+              boxSizing: "border-box" as const, fontFamily: "inherit",
             }}
           />
         </div>
@@ -148,7 +165,7 @@ export function AgentsListPage() {
                 color: category === cat ? "#a78bfa" : colors.textMuted,
               }}
             >
-              {CATEGORY_LABELS[cat] || cat}
+              {formatCategory(cat)}
             </button>
           ))}
         </div>
@@ -195,7 +212,7 @@ export function AgentsListPage() {
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "20px",
+              gap: "12px",
             }}>
               {filtered.map((agent) => (
                 <Link
@@ -204,12 +221,23 @@ export function AgentsListPage() {
                   style={{ textDecoration: "none" }}
                 >
                   <div style={{
-                    background: colors.bgCard,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: "14px", padding: "24px",
-                    height: "100%", transition: "all 0.25s",
-                    cursor: "pointer",
-                  }}>
+                    background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                    border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                    borderRadius: "14px", padding: "22px",
+                    height: "100%", transition: "all 0.2s",
+                    cursor: "pointer", display: "flex", flexDirection: "column",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = `${agent.color}30`;
+                    (e.currentTarget as HTMLDivElement).style.background = `${agent.color}06`;
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 30px ${agent.color}10`;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+                    (e.currentTarget as HTMLDivElement).style.background = isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+                  }}
+                  >
                     {/* Header */}
                     <div style={{
                       display: "flex", alignItems: "flex-start",
@@ -241,15 +269,15 @@ export function AgentsListPage() {
                       fontSize: "17px", fontWeight: 700,
                       color: colors.text, marginBottom: "6px",
                     }}>
-                      {agent.name}
+                      {(isAr && agent.name_ar) ? agent.name_ar : agent.name}
                     </h2>
 
-                    {agent.tagline && (
+                    {((isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline) && (
                       <p style={{
                         fontSize: "13px", color: agent.color,
                         fontWeight: 500, marginBottom: "10px",
                       }}>
-                        {agent.tagline}
+                        {(isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline}
                       </p>
                     )}
 
@@ -257,7 +285,7 @@ export function AgentsListPage() {
                       fontSize: "13px", color: colors.textMuted,
                       lineHeight: 1.6, marginBottom: "16px",
                     }}>
-                      {agent.description}
+                      {(isAr && agent.description_ar) ? agent.description_ar : agent.description}
                     </p>
 
                     {/* Capabilities */}
@@ -314,7 +342,7 @@ export function AgentsListPage() {
                         display: "flex", alignItems: "center", gap: "5px",
                         fontSize: "13px", fontWeight: 500, color: agent.color,
                       }}>
-                        View details <ArrowRight size={13} />
+                        {isAr ? "عرض التفاصيل" : "View details"} <ArrowRight size={13} />
                       </div>
                     </div>
                   </div>
@@ -325,7 +353,7 @@ export function AgentsListPage() {
             {filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px" }}>
                 <p style={{ color: colors.textMuted, fontSize: "15px" }}>
-                  No agents found matching your search.
+                  {isAr ? "لم يُعثر على وكلاء مطابقين لبحثك." : "No agents found matching your search."}
                 </p>
               </div>
             )}

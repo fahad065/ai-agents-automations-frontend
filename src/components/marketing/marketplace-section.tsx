@@ -317,7 +317,7 @@ export function MarketplaceSection() {
               marginBottom: "16px",
             }}
           >
-            <Zap size={12} />
+            <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
             Marketplace
           </div>
           <h2

@@ -56,7 +56,7 @@ export function LoginForm() {
         
         // Route based on role
         if (res.user.role === "admin") {
-          router.push("/admin");
+          router.push("/dashboard");
         } else {
           router.push("/dashboard");
         }
@@ -71,7 +71,7 @@ export function LoginForm() {
   return (
     <AuthWrapper
       title="Welcome back"
-      subtitle="Sign in to your NexAgent account"
+      subtitle="Sign in to your LogicMate account"
       footerText="Don't have an account?"
       footerLinkText="Sign up free"
       footerLinkHref="/auth/signup"

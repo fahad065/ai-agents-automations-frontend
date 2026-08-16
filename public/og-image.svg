@@ -1,0 +1,18 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#grad)"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a0a2e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="150" r="300" fill="#7c3aed" opacity="0.08"/>
+  <circle cx="1000" cy="480" r="250" fill="#7c3aed" opacity="0.06"/>
+  <text x="100" y="260" font-family="system-ui, sans-serif" font-size="80" font-weight="800" fill="white">LogicMate</text>
+  <text x="100" y="340" font-family="system-ui, sans-serif" font-size="36" fill="#a78bfa">AI Automation Platform</text>
+  <text x="100" y="410" font-family="system-ui, sans-serif" font-size="28" fill="#737373">YouTube · Instagram · WhatsApp · Arabic Content</text>
+  <rect x="100" y="460" width="200" height="52" rx="10" fill="#7c3aed"/>
+  <text x="200" y="493" font-family="system-ui, sans-serif" font-size="22" fill="white" text-anchor="middle" font-weight="600">Free Trial</text>
+  <text x="1100" y="580" font-family="system-ui, sans-serif" font-size="22" fill="#404040" text-anchor="end">logicmate.io</text>
+</svg>

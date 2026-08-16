@@ -3,15 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
+import { useLang } from "@/hooks/use-lang";
 import { CmsPage } from "./cms-page";
 import { ArrowLeft, Clock, Eye, Calendar, Loader2 } from "lucide-react";
 
 interface BlogPost {
   _id: string;
   title: string;
+  title_ar?: string;
   slug: string;
   excerpt: string;
+  excerpt_ar?: string;
   content: string;
+  content_ar?: string;
   category: string;
   tags: string[];
   authorName: string;
@@ -22,6 +26,7 @@ interface BlogPost {
 
 export function BlogPostPage({ slug }: { slug: string }) {
   const { colors } = useTheme();
+  const { isAr } = useLang();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,22 +53,26 @@ export function BlogPostPage({ slug }: { slug: string }) {
       <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px" }}>
         <p style={{ color: colors.text, fontSize: "16px" }}>Post not found</p>
         <Link href="/blog" style={{ color: "#a78bfa", textDecoration: "none", fontSize: "14px" }}>
-          Back to blog
+          {isAr ? "رجوع للمدونة" : "Back to blog"}
         </Link>
       </div>
     );
   }
 
+  const title = (isAr && post.title_ar) ? post.title_ar : post.title;
+  const excerpt = (isAr && post.excerpt_ar) ? post.excerpt_ar : post.excerpt;
+  const content = (isAr && post.content_ar) ? post.content_ar : post.content;
+
   return (
-    <CmsPage title={post.title} subtitle={post.excerpt}>
+    <CmsPage title={title} subtitle={excerpt}>
       {/* Back + meta */}
-      <div style={{ marginBottom: "32px" }}>
+      <div dir={isAr ? "rtl" : "ltr"} style={{ marginBottom: "32px" }}>
         <Link href="/blog" style={{
           display: "inline-flex", alignItems: "center", gap: "6px",
           color: colors.textMuted, textDecoration: "none",
           fontSize: "13px", marginBottom: "20px",
         }}>
-          <ArrowLeft size={13} /> All posts
+          <ArrowLeft size={13} /> {isAr ? "كل المقالات" : "All posts"}
         </Link>
 
         <div style={{
@@ -91,7 +100,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
             display: "flex", alignItems: "center", gap: "4px",
             fontSize: "12px", color: colors.textMuted,
           }}>
-            <Clock size={12} /> {post.readTimeMinutes} min read
+            <Clock size={12} /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
           </span>
           <span style={{
             display: "flex", alignItems: "center", gap: "4px",
@@ -107,7 +116,8 @@ export function BlogPostPage({ slug }: { slug: string }) {
 
       {/* Content */}
       <div
-        dangerouslySetInnerHTML={{ __html: post.content || "<p>Content coming soon.</p>" }}
+        dir={isAr ? "rtl" : "ltr"}
+        dangerouslySetInnerHTML={{ __html: content || (isAr ? "<p>المحتوى قادم قريباً.</p>" : "<p>Content coming soon.</p>") }}
         style={{ fontSize: "16px", lineHeight: 1.8, color: colors.textMuted }}
       />
 

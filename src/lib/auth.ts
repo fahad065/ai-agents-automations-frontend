@@ -43,4 +43,14 @@ export const authApi = {
   googleCallback: async (token: string, refresh: string) => {
     return { accessToken: token, refreshToken: refresh };
   },
+
+  verifyEmail: async (token: string) => {
+    const res = await api.get(`/auth/verify-email/${token}`);
+    return res.data;
+  },
+
+  resendVerification: async (email: string) => {
+    const res = await api.post("/auth/resend-verification", { email });
+    return res.data;
+  },
 };

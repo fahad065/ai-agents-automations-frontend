@@ -42,7 +42,7 @@ function CallbackContent() {
             await new Promise((r) => setTimeout(r, 100));
         
             if (user.role === "admin") {
-            router.push("/admin");
+            router.push("/dashboard");
             } else {
             router.push("/dashboard");
             }

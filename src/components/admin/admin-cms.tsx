@@ -20,15 +20,18 @@ export function AdminCmsPage() {
   const [activeTab, setActiveTab] = useState<"pages" | "blog">("pages");
   const [selectedPage, setSelectedPage] = useState("about");
   const [pageData, setPageData] = useState<any>(null);
+  const [cmsLang, setCmsLang] = useState<"en" | "ar">("en");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [blogLoading, setBlogLoading] = useState(false);
   const [showNewPost, setShowNewPost] = useState(false);
+  const [editingPost, setEditingPost] = useState<any>(null);
   const [newPost, setNewPost] = useState({
     title: "", excerpt: "", content: "",
     category: "tutorial", tags: "", isPublished: false,
+    readTimeMinutes: 5, metaTitle: "", metaDescription: "",
   });
   const [postSaving, setPostSaving] = useState(false);
 
@@ -73,7 +76,21 @@ export function AdminCmsPage() {
         tags: newPost.tags.split(",").map((t) => t.trim()).filter(Boolean),
       });
       setShowNewPost(false);
-      setNewPost({ title: "", excerpt: "", content: "", category: "tutorial", tags: "", isPublished: false });
+      setNewPost({ title: "", excerpt: "", content: "", category: "tutorial", tags: "", isPublished: false, readTimeMinutes: 5, metaTitle: "", metaDescription: "" });      fetchBlogPosts();
+    } catch {}
+    setPostSaving(false);
+  };
+
+  const updatePost = async () => {
+    setPostSaving(true);
+    try {
+      await api.put(`/cms/admin/blog/${editingPost._id}`, {
+        ...editingPost,
+        tags: typeof editingPost.tags === "string"
+          ? editingPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+          : editingPost.tags,
+      });
+      setEditingPost(null);
       fetchBlogPosts();
     } catch {}
     setPostSaving(false);
@@ -188,16 +205,24 @@ export function AdminCmsPage() {
             <div style={{
               background: colors.bgCard,
               border: `1px solid ${colors.border}`,
-              borderRadius: "12px", padding: "24px",
+              borderRadius: "12px", overflow: "hidden",
             }}>
+              {/* Editor header */}
               <div style={{
+                padding: "16px 20px",
+                borderBottom: `1px solid ${colors.border}`,
                 display: "flex", alignItems: "center",
-                justifyContent: "space-between", marginBottom: "20px",
+                justifyContent: "space-between", gap: "12px",
               }}>
-                <h2 style={{ fontSize: "15px", fontWeight: 600, color: colors.text }}>
-                  Editing: {PAGES.find((p) => p.slug === selectedPage)?.label}
-                </h2>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div>
+                  <p style={{ fontSize: "11px", color: colors.textMuted, marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Editing page
+                  </p>
+                  <h2 style={{ fontSize: "15px", fontWeight: 700, color: colors.text }}>
+                    {PAGES.find((p) => p.slug === selectedPage)?.label}
+                  </h2>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   {saved && (
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#22c55e" }}>
                       <CheckCircle2 size={14} /> Saved
@@ -218,119 +243,223 @@ export function AdminCmsPage() {
                       ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
                       : <Save size={13} />
                     }
-                    Save
+                    Save changes
                   </button>
                 </div>
               </div>
 
+              {/* Language selector tabs */}
+              <div style={{
+                display: "flex",
+                borderBottom: `1px solid ${colors.border}`,
+              }}>
+                {([
+                  { key: "en", label: "English", sub: "EN" },
+                  { key: "ar", label: "Arabic — UAE dialect", sub: "عربي (الإمارات)" },
+                ] as const).map((lang) => (
+                  <button
+                    key={lang.key}
+                    onClick={() => setCmsLang(lang.key)}
+                    style={{
+                      flex: 1, padding: "12px 20px",
+                      border: "none", cursor: "pointer",
+                      background: cmsLang === lang.key
+                        ? (lang.key === "ar" ? "rgba(245,158,11,0.08)" : "rgba(124,58,237,0.06)")
+                        : "transparent",
+                      borderBottom: cmsLang === lang.key
+                        ? `2px solid ${lang.key === "ar" ? "#f59e0b" : "#7c3aed"}`
+                        : "2px solid transparent",
+                      display: "flex", alignItems: "center",
+                      gap: "10px", transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: "28px", height: "28px", borderRadius: "6px",
+                      background: cmsLang === lang.key
+                        ? (lang.key === "ar" ? "rgba(245,158,11,0.15)" : "rgba(124,58,237,0.15)")
+                        : (colors.border),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 800,
+                      color: cmsLang === lang.key
+                        ? (lang.key === "ar" ? "#f59e0b" : "#a78bfa")
+                        : colors.textMuted,
+                    }}>
+                      {lang.sub === "EN" ? "EN" : "ع"}
+                    </div>
+                    <div style={{ textAlign: "left" }}>
+                      <p style={{
+                        fontSize: "13px", fontWeight: 600,
+                        color: cmsLang === lang.key ? colors.text : colors.textMuted,
+                        marginBottom: "1px",
+                      }}>
+                        {lang.label}
+                      </p>
+                      <p style={{ fontSize: "10px", color: colors.textMuted }}>
+                        {lang.key === "en" ? "Default content" : lang.sub}
+                      </p>
+                    </div>
+                    {cmsLang === lang.key && (
+                      <div style={{
+                        marginLeft: "auto",
+                        width: "6px", height: "6px", borderRadius: "50%",
+                        background: lang.key === "ar" ? "#f59e0b" : "#7c3aed",
+                      }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active language banner */}
+              {cmsLang === "ar" && (
+                <div style={{
+                  padding: "10px 20px",
+                  background: "rgba(245,158,11,0.06)",
+                  borderBottom: `1px solid rgba(245,158,11,0.15)`,
+                  display: "flex", alignItems: "center", gap: "8px",
+                  fontSize: "12px", color: "#f59e0b",
+                }}>
+                  <span style={{ fontWeight: 700 }}>⚡ Arabic mode</span>
+                  <span style={{ color: colors.textMuted }}>— All fields below are editing the Arabic (UAE dialect) content. Save to persist.</span>
+                </div>
+              )}
+
+              <div style={{ padding: "20px" }}>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
                 <div>
                   <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
-                    Title
+                    {cmsLang === "ar" ? "العنوان (عربي)" : "Title"}
                   </label>
                   <input
-                    value={pageData.title || ""}
-                    onChange={(e) => setPageData((p: any) => ({ ...p, title: e.target.value }))}
+                    value={(cmsLang === "ar" ? pageData.title_ar : pageData.title) || ""}
+                    onChange={(e) => setPageData((p: any) => ({
+                      ...p,
+                      [cmsLang === "ar" ? "title_ar" : "title"]: e.target.value,
+                    }))}
+                    dir={cmsLang === "ar" ? "rtl" : "ltr"}
                     style={inputStyle}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
-                    Subtitle
+                    {cmsLang === "ar" ? "النبذة (عربي)" : "Subtitle"}
                   </label>
                   <input
-                    value={pageData.subtitle || ""}
-                    onChange={(e) => setPageData((p: any) => ({ ...p, subtitle: e.target.value }))}
+                    value={(cmsLang === "ar" ? pageData.subtitle_ar : pageData.subtitle) || ""}
+                    onChange={(e) => setPageData((p: any) => ({
+                      ...p,
+                      [cmsLang === "ar" ? "subtitle_ar" : "subtitle"]: e.target.value,
+                    }))}
+                    dir={cmsLang === "ar" ? "rtl" : "ltr"}
                     style={inputStyle}
                   />
                 </div>
-                <div>
-                  <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
-                    Meta title (SEO)
-                  </label>
-                  <input
-                    value={pageData.metaTitle || ""}
-                    onChange={(e) => setPageData((p: any) => ({ ...p, metaTitle: e.target.value }))}
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
-                    Meta description (SEO)
-                  </label>
-                  <input
-                    value={pageData.metaDescription || ""}
-                    onChange={(e) => setPageData((p: any) => ({ ...p, metaDescription: e.target.value }))}
-                    style={inputStyle}
-                  />
-                </div>
+                {cmsLang === "en" && (
+                  <>
+                    <div>
+                      <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
+                        Meta title (SEO)
+                      </label>
+                      <input
+                        value={pageData.metaTitle || ""}
+                        onChange={(e) => setPageData((p: any) => ({ ...p, metaTitle: e.target.value }))}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
+                        Meta description (SEO)
+                      </label>
+                      <input
+                        value={pageData.metaDescription || ""}
+                        onChange={(e) => setPageData((p: any) => ({ ...p, metaDescription: e.target.value }))}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>
                 <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
-                  Content (HTML)
+                  {cmsLang === "ar" ? "المحتوى بالعربي (HTML)" : "Content (HTML)"}
                 </label>
                 <textarea
-                  value={pageData.content || ""}
-                  onChange={(e) => setPageData((p: any) => ({ ...p, content: e.target.value }))}
+                  value={(cmsLang === "ar" ? pageData.content_ar : pageData.content) || ""}
+                  onChange={(e) => setPageData((p: any) => ({
+                    ...p,
+                    [cmsLang === "ar" ? "content_ar" : "content"]: e.target.value,
+                  }))}
+                  dir={cmsLang === "ar" ? "rtl" : "ltr"}
                   rows={16}
                   style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }}
                 />
               </div>
 
               {/* FAQ items editor */}
-              {selectedPage === "faq" && pageData.faqItems && (
+              {selectedPage === "faq" && (
                 <div style={{ marginTop: "16px" }}>
-                  <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "8px" }}>
-                    FAQ Items ({pageData.faqItems.length})
-                  </label>
-                  {pageData.faqItems.map((item: any, i: number) => (
-                    <div key={i} style={{
-                      background: colors.bg,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: "8px", padding: "12px",
-                      marginBottom: "8px",
-                    }}>
-                      <input
-                        value={item.question}
-                        onChange={(e) => {
-                          const items = [...pageData.faqItems];
-                          items[i] = { ...items[i], question: e.target.value };
-                          setPageData((p: any) => ({ ...p, faqItems: items }));
-                        }}
-                        placeholder="Question"
-                        style={{ ...inputStyle, marginBottom: "6px" }}
-                      />
-                      <textarea
-                        value={item.answer}
-                        onChange={(e) => {
-                          const items = [...pageData.faqItems];
-                          items[i] = { ...items[i], answer: e.target.value };
-                          setPageData((p: any) => ({ ...p, faqItems: items }));
-                        }}
-                        placeholder="Answer"
-                        rows={2}
-                        style={{ ...inputStyle, resize: "vertical" as const }}
-                      />
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setPageData((p: any) => ({
-                      ...p,
-                      faqItems: [...p.faqItems, { question: "", answer: "", order: p.faqItems.length + 1 }],
-                    }))}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "6px",
-                      padding: "8px 14px", borderRadius: "8px",
-                      border: `1px solid ${colors.border}`,
-                      background: "none", color: colors.textMuted,
-                      cursor: "pointer", fontSize: "12px",
-                    }}
-                  >
-                    <Plus size={13} /> Add FAQ item
-                  </button>
+                  {(() => {
+                    const fieldKey = cmsLang === "ar" ? "faqItems_ar" : "faqItems";
+                    const items: any[] = pageData[fieldKey] || [];
+                    return (
+                      <>
+                        <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "8px" }}>
+                          {cmsLang === "ar" ? `أسئلة شائعة (عربي) — ${items.length}` : `FAQ Items (${items.length})`}
+                        </label>
+                        {items.map((item: any, i: number) => (
+                          <div key={i} style={{
+                            background: colors.bg,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: "8px", padding: "12px",
+                            marginBottom: "8px",
+                          }}>
+                            <input
+                              value={item.question}
+                              dir={cmsLang === "ar" ? "rtl" : "ltr"}
+                              onChange={(e) => {
+                                const updated = [...items];
+                                updated[i] = { ...updated[i], question: e.target.value };
+                                setPageData((p: any) => ({ ...p, [fieldKey]: updated }));
+                              }}
+                              placeholder={cmsLang === "ar" ? "السؤال" : "Question"}
+                              style={{ ...inputStyle, marginBottom: "6px" }}
+                            />
+                            <textarea
+                              value={item.answer}
+                              dir={cmsLang === "ar" ? "rtl" : "ltr"}
+                              onChange={(e) => {
+                                const updated = [...items];
+                                updated[i] = { ...updated[i], answer: e.target.value };
+                                setPageData((p: any) => ({ ...p, [fieldKey]: updated }));
+                              }}
+                              placeholder={cmsLang === "ar" ? "الإجابة" : "Answer"}
+                              rows={2}
+                              style={{ ...inputStyle, resize: "vertical" as const }}
+                            />
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setPageData((p: any) => ({
+                            ...p,
+                            [fieldKey]: [...items, { question: "", answer: "", order: items.length + 1 }],
+                          }))}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "6px",
+                            padding: "8px 14px", borderRadius: "8px",
+                            border: `1px solid ${colors.border}`,
+                            background: "none", color: colors.textMuted,
+                            cursor: "pointer", fontSize: "12px",
+                          }}
+                        >
+                          <Plus size={13} /> {cmsLang === "ar" ? "إضافة سؤال" : "Add FAQ item"}
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
+              </div>{/* end padding wrapper */}
             </div>
           ) : null}
         </div>
@@ -383,7 +512,18 @@ export function AdminCmsPage() {
               </div>
               <input value={newPost.excerpt} onChange={(e) => setNewPost((p) => ({ ...p, excerpt: e.target.value }))} placeholder="Short excerpt" style={inputStyle} />
               <input value={newPost.tags} onChange={(e) => setNewPost((p) => ({ ...p, tags: e.target.value }))} placeholder="Tags (comma separated)" style={inputStyle} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={newPost.metaTitle} onChange={(e) => setNewPost((p) => ({ ...p, metaTitle: e.target.value }))} placeholder="Meta title (SEO)" style={inputStyle} />
+                <input value={newPost.metaDescription} onChange={(e) => setNewPost((p) => ({ ...p, metaDescription: e.target.value }))} placeholder="Meta description (SEO)" style={inputStyle} />
+              </div>
+              <input type="number" value={newPost.readTimeMinutes} onChange={(e) => setNewPost((p) => ({ ...p, readTimeMinutes: Number(e.target.value) }))} placeholder="Read time (minutes)" style={{ ...inputStyle, width: "120px" }} />
               <textarea value={newPost.content} onChange={(e) => setNewPost((p) => ({ ...p, content: e.target.value }))} placeholder="Content (HTML supported)" rows={10} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
+              <details style={{ marginBottom: "10px" }}>
+                <summary style={{ fontSize: "12px", color: colors.textMuted, cursor: "pointer", marginBottom: "8px" }}>Arabic (UAE dialect) — optional</summary>
+                <input value={(newPost as any).title_ar || ""} onChange={(e) => setNewPost((p) => ({ ...p, title_ar: e.target.value } as any))} placeholder="العنوان بالعربي" dir="rtl" style={inputStyle} />
+                <input value={(newPost as any).excerpt_ar || ""} onChange={(e) => setNewPost((p) => ({ ...p, excerpt_ar: e.target.value } as any))} placeholder="النبذة بالعربي" dir="rtl" style={inputStyle} />
+                <textarea value={(newPost as any).content_ar || ""} onChange={(e) => setNewPost((p) => ({ ...p, content_ar: e.target.value } as any))} placeholder="المحتوى بالعربي (HTML)" dir="rtl" rows={8} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
+              </details>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
                   <input type="checkbox" checked={newPost.isPublished} onChange={(e) => setNewPost((p) => ({ ...p, isPublished: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
@@ -394,6 +534,63 @@ export function AdminCmsPage() {
                   Save post
                 </button>
                 <button onClick={() => setShowNewPost(false)} style={{ padding: "9px 16px", borderRadius: "8px", border: `1px solid ${colors.border}`, background: "none", color: colors.textMuted, cursor: "pointer", fontSize: "13px" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Edit post modal */}
+          {editingPost && (
+            <div style={{
+              background: colors.bgCard,
+              border: "1px solid rgba(124,58,237,0.3)",
+              borderRadius: "12px", padding: "20px",
+              marginBottom: "20px",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 600, color: colors.text }}>
+                  Edit: {editingPost.title?.slice(0, 40)}...
+                </h3>
+                <button onClick={() => setEditingPost(null)} style={{
+                  background: "transparent", border: "none",
+                  cursor: "pointer", color: colors.textMuted,
+                }}>✕</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={editingPost.title || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, title: e.target.value }))} placeholder="Post title *" style={inputStyle} />
+                <select value={editingPost.category || "tutorial"} onChange={(e) => setEditingPost((p: any) => ({ ...p, category: e.target.value }))} style={inputStyle}>
+                  <option value="product">Product</option>
+                  <option value="tutorial">Tutorial</option>
+                  <option value="case-study">Case study</option>
+                  <option value="news">News</option>
+                  <option value="tips">Tips</option>
+                </select>
+              </div>
+              <input value={editingPost.excerpt || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, excerpt: e.target.value }))} placeholder="Short excerpt" style={inputStyle} />
+              <input value={typeof editingPost.tags === "string" ? editingPost.tags : (editingPost.tags || []).join(", ")} onChange={(e) => setEditingPost((p: any) => ({ ...p, tags: e.target.value }))} placeholder="Tags (comma separated)" style={inputStyle} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input value={editingPost.metaTitle || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, metaTitle: e.target.value }))} placeholder="Meta title (SEO)" style={inputStyle} />
+                <input value={editingPost.metaDescription || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, metaDescription: e.target.value }))} placeholder="Meta description (SEO)" style={inputStyle} />
+              </div>
+              <input type="number" value={editingPost.readTimeMinutes || 5} onChange={(e) => setEditingPost((p: any) => ({ ...p, readTimeMinutes: Number(e.target.value) }))} placeholder="Read time (minutes)" style={{ ...inputStyle, width: "120px" }} />
+              <textarea value={editingPost.content || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, content: e.target.value }))} placeholder="Content (HTML supported)" rows={12} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
+              <details style={{ marginBottom: "10px" }}>
+                <summary style={{ fontSize: "12px", color: colors.textMuted, cursor: "pointer", marginBottom: "8px" }}>Arabic (UAE dialect) — optional</summary>
+                <input value={editingPost.title_ar || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, title_ar: e.target.value }))} placeholder="العنوان بالعربي" dir="rtl" style={inputStyle} />
+                <input value={editingPost.excerpt_ar || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, excerpt_ar: e.target.value }))} placeholder="النبذة بالعربي" dir="rtl" style={inputStyle} />
+                <textarea value={editingPost.content_ar || ""} onChange={(e) => setEditingPost((p: any) => ({ ...p, content_ar: e.target.value }))} placeholder="المحتوى بالعربي (HTML)" dir="rtl" rows={10} style={{ ...inputStyle, fontFamily: "monospace", fontSize: "12px", resize: "vertical" as const }} />
+              </details>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
+                  <input type="checkbox" checked={editingPost.isPublished || false} onChange={(e) => setEditingPost((p: any) => ({ ...p, isPublished: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
+                  Published
+                </label>
+                <button onClick={updatePost} disabled={postSaving} style={{ padding: "9px 20px", borderRadius: "8px", background: "#7c3aed", color: "white", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                  {postSaving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={13} />}
+                  Update post
+                </button>
+                <button onClick={() => setEditingPost(null)} style={{ padding: "9px 16px", borderRadius: "8px", border: `1px solid ${colors.border}`, background: "none", color: colors.textMuted, cursor: "pointer", fontSize: "13px" }}>
                   Cancel
                 </button>
               </div>
@@ -446,6 +643,17 @@ export function AdminCmsPage() {
                     }}
                   >
                     {post.isPublished ? "Published" : "Draft"}
+                  </button>
+                  <button onClick={() => setEditingPost({
+                    ...post,
+                    tags: (post.tags || []).join(", "),
+                  })} style={{
+                    width: "28px", height: "28px", borderRadius: "6px",
+                    border: `1px solid ${colors.border}`, background: "transparent",
+                    color: colors.textMuted, display: "flex", alignItems: "center",
+                    justifyContent: "center", cursor: "pointer",
+                  }}>
+                    <Pencil size={12} />
                   </button>
                   <Link href={`/blog/${post.slug}`} target="_blank" style={{ color: colors.textMuted }}>
                     <Eye size={14} />

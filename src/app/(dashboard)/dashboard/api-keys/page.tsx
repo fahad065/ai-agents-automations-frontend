@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ApiKeysPage } from "@/components/dashboard/api-keys-page";
 
 export const metadata: Metadata = {
-  title: "API Keys — NexAgent",
+  title: "API Keys — LogicMate",
   description: "Manage your API keys securely.",
 };
 

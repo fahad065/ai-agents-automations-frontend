@@ -5,17 +5,23 @@ import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTheme } from "@/hooks/use-theme";
-import { ArrowRight, Bot } from "lucide-react";
+import { useLang } from "@/hooks/use-lang";
+import { tr } from "@/lib/translations";
+import { ArrowRight, Bot, Zap } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface AgentTemplate {
   _id: string;
   name: string;
+  name_ar?: string;
   slug: string;
   tagline: string;
+  tagline_ar?: string;
   description: string;
+  description_ar?: string;
   category: string;
+  moduleType: string;
   icon: string;
   color: string;
   badge: string;
@@ -24,26 +30,24 @@ interface AgentTemplate {
 }
 
 export function AgentsSection() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { lang, isAr } = useLang();
   const sectionRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [agents, setAgents] = useState<AgentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/agents/templates`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+        const res = await fetch(`${apiUrl}/modules?limit=6`);
         const data = await res.json();
-        setAgents(data.slice(0, 4));
-      } catch {
-        // Keep empty — section will not render
-      } finally {
-        setLoading(false);
-      }
+        setAgents((data.data || data).slice(0, 6));
+      } catch {}
+      finally { setLoading(false); }
     };
     fetchAgents();
   }, []);
@@ -57,7 +61,7 @@ export function AgentsSection() {
       });
       if (gridRef.current?.children) {
         gsap.from(Array.from(gridRef.current.children), {
-          opacity: 0, y: 30, duration: 0.5, stagger: 0.1, ease: "power3.out",
+          opacity: 0, y: 24, duration: 0.5, stagger: 0.08, ease: "power3.out",
           scrollTrigger: { trigger: gridRef.current, start: "top 85%" },
         });
       }
@@ -67,65 +71,68 @@ export function AgentsSection() {
 
   if (!loading && agents.length === 0) return null;
 
+  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+
   return (
     <section ref={sectionRef} style={{
-      padding: "96px 24px",
+      padding: "100px 24px",
       background: colors.bg,
-      borderTop: `1px solid ${colors.border}`,
+      borderTop: `1px solid ${border}`,
     }}>
-      <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
 
         <div ref={titleRef} style={{
           display: "flex", alignItems: "flex-end",
           justifyContent: "space-between",
-          marginBottom: "48px", flexWrap: "wrap", gap: "16px",
+          marginBottom: "56px", flexWrap: "wrap", gap: "20px",
         }}>
           <div>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: "6px",
               border: "1px solid rgba(124,58,237,0.3)",
               background: "rgba(124,58,237,0.08)",
-              color: "#a78bfa", padding: "4px 14px",
+              color: "#a78bfa", padding: "5px 14px",
               borderRadius: "9999px", fontSize: "12px",
-              fontWeight: 500, marginBottom: "12px",
+              fontWeight: 500, marginBottom: "16px",
             }}>
-              <Bot size={11} /> AI Agents
+              <Bot size={11} /> {isAr ? "وكلاء الذكاء الاصطناعي والأتمتة" : "AI Agents & Automations"}
             </div>
             <h2 style={{
-              fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 700,
-              color: colors.text, marginBottom: "8px",
+              fontSize: "clamp(28px, 4vw, 46px)", fontWeight: 800,
+              color: colors.text, marginBottom: "10px",
+              letterSpacing: "-0.03em", lineHeight: 1.1,
             }}>
-              Agents built for every niche
+              {isAr ? "جاهز للنشر." : "Ready to deploy."}<br />{isAr ? "مصمم لقطاعك." : "Built for your industry."}
             </h2>
-            <p style={{ color: colors.textMuted, fontSize: "16px", maxWidth: "480px" }}>
-              Specialised AI agents trained on your industry. Plug in and go.
+            <p style={{ color: colors.textMuted, fontSize: "15px", maxWidth: "420px", lineHeight: 1.65 }}>
+              {isAr ? "اشترك بنقرة واحدة. بدون إعداد تقني. يعمل في دقائق." : "Subscribe in one click. No technical setup. Running in minutes."}
             </p>
           </div>
 
           <Link href="/agents" style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
-            padding: "9px 18px", borderRadius: "10px",
-            border: `1px solid ${colors.border}`,
-            background: colors.bgCard,
-            color: colors.textMuted, fontSize: "14px",
+            padding: "10px 20px", borderRadius: "9px",
+            border: `1px solid ${border}`,
+            background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+            color: colors.textMuted, fontSize: "13px",
             fontWeight: 500, textDecoration: "none",
+            whiteSpace: "nowrap",
           }}>
-            View all agents <ArrowRight size={14} />
+            {tr("viewAllAgents", lang)} <ArrowRight size={13} />
           </Link>
         </div>
 
         {loading ? (
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "12px",
           }}>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} style={{
-                background: colors.bgCard,
-                border: `1px solid ${colors.border}`,
-                borderRadius: "14px", padding: "24px",
-                height: "280px",
+                background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
+                border: `1px solid ${border}`,
+                borderRadius: "16px", padding: "24px", height: "200px",
                 animation: "pulse 1.5s infinite",
               }} />
             ))}
@@ -134,85 +141,115 @@ export function AgentsSection() {
         ) : (
           <div ref={gridRef} style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "12px",
           }}>
-            {agents.map((agent) => (
-              <Link
-                key={agent._id}
-                href={`/agents/${agent.slug}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div style={{
-                  background: colors.bgCard,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: "14px", padding: "24px",
-                  transition: "all 0.3s", cursor: "pointer", height: "100%",
-                }}>
+            {agents.map((agent) => {
+              const isHovered = hovered === agent._id;
+              return (
+                <Link
+                  key={agent._id}
+                  href={`/agents/${agent.slug}`}
+                  style={{ textDecoration: "none" }}
+                  onMouseEnter={() => setHovered(agent._id)}
+                  onMouseLeave={() => setHovered(null)}
+                >
                   <div style={{
-                    display: "flex", alignItems: "center",
-                    justifyContent: "space-between", marginBottom: "16px",
+                    background: isHovered ? `${agent.color}06` : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)"),
+                    border: `1px solid ${isHovered ? agent.color + "30" : border}`,
+                    borderRadius: "16px", padding: "22px",
+                    transition: "all 0.2s", cursor: "pointer", height: "100%",
+                    display: "flex", flexDirection: "column",
+                    boxShadow: isHovered ? `0 0 40px ${agent.color}10` : "none",
                   }}>
+                    {/* Card header */}
                     <div style={{
-                      width: "44px", height: "44px", borderRadius: "12px",
-                      background: `${agent.color}15`,
-                      border: `1px solid ${agent.color}30`,
                       display: "flex", alignItems: "center",
-                      justifyContent: "center", fontSize: "20px",
+                      justifyContent: "space-between", marginBottom: "14px",
                     }}>
-                      {agent.icon}
-                    </div>
-                    <span style={{
-                      fontSize: "11px", fontWeight: 600,
-                      padding: "3px 10px", borderRadius: "9999px",
-                      background: agent.badge === "Live"
-                        ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)",
-                      color: agent.badge === "Live" ? "#22c55e" : colors.textMuted,
-                      border: `1px solid ${agent.badge === "Live"
-                        ? "rgba(34,197,94,0.2)" : colors.border}`,
-                    }}>
-                      {agent.badge}
-                    </span>
-                  </div>
-
-                  <h3 style={{
-                    fontSize: "16px", fontWeight: 600,
-                    color: colors.text, marginBottom: "8px",
-                  }}>
-                    {agent.name}
-                  </h3>
-                  <p style={{
-                    fontSize: "13px", color: colors.textMuted,
-                    lineHeight: 1.6, marginBottom: "16px",
-                  }}>
-                    {agent.description}
-                  </p>
-
-                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "16px" }}>
-                    {agent.capabilities.slice(0, 3).map((c) => (
-                      <li key={c} style={{
-                        display: "flex", alignItems: "center",
-                        gap: "7px", fontSize: "12px",
-                        color: colors.textMuted, marginBottom: "6px",
+                      <div style={{
+                        width: "42px", height: "42px", borderRadius: "11px",
+                        background: `${agent.color}12`, border: `1px solid ${agent.color}25`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "20px", flexShrink: 0,
                       }}>
-                        <div style={{
-                          width: "4px", height: "4px", borderRadius: "50%",
-                          background: agent.color, flexShrink: 0,
-                        }} />
-                        {c}
-                      </li>
-                    ))}
-                  </ul>
+                        {agent.icon}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {agent.moduleType === "automation" && (
+                          <span style={{
+                            fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px",
+                            background: "rgba(34,197,94,0.1)", color: "#22c55e",
+                            border: "1px solid rgba(34,197,94,0.2)",
+                          }}>
+                            <Zap size={8} style={{ display: "inline", marginRight: "2px" }} />
+                            AUTO
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: "10px", fontWeight: 600,
+                          padding: "3px 9px", borderRadius: "9999px",
+                          background: agent.badge === "Live"
+                            ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
+                          color: agent.badge === "Live" ? "#22c55e" : agent.color,
+                          border: `1px solid ${agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25"}`,
+                        }}>
+                          {agent.badge || "Active"}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: "6px",
-                    fontSize: "13px", fontWeight: 500, color: agent.color,
-                  }}>
-                    Explore agent <ArrowRight size={13} />
+                    <h3 style={{
+                      fontSize: "15px", fontWeight: 700,
+                      color: colors.text, marginBottom: "6px", lineHeight: 1.3,
+                    }}>
+                      {(isAr && agent.name_ar) ? agent.name_ar : agent.name}
+                    </h3>
+
+                    {((isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline) && (
+                      <p style={{
+                        fontSize: "12px", color: colors.textMuted,
+                        lineHeight: 1.6, marginBottom: "14px", flex: 1,
+                      }}>
+                        {(isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline}
+                      </p>
+                    )}
+
+                    {/* Capabilities */}
+                    <ul style={{ listStyle: "none", padding: 0, marginBottom: "16px" }}>
+                      {agent.capabilities.slice(0, 3).map((c) => (
+                        <li key={c} style={{
+                          display: "flex", alignItems: "flex-start",
+                          gap: "7px", fontSize: "12px",
+                          color: colors.textMuted, marginBottom: "5px",
+                        }}>
+                          <div style={{
+                            width: "4px", height: "4px", borderRadius: "50%",
+                            background: agent.color, flexShrink: 0, marginTop: "5px",
+                          }} />
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      paddingTop: "12px",
+                      borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
+                    }}>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: agent.color, display: "flex", alignItems: "center", gap: "4px" }}>
+                        {isAr ? "استكشف" : "Explore"} <ArrowRight size={12} />
+                      </span>
+                      {agent.pricing?.monthly && (
+                        <span style={{ fontSize: "11px", color: colors.textMuted }}>
+                          from ${agent.pricing.monthly}/mo
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

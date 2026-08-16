@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
+import { useLang } from "@/hooks/use-lang";
 import { ArrowRight, Clock, Eye, Loader2, BookOpen } from "lucide-react";
 
 interface BlogPost {
@@ -19,17 +20,18 @@ interface BlogPost {
   viewCount: number;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  all: "All posts",
-  product: "Product",
-  tutorial: "Tutorials",
-  "case-study": "Case studies",
-  news: "News",
-  tips: "Tips",
-};
-
 export function BlogListPage() {
   const { colors } = useTheme();
+  const { isAr } = useLang();
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    all: isAr ? "كل المقالات" : "All posts",
+    product: isAr ? "المنتج" : "Product",
+    tutorial: isAr ? "الدروس" : "Tutorials",
+    "case-study": isAr ? "دراسات الحالة" : "Case studies",
+    news: isAr ? "الأخبار" : "News",
+    tips: isAr ? "نصائح" : "Tips",
+  };
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export function BlogListPage() {
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.bg }}>
+    <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
       {/* Hero */}
       <section style={{ padding: "100px 24px 48px", textAlign: "center" }}>
         <div style={{
@@ -64,17 +66,19 @@ export function BlogListPage() {
           borderRadius: "9999px", fontSize: "12px",
           fontWeight: 500, marginBottom: "16px",
         }}>
-          <BookOpen size={11} /> NexAgent Blog
+          <BookOpen size={11} /> {isAr ? "مدونة لوجيك ميت" : "LogicMate Blog"}
         </div>
         <h1 style={{
           fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800,
           color: colors.text, marginBottom: "12px",
           letterSpacing: "-0.02em",
         }}>
-          Insights and tutorials
+          {isAr ? "رؤى ودروس تعليمية" : "Insights and tutorials"}
         </h1>
         <p style={{ fontSize: "17px", color: colors.textMuted, maxWidth: "480px", margin: "0 auto" }}>
-          Product updates, automation tutorials, case studies and tips from the NexAgent team.
+          {isAr
+            ? "تحديثات المنتج، دروس الأتمتة، دراسات الحالة ونصائح من فريق لوجيك ميت."
+            : "Product updates, automation tutorials, case studies and tips from the LogicMate team."}
         </p>
       </section>
 
@@ -113,10 +117,10 @@ export function BlogListPage() {
           <div style={{ textAlign: "center", padding: "80px" }}>
             <BookOpen size={40} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
             <p style={{ color: colors.textMuted, fontSize: "16px", marginBottom: "8px" }}>
-              No posts published yet.
+              {isAr ? "لا توجد مقالات منشورة بعد." : "No posts published yet."}
             </p>
             <p style={{ color: colors.textMuted, fontSize: "14px" }}>
-              Check back soon — we are working on some great content.
+              {isAr ? "تابعنا قريباً — نعمل على محتوى رائع." : "Check back soon — we are working on some great content."}
             </p>
           </div>
         ) : (
@@ -183,7 +187,7 @@ export function BlogListPage() {
                         gap: "12px", fontSize: "12px", color: colors.textMuted,
                       }}>
                         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Clock size={11} /> {post.readTimeMinutes} min read
+                          <Clock size={11} /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
                         </span>
                         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                           <Eye size={11} /> {post.viewCount}
@@ -193,7 +197,7 @@ export function BlogListPage() {
                         display: "flex", alignItems: "center", gap: "4px",
                         fontSize: "12px", color: "#a78bfa",
                       }}>
-                        Read <ArrowRight size={12} />
+                        {isAr ? "اقرأ" : "Read"} <ArrowRight size={12} />
                       </div>
                     </div>
                   </div>

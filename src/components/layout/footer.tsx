@@ -2,43 +2,48 @@
 
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
-import { Zap } from "lucide-react";
-import { FaTwitter, FaGithub, FaLinkedin } from "react-icons/fa";
+import { useLang } from "@/hooks/use-lang";
+import { tr } from "@/lib/translations";
+import { FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
 
-const links = {
-  Product: [
-    { label: "Automations", href: "/automations" },
-    { label: "AI Agents", href: "/agents" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Changelog", href: "/changelog" },
-  ],
-  Company: [
-    { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
-    { label: "Contact", href: "/contact" },
-    { label: "FAQ", href: "/faq" },
-  ],
-  Legal: [
-    { label: "Privacy policy", href: "/privacy" },
-    { label: "Terms of service", href: "/terms" },
-    { label: "Cookie policy", href: "/cookies" },
-  ],
-};
-
-const socials = [
-  { icon: FaTwitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: FaGithub, href: "https://github.com", label: "GitHub" },
-  { icon: FaLinkedin, href: "https://linkedin.com", label: "LinkedIn" },
+const SOCIALS = [
+  { icon: FaTwitter, href: "https://twitter.com/logicmate", label: "X / Twitter" },
+  { icon: FaInstagram, href: "https://instagram.com/logicmate", label: "Instagram" },
+  { icon: FaLinkedin, href: "https://linkedin.com/company/logicmate", label: "LinkedIn" },
 ];
 
 export function Footer() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { lang, isAr } = useLang();
+
+  const LINKS = {
+    [tr("footerProduct", lang)]: [
+      { label: isAr ? "القطاعات" : "Industries", href: "/industries" },
+      { label: isAr ? "الوكلاء الذكيون" : "AI Agents", href: "/agents" },
+      { label: isAr ? "الأتمتة" : "Automations", href: "/automations" },
+      { label: isAr ? "الشات بوت" : "Chatbots", href: "/chatbots" },
+      { label: isAr ? "الأسعار" : "Pricing", href: "/pricing" },
+    ],
+    [tr("footerCompany", lang)]: [
+      { label: isAr ? "عن الشركة" : "About", href: "/about" },
+      { label: isAr ? "المدونة" : "Blog", href: "/blog" },
+      { label: isAr ? "تواصل معنا" : "Contact", href: "/contact" },
+      { label: isAr ? "الأسئلة الشائعة" : "FAQ", href: "/faq" },
+    ],
+    [tr("footerLegal", lang)]: [
+      { label: isAr ? "سياسة الخصوصية" : "Privacy Policy", href: "/privacy" },
+      { label: isAr ? "شروط الخدمة" : "Terms of Service", href: "/terms" },
+      { label: isAr ? "سياسة ملفات تعريف الارتباط" : "Cookie Policy", href: "/cookies" },
+      { label: isAr ? "سياسة الاسترداد" : "Refund Policy", href: "/refund" },
+    ],
+  };
+  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
   return (
     <footer style={{
-      borderTop: `1px solid ${colors.border}`,
+      borderTop: `1px solid ${border}`,
       background: colors.bg,
-      padding: "64px 24px 32px",
+      padding: "72px 24px 40px",
     }}>
       <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
 
@@ -46,60 +51,57 @@ export function Footer() {
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "40px",
-          marginBottom: "48px",
+          gap: "48px", marginBottom: "64px",
         }}>
 
-          {/* Brand col */}
+          {/* Brand */}
           <div style={{ minWidth: "200px" }}>
             <Link href="/" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              textDecoration: "none", marginBottom: "14px",
+              display: "inline-flex", alignItems: "center", gap: "9px",
+              textDecoration: "none", marginBottom: "16px",
             }}>
               <div style={{
-                width: "28px", height: "28px", borderRadius: "7px",
+                width: "30px", height: "30px", borderRadius: "8px",
                 background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Zap size={14} color="white" strokeWidth={2.5} />
+                <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
               </div>
-              <span style={{ fontWeight: 700, color: colors.text, fontSize: "15px" }}>
-                Nex<span style={{ color: "#a78bfa" }}>Agent</span>
+              <span style={{ fontWeight: 700, fontSize: "15px", color: colors.text }}>
+                Logic<span style={{ color: "#a78bfa" }}>Mate</span>
               </span>
             </Link>
             <p style={{
               color: colors.textMuted, fontSize: "13px",
-              lineHeight: 1.7, maxWidth: "220px", marginBottom: "20px",
+              lineHeight: 1.75, maxWidth: "220px", marginBottom: "24px",
             }}>
-              The AI automation platform for creators and businesses. Deploy agents, not employees.
+              {tr("footerDesc", lang)}
             </p>
-
-            {/* Socials */}
-            <div style={{ display: "flex", gap: "8px" }}>
-              {socials.map((s) => {
-                const IconComponent = s.icon;
+            <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+              {SOCIALS.map((s) => {
+                const Icon = s.icon;
                 return (
-                  <Link key={s.label} href={s.href} style={{
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" title={s.label} style={{
                     width: "32px", height: "32px", borderRadius: "8px",
-                    border: `1px solid ${colors.border}`,
-                    background: colors.bgCard,
+                    border: `1px solid ${border}`,
+                    background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: colors.textMuted, textDecoration: "none",
-                    transition: "all 0.2s",
                   }}>
-                    <IconComponent size={14} />
-                  </Link>
+                    <Icon size={13} />
+                  </a>
                 );
               })}
             </div>
           </div>
 
           {/* Link columns */}
-          {Object.entries(links).map(([group, items]) => (
+          {Object.entries(LINKS).map(([group, items]) => (
             <div key={group}>
               <p style={{
-                color: colors.text, fontSize: "13px",
-                fontWeight: 600, marginBottom: "14px",
+                color: colors.text, fontSize: "12px",
+                fontWeight: 700, marginBottom: "16px",
+                letterSpacing: "0.05em", textTransform: "uppercase",
               }}>
                 {group}
               </p>
@@ -108,7 +110,7 @@ export function Footer() {
                   <li key={item.label} style={{ marginBottom: "10px" }}>
                     <Link href={item.href} style={{
                       color: colors.textMuted, fontSize: "13px",
-                      textDecoration: "none",
+                      textDecoration: "none", lineHeight: 1,
                     }}>
                       {item.label}
                     </Link>
@@ -121,17 +123,15 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div style={{
-          borderTop: `1px solid ${colors.border}`,
-          paddingTop: "24px",
+          borderTop: `1px solid ${border}`,
+          paddingTop: "28px",
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
           alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
-          textAlign: "center",
+          flexWrap: "wrap", gap: "12px",
         }}>
           <p style={{ color: colors.textMuted, fontSize: "12px" }}>
-            © {new Date().getFullYear()} NexAgent. All rights reserved.
+            © {new Date().getFullYear()} LogicMate. {tr("footerAllRightsReserved", lang)}
           </p>
         </div>
       </div>

@@ -9,6 +9,7 @@ import {
   AlertTriangle, X, Copy, Check,
   RefreshCw, Shield,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ApiKey {
   _id: string;
@@ -144,11 +145,9 @@ function KeyDialog({
         label: label || selectedProvider?.label || provider,
         key: keyValue.trim(),
       });
-      setSaved(true);
-      setTimeout(() => {
-        onSaved();
-        onClose();
-      }, 700);
+      onSaved();
+      onClose();
+      toast.success("API key saved successfully");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to save key");
     }
