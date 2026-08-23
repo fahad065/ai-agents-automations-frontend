@@ -19,6 +19,7 @@ import {
 const userNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
   { label: "My Modules", href: "/dashboard/modules", icon: Package },
+  { label: "Chatbots", href: "/dashboard/chatbots", icon: Bot },
   { label: "Pipeline Logs", href: "/dashboard/pipeline-logs", icon: FileText },
   { label: "API Keys", href: "/dashboard/api-keys", icon: Key },
   { label: "Billing", href: "/dashboard/payment-instructions", icon: CreditCard },
@@ -32,6 +33,7 @@ const adminNavItems = [
   { label: "Industries", href: "/dashboard/industries", icon: Package },
   { label: "Modules", href: "/dashboard/cms-modules", icon: Bot },
   { label: "My Modules", href: "/dashboard/modules", icon: Package },
+  { label: "Chatbots", href: "/dashboard/chatbots", icon: Bot },
   { label: "Pipeline Logs", href: "/dashboard/pipeline-logs", icon: FileText },
   { label: "Subscriptions", href: "/dashboard/subscriptions", icon: BarChart3 },
   { label: "Billing", href: "/dashboard/payment-instructions", icon: CreditCard },

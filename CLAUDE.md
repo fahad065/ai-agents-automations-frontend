@@ -162,10 +162,41 @@ Three product categories (all data from backend):
 - Dashboard overview, modules, billing, pipeline-logs, api-keys, settings, notifications
 - Auth (email + Google OAuth)
 - Navbar (Industries, Chatbots, About, Pricing) + Footer with all links
+- Admin-only "Email Sender" tab in Settings (multi-select recipients, rich text editor, sends via backend `POST /admin/email/send`)
+- **Full chatbot dashboard module** (see below)
+
+## Chatbot dashboard module (implemented)
+
+Nav item "Chatbots" (Bot icon) in `dashboard-shell.tsx`, positioned after "My Modules", visible to both regular users and admins.
+
+### Routes
+- `/dashboard/chatbots` → `chatbots-page.tsx` — list view
+- `/dashboard/chatbots/[id]` → `chatbot-config-page.tsx` — tabbed config view
+
+### `chatbots-page.tsx`
+- Grid of chatbot cards: status badge (draft=amber/active=green/inactive=gray), template emoji, enabled-channel icons, created date
+- "+ New Chatbot" → modal with name, description, 6 template picker cards (Restaurant🍽️/Real Estate🏠/Clinic💆/E-commerce🛍️/Gym🏋️/Education🎓) + Custom/Blank, language select → `POST /chatbots` → redirects to the config page
+- Delete via `confirm()` → `DELETE /chatbots/:id`
+
+### `chatbot-config-page.tsx` — 5 tabs, each lazy-loads its data on first visit
+1. **Overview** — name/description/persona/language, 3-way status switch (draft/active/inactive) with live `PUT`, fallback message EN + AR (amber AR styling matching the CMS pattern), human handoff toggle
+2. **Knowledge Base** — add/list/delete entries of type FAQ / Text / URL. This is what the AI engine answers from — nothing here means the bot only ever returns the fallback message.
+3. **Channels** — three cards:
+   - **Website**: enable toggle, color picker, welcome message EN+AR, on enable fetches `GET /chatbots/:id/embed-code` and shows the `<script>` snippet with a copy button
+   - **WhatsApp**: enable toggle, Phone Number ID + Access Token (masked inputs), read-only webhook URL `${NEXT_PUBLIC_API_URL}/webhooks/whatsapp/:embedKey` with copy button
+   - **Instagram**: same pattern, webhook URL `${NEXT_PUBLIC_API_URL}/webhooks/instagram/:embedKey`
+   - Each card PUTs only its own `channels.X` sub-object
+4. **Conversations** — recent sessions from `GET /chatbots/:id/conversations`, expandable to a chat-bubble thread view
+5. **Analytics** — stat cards + proportional-width bars for `GET /chatbots/:id/analytics`
+
+### Website embed widget — `public/chatbot-widget.js`
+Vanilla JS, zero dependencies, self-injects a floating chat bubble + panel. Reads config from `window.LMChatbot = {embedKey, color, apiUrl, botName, welcomeMessage, welcomeMessageAr}` (the backend's embed-code generator writes this object). Persists a session ID in `localStorage`, POSTs to `${apiUrl}/chat/:embedKey`, auto-detects Arabic via `navigator.language` and flips to RTL bubble alignment. This file is served statically from the frontend's own domain — the backend's `getEmbedCode()` points `<script src>` at `${FRONTEND_URL}/chatbot-widget.js`.
+
+**Known gap:** the backend's embed-code generator needs `PUBLIC_API_URL` set correctly in production (Railway backend's real public URL + `/api/v1`) or the widget will point at the wrong API and silently fail. Verify this env var before telling a real customer to install the widget.
 
 ## What is next to build
-1. **Dashboard chatbot module** — UI for creating/configuring/deploying chatbots
-2. **Channel integrations** — Website embed widget, WhatsApp, Instagram connect
+1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
+2. **WhatsApp / Instagram going live** — code and UI are done; needs the account owner's real Meta Business App credentials pasted into the Channels tab, plus Instagram needs Meta App Review for `instagram_manage_messages` (can take days)
 3. **Subscribe flow** — for AI agents and automations
 4. **Payment integration**
 5. **Admin panel UI revamp** (on hold)
