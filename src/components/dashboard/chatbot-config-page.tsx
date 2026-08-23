@@ -292,7 +292,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     setEmbedLoading(true);
     try {
       const res = await api.get(`/chatbots/${id}/embed-code`);
-      setEmbedCode(res.data?.code || "");
+      setEmbedCode(res.data?.embedCode || "");
     } catch {
       // silent — website may not be enabled yet
     }
@@ -795,9 +795,8 @@ function ChannelsTab({ botId, embedKey, channels, setChannels, savingChannel, sa
   );
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-  const webhookBase = apiUrl.replace(/\/api\/v1\/?$/, "");
-  const whatsappWebhook = `${webhookBase}/webhooks/whatsapp/${embedKey}`;
-  const instagramWebhook = `${webhookBase}/webhooks/instagram/${embedKey}`;
+  const whatsappWebhook = `${apiUrl}/webhooks/whatsapp/${embedKey}`;
+  const instagramWebhook = `${apiUrl}/webhooks/instagram/${embedKey}`;
 
   return (
     <>
