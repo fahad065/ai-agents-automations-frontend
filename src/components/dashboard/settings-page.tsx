@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import {
   User, Bell, Shield, Moon, Sun, Save,
   Loader2, CheckCircle2, AlertCircle, Lock, AlertTriangle,
+  Mail, Bold, Italic, Underline, List, ListOrdered, Link, Eye, EyeOff, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -107,7 +108,7 @@ export function SettingsPage() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user } = useAuthStore();
 
-  const [tab, setTab] = useState<"profile" | "notifications" | "security">("profile");
+  const [tab, setTab] = useState<"profile" | "notifications" | "security" | "email">("profile");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -310,10 +311,11 @@ export function SettingsPage() {
         borderRadius: "10px", padding: "4px", width: "fit-content",
       }}>
         {([
-          { key: "profile",       label: "Profile",       icon: User },
-          { key: "notifications", label: "Notifications", icon: Bell },
-          { key: "security",      label: "Security",      icon: Shield },
-        ] as const).map(({ key, label: lbl2, icon: Icon }) => (
+          { key: "profile",       label: "Profile",       icon: User,   adminOnly: false },
+          { key: "notifications", label: "Notifications", icon: Bell,   adminOnly: false },
+          { key: "security",      label: "Security",      icon: Shield, adminOnly: false },
+          { key: "email",         label: "Email Sender",  icon: Mail,   adminOnly: true  },
+        ] as const).filter(t => !t.adminOnly || (user as any)?.role === "admin").map(({ key, label: lbl2, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)} style={{
             display: "flex", alignItems: "center", gap: "6px",
             padding: "7px 16px", borderRadius: "7px", fontSize: "13px",
@@ -573,10 +575,299 @@ export function SettingsPage() {
         </>
       )}
 
+      {tab === "email" && (user as any)?.role === "admin" && (
+        <EmailSenderTab colors={colors} isDark={isDark} selectStyles={selectStyles} />
+      )}
+
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .lm-editor:focus { outline: none; }
+        .lm-editor a { color: #a78bfa; }
+        .lm-editor ul { padding-left: 20px; }
+        .lm-editor ol { padding-left: 20px; }
+        .lm-toolbar-btn:hover { background: rgba(124,58,237,0.12) !important; }
       `}</style>
+    </div>
+  );
+}
+
+// ── Email Sender Tab ──────────────────────────────────────────
+function EmailSenderTab({ colors, isDark, selectStyles }: { colors: any; isDark: boolean; selectStyles: any }) {
+  const [users, setUsers] = useState<{ value: string; label: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [to, setTo] = useState<{ value: string; label: string }[]>([]);
+  const [subject, setSubject] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.get("/admin/users").then((res: any) => {
+      const list = (res.data || []).map((u: any) => ({
+        value: u.email,
+        label: `${u.name || "Unknown"} — ${u.email}`,
+      }));
+      setUsers(list);
+    }).catch(() => {}).finally(() => setLoadingUsers(false));
+  }, []);
+
+  const execCmd = (cmd: string, value?: string) => {
+    document.execCommand(cmd, false, value);
+    editorRef.current?.focus();
+  };
+
+  const insertLink = () => {
+    const url = prompt("Enter URL:");
+    if (url) execCmd("createLink", url);
+  };
+
+  const getHtml = () => editorRef.current?.innerHTML || "";
+
+  const send = async () => {
+    if (!to.length) { toast.error("Select at least one recipient"); return; }
+    if (!subject.trim()) { toast.error("Subject is required"); return; }
+    const html = getHtml();
+    if (!html.trim() || html === "<br>") { toast.error("Email body is empty"); return; }
+    setSending(true);
+    setResult(null);
+    try {
+      const res = await api.post("/admin/email/send", {
+        to: to.map(t => t.value),
+        subject,
+        html,
+      });
+      setResult(res.data);
+      if (res.data.failed === 0) {
+        toast.success(`Sent to ${res.data.sent} recipient${res.data.sent > 1 ? "s" : ""}`);
+        setTo([]);
+        setSubject("");
+        if (editorRef.current) editorRef.current.innerHTML = "";
+      } else {
+        toast.warning(`${res.data.sent} sent, ${res.data.failed} failed`);
+      }
+    } catch {
+      toast.error("Failed to send email");
+    }
+    setSending(false);
+  };
+
+  const inp = {
+    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
+    border: `1px solid ${colors.border}`, background: colors.bg,
+    color: colors.text, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+  };
+
+  const toolbarBtnStyle = (active = false): React.CSSProperties => ({
+    width: "30px", height: "30px", borderRadius: "6px", border: "none",
+    background: active ? "rgba(124,58,237,0.18)" : "transparent",
+    color: active ? "#a78bfa" : colors.textMuted,
+    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "13px", flexShrink: 0,
+  });
+
+  const multiSelectStyles = {
+    ...selectStyles,
+    multiValue: (base: any) => ({ ...base, background: "rgba(124,58,237,0.15)", borderRadius: "5px" }),
+    multiValueLabel: (base: any) => ({ ...base, color: "#a78bfa", fontSize: "11px" }),
+    multiValueRemove: (base: any) => ({ ...base, color: "#a78bfa", ":hover": { background: "rgba(124,58,237,0.3)", color: "white" } }),
+  };
+
+  return (
+    <div>
+      {/* Header card */}
+      <div style={{
+        background: colors.bgCard, border: `1px solid ${colors.border}`,
+        borderRadius: "12px", overflow: "hidden", marginBottom: "16px",
+      }}>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 20px", borderBottom: `1px solid ${colors.border}`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Mail size={15} color="#a78bfa" />
+            <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Email Sender</h2>
+          </div>
+          <span style={{
+            fontSize: "11px", padding: "3px 8px", borderRadius: "5px",
+            background: "rgba(124,58,237,0.12)", color: "#a78bfa", fontWeight: 600,
+          }}>
+            Admin only · via hello@logicmate.io
+          </span>
+        </div>
+
+        <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+          {/* To field */}
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>
+              To
+            </label>
+            {loadingUsers ? (
+              <div style={{ padding: "10px", fontSize: "13px", color: colors.textMuted }}>
+                <Loader2 size={13} style={{ animation: "spin 1s linear infinite", display: "inline", marginRight: "6px" }} />
+                Loading users...
+              </div>
+            ) : (
+              <ReactSelect
+                isMulti
+                options={users}
+                value={to}
+                onChange={(v: any) => setTo(v || [])}
+                styles={multiSelectStyles}
+                placeholder="Search and select recipients..."
+                isSearchable
+                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                menuPosition="fixed"
+                closeMenuOnSelect={false}
+              />
+            )}
+            {to.length > 0 && (
+              <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "5px" }}>
+                {to.length} recipient{to.length > 1 ? "s" : ""} selected
+              </p>
+            )}
+          </div>
+
+          {/* Subject */}
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>
+              Subject
+            </label>
+            <input
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              style={inp}
+              placeholder="Email subject..."
+            />
+          </div>
+
+          {/* Body editor */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
+              <label style={{ fontSize: "12px", fontWeight: 500, color: colors.textMuted }}>
+                Message
+              </label>
+              <button onClick={() => setShowPreview(v => !v)} style={{
+                display: "flex", alignItems: "center", gap: "5px",
+                fontSize: "11px", color: colors.textMuted, background: "transparent",
+                border: "none", cursor: "pointer", padding: "2px 6px",
+              }}>
+                {showPreview ? <EyeOff size={12} /> : <Eye size={12} />}
+                {showPreview ? "Edit" : "Preview"}
+              </button>
+            </div>
+
+            {!showPreview ? (
+              <div style={{
+                border: `1px solid ${colors.border}`, borderRadius: "8px", overflow: "hidden",
+              }}>
+                {/* Toolbar */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: "2px",
+                  padding: "6px 8px", borderBottom: `1px solid ${colors.border}`,
+                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)",
+                  flexWrap: "wrap",
+                }}>
+                  {[
+                    { icon: <Bold size={13} />, cmd: "bold", title: "Bold" },
+                    { icon: <Italic size={13} />, cmd: "italic", title: "Italic" },
+                    { icon: <Underline size={13} />, cmd: "underline", title: "Underline" },
+                  ].map(({ icon, cmd, title }) => (
+                    <button key={cmd} className="lm-toolbar-btn" onMouseDown={e => { e.preventDefault(); execCmd(cmd); }}
+                      style={toolbarBtnStyle()} title={title}>
+                      {icon}
+                    </button>
+                  ))}
+                  <div style={{ width: "1px", height: "18px", background: colors.border, margin: "0 4px" }} />
+                  <button className="lm-toolbar-btn" onMouseDown={e => { e.preventDefault(); execCmd("insertUnorderedList"); }}
+                    style={toolbarBtnStyle()} title="Bullet list">
+                    <List size={13} />
+                  </button>
+                  <button className="lm-toolbar-btn" onMouseDown={e => { e.preventDefault(); execCmd("insertOrderedList"); }}
+                    style={toolbarBtnStyle()} title="Numbered list">
+                    <ListOrdered size={13} />
+                  </button>
+                  <div style={{ width: "1px", height: "18px", background: colors.border, margin: "0 4px" }} />
+                  <button className="lm-toolbar-btn" onMouseDown={e => { e.preventDefault(); insertLink(); }}
+                    style={toolbarBtnStyle()} title="Insert link">
+                    <Link size={13} />
+                  </button>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
+                    {[
+                      { label: "H1", cmd: "formatBlock", val: "H1" },
+                      { label: "H2", cmd: "formatBlock", val: "H2" },
+                      { label: "P",  cmd: "formatBlock", val: "P" },
+                    ].map(({ label, cmd, val }) => (
+                      <button key={label} className="lm-toolbar-btn" onMouseDown={e => { e.preventDefault(); execCmd(cmd, val); }}
+                        style={{ ...toolbarBtnStyle(), width: "auto", padding: "0 8px", fontSize: "11px", fontWeight: 600 }}
+                        title={`${label} heading`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Editable area */}
+                <div
+                  ref={editorRef}
+                  className="lm-editor"
+                  contentEditable
+                  suppressContentEditableWarning
+                  style={{
+                    minHeight: "240px", padding: "14px 16px",
+                    fontSize: "14px", lineHeight: "1.7",
+                    color: colors.text, background: colors.bg,
+                    outline: "none",
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Tab") { e.preventDefault(); execCmd("insertHTML", "&nbsp;&nbsp;&nbsp;&nbsp;"); }
+                  }}
+                />
+              </div>
+            ) : (
+              <div style={{
+                border: `1px solid ${colors.border}`, borderRadius: "8px",
+                padding: "16px", minHeight: "260px", background: colors.bg,
+                fontSize: "14px", lineHeight: "1.7", color: colors.text,
+              }}
+                dangerouslySetInnerHTML={{ __html: getHtml() }}
+              />
+            )}
+          </div>
+
+          {/* Result banner */}
+          {result && (
+            <div style={{
+              padding: "12px 14px", borderRadius: "8px", fontSize: "13px",
+              background: result.failed === 0 ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.08)",
+              border: `1px solid ${result.failed === 0 ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
+              color: result.failed === 0 ? "#22c55e" : "#f59e0b",
+            }}>
+              {result.failed === 0
+                ? `✓ Email sent to ${result.sent} recipient${result.sent > 1 ? "s" : ""}`
+                : `${result.sent} sent · ${result.failed} failed`}
+            </div>
+          )}
+
+          {/* Send button */}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button onClick={send} disabled={sending} style={{
+              display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px",
+              borderRadius: "8px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+              color: "white", border: "none", cursor: sending ? "not-allowed" : "pointer",
+              fontSize: "13px", fontWeight: 600, opacity: sending ? 0.7 : 1,
+              boxShadow: sending ? "none" : "0 4px 12px rgba(124,58,237,0.3)",
+            }}>
+              {sending
+                ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                : <Send size={14} />}
+              {sending ? "Sending..." : "Send Email"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
