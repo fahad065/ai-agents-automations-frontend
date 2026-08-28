@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import {
   MessageCircle, Globe, Smartphone, Zap,
   Clock, Shield, BarChart3, ArrowRight, Check, Bot,
-  Users, Star, Headphones,
+  Users, Star, Headphones, Play, X,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 
@@ -50,6 +51,7 @@ const TEMPLATES = [
     desc_ar: "يرد على أسئلة القائمة، يحجز الطاولات، ويشارك العروض اليومية.",
     tags: ["Food & Beverage", "Bookings"],
     color: "#f59e0b",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/restaurant-bot-demo-final.mp4",
   },
   {
     emoji: "🏠",
@@ -154,6 +156,7 @@ export function ChatbotsPage() {
   const { colors, isDark } = useTheme();
   const { isAr } = useLang();
   const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const [demoVideo, setDemoVideo] = useState<{ url: string; title: string } | null>(null);
 
   return (
     <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
@@ -360,9 +363,32 @@ export function ChatbotsPage() {
                     </div>
                   </div>
                 </div>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
+                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65, marginBottom: (t as any).demoVideoUrl ? "16px" : 0 }}>
                   {isAr ? t.desc_ar : t.desc}
                 </p>
+                {(t as any).demoVideoUrl && (
+                  <button
+                    onClick={() => setDemoVideo({ url: (t as any).demoVideoUrl, title: isAr ? t.name_ar : t.name })}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "7px",
+                      width: "100%", padding: "9px 12px", borderRadius: "9px",
+                      background: t.color + "10", border: `1px solid ${t.color}30`,
+                      color: t.color, fontSize: "12.5px", fontWeight: 600,
+                      cursor: "pointer", transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.color + "1c"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.color + "10"; }}
+                  >
+                    <span style={{
+                      width: "20px", height: "20px", borderRadius: "50%",
+                      background: t.color, display: "flex", alignItems: "center",
+                      justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <Play size={9} fill="white" color="white" />
+                    </span>
+                    {isAr ? "شاهد كيف يعمل" : "Watch it in action"}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -532,6 +558,57 @@ export function ChatbotsPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Demo video modal ─────────────────────────────────── */}
+      {demoVideo && (
+        <div
+          onClick={() => setDemoVideo(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: "800px",
+              background: isDark ? "#111" : "#000",
+              borderRadius: "16px", overflow: "hidden",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "14px 18px",
+            }}>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>
+                {demoVideo.title} — {isAr ? "ديمو مباشر" : "Live demo"}
+              </p>
+              <button
+                onClick={() => setDemoVideo(null)}
+                aria-label={isAr ? "إغلاق" : "Close"}
+                style={{
+                  width: "28px", height: "28px", borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)", border: "none",
+                  color: "white", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <video
+              src={demoVideo.url}
+              controls
+              autoPlay
+              playsInline
+              style={{ width: "100%", display: "block", aspectRatio: "16/9", background: "black" }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
