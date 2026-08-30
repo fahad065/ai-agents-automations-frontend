@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
@@ -206,7 +207,7 @@ function UserDropdown({ user, onLogout, colors, isDark, isAdmin }: {
         cursor: "pointer", transition: "all 0.2s",
       }}>
         {user?.avatar ? (
-          <img src={user.avatar} alt={user?.name || ""} style={{ width: "30px", height: "30px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          <Image src={user.avatar} alt={user?.name || ""} width={30} height={30} style={{ width: "30px", height: "30px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
           <div style={{
             width: "30px", height: "30px", borderRadius: "50%",
@@ -240,7 +241,7 @@ function UserDropdown({ user, onLogout, colors, isDark, isAdmin }: {
           <div style={{ padding: "16px", borderBottom: `1px solid ${panelDivider}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
               {user?.avatar ? (
-                <img src={user.avatar} alt="" style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }} />
+                <Image src={user.avatar} alt="" width={38} height={38} style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }} />
               ) : (
                 <div style={{
                   width: "38px", height: "38px", borderRadius: "50%",
