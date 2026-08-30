@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
   ArrowLeft, Loader2, Save, Settings, BookOpen, Radio, MessageSquare,
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
+  DollarSign, CheckCircle2, Clock, Mail,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -52,9 +54,55 @@ interface Chatbot {
   humanHandoff?: boolean;
   embedKey: string;
   channels: Channels;
+  billing: Billing;
   createdAt: string;
   updatedAt?: string;
 }
+
+interface Billing {
+  setupFee: number;
+  monthlyFee: number;
+  currency: string;
+  status: "trial" | "awaiting_setup_payment" | "active" | "past_due" | "suspended";
+  trialEndsAt?: string;
+  setupPaidAt?: string;
+  lastBillingDate?: string;
+  nextBillingDate?: string;
+  notes?: string;
+}
+
+interface BillingRecord {
+  _id: string;
+  amount: number;
+  currency: string;
+  type: string;
+  status: string;
+  description: string;
+  billingDate: string;
+}
+
+const BANK_DETAILS = {
+  bankName: "Emirates NBD",
+  accountName: "Fahad Abdul Faheem",
+  accountNumber: "1015821777301",
+  iban: "AE720260001015821777301",
+  swiftCode: "EBILAEAD",
+};
+
+const BILLING_STATUS_LABEL: Record<string, string> = {
+  trial: "Trial",
+  awaiting_setup_payment: "Awaiting Setup Payment",
+  active: "Active",
+  past_due: "Past Due",
+  suspended: "Suspended",
+};
+const BILLING_STATUS_COLOR: Record<string, string> = {
+  trial: "#f59e0b",
+  awaiting_setup_payment: "#ef4444",
+  active: "#22c55e",
+  past_due: "#ef4444",
+  suspended: "#6b7280",
+};
 
 interface KnowledgeEntry {
   _id: string;
@@ -100,6 +148,7 @@ const TABS = [
   { key: "channels", label: "Channels", icon: Radio },
   { key: "conversations", label: "Conversations", icon: MessageSquare },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
+  { key: "billing", label: "Billing", icon: DollarSign },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -210,12 +259,30 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
+  // Billing
+  const { user } = useAuthStore();
+  const isAdmin = (user as any)?.role === "admin";
+  const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
+  const [billingLoaded, setBillingLoaded] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [pricingForm, setPricingForm] = useState({
+    setupFee: "0", monthlyFee: "0", currency: "USD", trialEndsAt: "", notes: "",
+  });
+  const [pricingSaving, setPricingSaving] = useState(false);
+  const [payKind, setPayKind] = useState<"setup" | "monthly">("setup");
+  const [transactionRef, setTransactionRef] = useState("");
+  const [payNotes, setPayNotes] = useState("");
+  const [notifySending, setNotifySending] = useState(false);
+  const [notifySent, setNotifySent] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
   useEffect(() => { fetchChatbot(); }, [id]);
 
   useEffect(() => {
     if (tab === "knowledge" && !knowledgeLoaded) fetchKnowledge();
     if (tab === "conversations" && !conversationsLoaded) fetchConversations();
     if (tab === "analytics" && !analyticsLoaded) fetchAnalytics();
+    if (tab === "billing" && !billingLoaded) fetchBilling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
@@ -286,6 +353,75 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       toast.error("Failed to load analytics");
     }
     setAnalyticsLoading(false);
+  };
+
+  const fetchBilling = async () => {
+    setBillingLoading(true);
+    try {
+      const res = await api.get(`/chatbots/${id}/billing`);
+      const data = res.data?.data || res.data;
+      setBillingHistory(data.history || []);
+      const b: Billing | undefined = data.billing;
+      if (b) {
+        setPricingForm({
+          setupFee: String(b.setupFee ?? 0),
+          monthlyFee: String(b.monthlyFee ?? 0),
+          currency: b.currency || "USD",
+          trialEndsAt: b.trialEndsAt ? b.trialEndsAt.slice(0, 10) : "",
+          notes: b.notes || "",
+        });
+      }
+      setBillingLoaded(true);
+    } catch {
+      toast.error("Failed to load billing info");
+    }
+    setBillingLoading(false);
+  };
+
+  const savePricing = async () => {
+    setPricingSaving(true);
+    try {
+      const res = await api.put(`/chatbots/${id}/pricing`, {
+        setupFee: Number(pricingForm.setupFee) || 0,
+        monthlyFee: Number(pricingForm.monthlyFee) || 0,
+        currency: pricingForm.currency,
+        trialEndsAt: pricingForm.trialEndsAt || undefined,
+        notes: pricingForm.notes,
+      });
+      setChatbot((c) => c ? { ...c, billing: res.data?.data?.billing || res.data.billing } : c);
+      toast.success("Pricing saved");
+    } catch {
+      toast.error("Failed to save pricing");
+    }
+    setPricingSaving(false);
+  };
+
+  const submitNotifyPayment = async () => {
+    if (!transactionRef.trim()) { toast.error("Enter your transaction reference"); return; }
+    setNotifySending(true);
+    try {
+      await api.post(`/chatbots/${id}/notify-payment`, {
+        kind: payKind, transactionRef, notes: payNotes,
+      });
+      setNotifySent(true);
+      toast.success("Payment notification sent — we'll verify and activate within 24 hours");
+    } catch {
+      toast.error("Failed to send. Email hello@logicmate.io directly.");
+    }
+    setNotifySending(false);
+  };
+
+  const confirmPayment = async (kind: "setup" | "monthly") => {
+    setConfirming(kind);
+    try {
+      const res = await api.post(`/chatbots/${id}/confirm-payment`, { kind });
+      setChatbot((c) => c ? { ...c, billing: res.data?.data?.billing || res.data.billing } : c);
+      toast.success(`${kind === "setup" ? "Setup" : "Monthly"} payment confirmed`);
+      fetchBilling();
+    } catch {
+      toast.error("Failed to confirm payment");
+    }
+    setConfirming(null);
   };
 
   const fetchEmbedCode = async () => {
@@ -576,6 +712,33 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       {/* ── ANALYTICS ── */}
       {tab === "analytics" && (
         <AnalyticsTab analytics={analytics} loading={analyticsLoading} colors={colors} isDark={isDark} />
+      )}
+
+      {/* ── BILLING ── */}
+      {tab === "billing" && (
+        <BillingTab
+          billing={chatbot.billing}
+          history={billingHistory}
+          loading={billingLoading}
+          isAdmin={isAdmin}
+          colors={colors}
+          isDark={isDark}
+          pricingForm={pricingForm}
+          setPricingForm={setPricingForm}
+          savePricing={savePricing}
+          pricingSaving={pricingSaving}
+          payKind={payKind}
+          setPayKind={setPayKind}
+          transactionRef={transactionRef}
+          setTransactionRef={setTransactionRef}
+          payNotes={payNotes}
+          setPayNotes={setPayNotes}
+          notifySending={notifySending}
+          notifySent={notifySent}
+          submitNotifyPayment={submitNotifyPayment}
+          confirming={confirming}
+          confirmPayment={confirmPayment}
+        />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -1113,6 +1276,245 @@ function AnalyticsTab({ analytics, loading, colors, isDark }: { analytics: Analy
             );
           })}
         </div>
+      </Section>
+    </>
+  );
+}
+
+// ── Billing Tab ──────────────────────────────────────────────
+function BillingTab({
+  billing, history, loading, isAdmin, colors, isDark,
+  pricingForm, setPricingForm, savePricing, pricingSaving,
+  payKind, setPayKind, transactionRef, setTransactionRef, payNotes, setPayNotes,
+  notifySending, notifySent, submitNotifyPayment,
+  confirming, confirmPayment,
+}: {
+  billing: Billing; history: BillingRecord[]; loading: boolean; isAdmin: boolean; colors: any; isDark: boolean;
+  pricingForm: { setupFee: string; monthlyFee: string; currency: string; trialEndsAt: string; notes: string };
+  setPricingForm: (fn: any) => void;
+  savePricing: () => void; pricingSaving: boolean;
+  payKind: "setup" | "monthly"; setPayKind: (k: "setup" | "monthly") => void;
+  transactionRef: string; setTransactionRef: (v: string) => void;
+  payNotes: string; setPayNotes: (v: string) => void;
+  notifySending: boolean; notifySent: boolean; submitNotifyPayment: () => void;
+  confirming: string | null; confirmPayment: (kind: "setup" | "monthly") => void;
+}) {
+  if (loading) {
+    return (
+      <div style={{ padding: "60px", textAlign: "center" }}>
+        <Loader2 size={22} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+      </div>
+    );
+  }
+
+  const inp = {
+    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
+    border: `1px solid ${colors.border}`, background: colors.bg,
+    color: colors.text, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+  };
+  const lbl = (text: string) => (
+    <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>{text}</label>
+  );
+
+  const statusColor = BILLING_STATUS_COLOR[billing?.status] || "#6b7280";
+  const setupOwed = (billing?.setupFee || 0) > 0 && !billing?.setupPaidAt;
+  const monthlyActive = (billing?.monthlyFee || 0) > 0;
+
+  return (
+    <>
+      {/* Status header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px",
+        background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px",
+        padding: "18px 20px", marginBottom: "16px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <DollarSign size={16} color="#a78bfa" />
+          <div>
+            <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Billing Status</p>
+            <p style={{ fontSize: "11px", color: colors.textMuted }}>
+              {billing?.currency || "USD"} {billing?.setupFee || 0} setup · {billing?.currency || "USD"} {billing?.monthlyFee || 0}/mo
+            </p>
+          </div>
+        </div>
+        <span style={{
+          fontSize: "12px", fontWeight: 700, padding: "5px 12px", borderRadius: "9999px",
+          background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}30`,
+        }}>
+          {BILLING_STATUS_LABEL[billing?.status] || "Trial"}
+        </span>
+      </div>
+
+      {/* Admin: pricing editor */}
+      {isAdmin && (
+        <Section title="Set Pricing (admin only)" icon={DollarSign} colors={colors}>
+          <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "16px" }}>
+            Not shown publicly — priced per deal. The customer sees these amounts once set.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px" }}>
+            <div>
+              {lbl("Setup Fee (one-time)")}
+              <input type="number" min="0" value={pricingForm.setupFee}
+                onChange={(e) => setPricingForm((f: any) => ({ ...f, setupFee: e.target.value }))} style={inp} />
+            </div>
+            <div>
+              {lbl("Monthly Fee")}
+              <input type="number" min="0" value={pricingForm.monthlyFee}
+                onChange={(e) => setPricingForm((f: any) => ({ ...f, monthlyFee: e.target.value }))} style={inp} />
+            </div>
+            <div>
+              {lbl("Currency")}
+              <input value={pricingForm.currency}
+                onChange={(e) => setPricingForm((f: any) => ({ ...f, currency: e.target.value }))} style={inp} placeholder="USD" />
+            </div>
+          </div>
+          <div style={{ marginTop: "14px" }}>
+            {lbl("Trial Ends")}
+            <input type="date" value={pricingForm.trialEndsAt}
+              onChange={(e) => setPricingForm((f: any) => ({ ...f, trialEndsAt: e.target.value }))} style={{ ...inp, maxWidth: "220px" }} />
+          </div>
+          <div style={{ marginTop: "14px" }}>
+            {lbl("Internal Notes (deal terms, not shown to customer)")}
+            <textarea rows={2} value={pricingForm.notes}
+              onChange={(e) => setPricingForm((f: any) => ({ ...f, notes: e.target.value }))}
+              style={{ ...inp, resize: "vertical" as const }} placeholder="e.g. Multi-location discount agreed via call on..." />
+          </div>
+          <SaveBtn onClick={savePricing} saving={pricingSaving} label="Save Pricing" />
+
+          <div style={{ display: "flex", gap: "10px", marginTop: "18px", paddingTop: "18px", borderTop: `1px solid ${colors.border}` }}>
+            <button onClick={() => confirmPayment("setup")} disabled={confirming === "setup" || !setupOwed} style={{
+              flex: 1, padding: "10px", borderRadius: "8px", cursor: setupOwed ? "pointer" : "not-allowed",
+              border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.08)",
+              color: "#22c55e", fontSize: "12.5px", fontWeight: 600, opacity: setupOwed ? 1 : 0.5,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+            }}>
+              {confirming === "setup" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <CheckCircle2 size={13} />}
+              Confirm Setup Payment Received
+            </button>
+            <button onClick={() => confirmPayment("monthly")} disabled={confirming === "monthly" || !monthlyActive} style={{
+              flex: 1, padding: "10px", borderRadius: "8px", cursor: monthlyActive ? "pointer" : "not-allowed",
+              border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.08)",
+              color: "#22c55e", fontSize: "12.5px", fontWeight: 600, opacity: monthlyActive ? 1 : 0.5,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+            }}>
+              {confirming === "monthly" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <CheckCircle2 size={13} />}
+              Confirm Monthly Payment Received
+            </button>
+          </div>
+        </Section>
+      )}
+
+      {/* Payment due + pay instructions */}
+      {(setupOwed || monthlyActive) && (
+        <Section title="Payment" icon={Clock} colors={colors}>
+          {notifySent ? (
+            <div style={{
+              padding: "24px", borderRadius: "10px", textAlign: "center",
+              background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)",
+            }}>
+              <CheckCircle2 size={28} color="#22c55e" style={{ margin: "0 auto 10px" }} />
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#22c55e", marginBottom: "4px" }}>Payment notification sent</p>
+              <p style={{ fontSize: "12px", color: colors.textMuted }}>We'll verify and activate within 24 hours.</p>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                {setupOwed && (
+                  <button onClick={() => setPayKind("setup")} style={{
+                    flex: 1, padding: "8px 12px", borderRadius: "8px", cursor: "pointer",
+                    border: `2px solid ${payKind === "setup" ? "#7c3aed" : colors.border}`,
+                    background: payKind === "setup" ? "rgba(124,58,237,0.08)" : "transparent",
+                    color: payKind === "setup" ? "#a78bfa" : colors.text, fontSize: "12.5px", fontWeight: 600,
+                  }}>
+                    Setup Fee — {billing.currency} {billing.setupFee}
+                  </button>
+                )}
+                {monthlyActive && (
+                  <button onClick={() => setPayKind("monthly")} style={{
+                    flex: 1, padding: "8px 12px", borderRadius: "8px", cursor: "pointer",
+                    border: `2px solid ${payKind === "monthly" ? "#7c3aed" : colors.border}`,
+                    background: payKind === "monthly" ? "rgba(124,58,237,0.08)" : "transparent",
+                    color: payKind === "monthly" ? "#a78bfa" : colors.text, fontSize: "12.5px", fontWeight: 600,
+                  }}>
+                    Monthly — {billing.currency} {billing.monthlyFee}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                {Object.entries(BANK_DETAILS).map(([key, value]) => (
+                  <div key={key} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "9px 12px", borderRadius: "7px", background: colors.bg, border: `1px solid ${colors.border}`,
+                  }}>
+                    <div>
+                      <p style={{ fontSize: "10px", color: colors.textMuted, textTransform: "capitalize" }}>{key.replace(/([A-Z])/g, " $1").trim()}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, fontFamily: "monospace" }}>{value}</p>
+                    </div>
+                    <button onClick={() => copyText(value, key)} style={{
+                      width: "28px", height: "28px", borderRadius: "6px", cursor: "pointer",
+                      border: `1px solid ${colors.border}`, background: "transparent", color: colors.textMuted,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Copy size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div>
+                  {lbl("Transaction Reference *")}
+                  <input value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} style={inp} placeholder="e.g. TXN123456789" />
+                </div>
+                <div>
+                  {lbl("Notes (optional)")}
+                  <textarea rows={2} value={payNotes} onChange={(e) => setPayNotes(e.target.value)} style={{ ...inp, resize: "vertical" as const }} />
+                </div>
+                <button onClick={submitNotifyPayment} disabled={notifySending} style={{
+                  padding: "11px", borderRadius: "9px", cursor: notifySending ? "not-allowed" : "pointer",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none",
+                  fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                  opacity: notifySending ? 0.7 : 1,
+                }}>
+                  <Mail size={14} />
+                  {notifySending ? "Sending..." : "Notify us — I've paid"}
+                </button>
+              </div>
+            </>
+          )}
+        </Section>
+      )}
+
+      {/* History */}
+      <Section title="Billing History" icon={FileText} colors={colors}>
+        {history.length === 0 ? (
+          <p style={{ fontSize: "13px", color: colors.textMuted, textAlign: "center", padding: "20px" }}>No billing records yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {history.map((h) => (
+              <div key={h._id} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
+                padding: "10px 14px", borderRadius: "8px", background: colors.bg, border: `1px solid ${colors.border}`,
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "13px", color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.description}</p>
+                  <p style={{ fontSize: "11px", color: colors.textMuted }}>{new Date(h.billingDate).toLocaleDateString()}</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: colors.text }}>{h.currency} {h.amount}</span>
+                  <span style={{
+                    fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "9999px",
+                    background: h.status === "paid" ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)",
+                    color: h.status === "paid" ? "#22c55e" : "#f59e0b",
+                  }}>
+                    {h.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
     </>
   );
