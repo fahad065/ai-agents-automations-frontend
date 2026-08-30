@@ -63,6 +63,7 @@ const TEMPLATES = [
     desc_ar: "يؤهل المشترين والمستأجرين، يجدول المعاينات، ويرسل العروض.",
     tags: ["Real Estate", "Lead Capture"],
     color: "#7c3aed",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/real-estate-bot-demo.mp4",
   },
   {
     emoji: "💆",
@@ -72,6 +73,7 @@ const TEMPLATES = [
     desc_ar: "يحجز المواعيد، يرسل التذكيرات، ويرد على أسئلة العيادة.",
     tags: ["Healthcare", "Appointments"],
     color: "#22c55e",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/clinic-appointment-bot-demo.mp4",
   },
   {
     emoji: "🛍️",
@@ -81,6 +83,7 @@ const TEMPLATES = [
     desc_ar: "يتابع الطلبات، يعالج الإرجاع، ويرد على أسئلة المنتجات فوراً.",
     tags: ["E-commerce", "Support"],
     color: "#3b82f6",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/ecommerce-bot-demo.mp4",
   },
   {
     emoji: "🏋️",
@@ -90,6 +93,7 @@ const TEMPLATES = [
     desc_ar: "يشرح خطط الاشتراك، يحجز التجارب المجانية، ويرد على استفسارات الجداول.",
     tags: ["Fitness", "Memberships"],
     color: "#ef4444",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/gym-membership-bot-demo.mp4",
   },
   {
     emoji: "🎓",
@@ -99,6 +103,7 @@ const TEMPLATES = [
     desc_ar: "يوجّه الطلاب المحتملين، يرد على أسئلة الدورات، ويجمع الطلبات.",
     tags: ["Education", "Enrolment"],
     color: "#8b5cf6",
+    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/education-enrolment-bot-demo.mp4",
   },
 ];
 
