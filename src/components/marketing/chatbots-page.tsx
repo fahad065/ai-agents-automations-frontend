@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 
+const GENERAL_DEMO_URL = "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/logicmate-chatbots-product-demo.mp4";
+
 const CHANNELS = [
   {
     icon: Globe, color: "#7c3aed",
@@ -233,14 +235,17 @@ export function ChatbotsPage() {
           }}>
             {isAr ? "ابدأ الآن" : "Get started"} <ArrowRight size={16} />
           </Link>
-          <Link href="/contact" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            border: `1px solid ${border}`, color: colors.textMuted,
-            padding: "14px 28px", borderRadius: "10px",
-            fontSize: "15px", fontWeight: 500, textDecoration: "none",
-          }}>
+          <button
+            onClick={() => setDemoVideo({ url: GENERAL_DEMO_URL, title: "LogicMate Chatbots" })}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              border: `1px solid ${border}`, color: colors.textMuted,
+              padding: "14px 28px", borderRadius: "10px",
+              fontSize: "15px", fontWeight: 500, background: "transparent", cursor: "pointer",
+            }}
+          >
             {isAr ? "شوف ديمو" : "See a demo"}
-          </Link>
+          </button>
         </div>
 
         {/* Social proof */}
