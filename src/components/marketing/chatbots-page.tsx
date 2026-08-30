@@ -231,7 +231,7 @@ export function ChatbotsPage() {
             fontSize: "15px", fontWeight: 600, textDecoration: "none",
             boxShadow: "0 4px 24px rgba(124,58,237,0.4)",
           }}>
-            {isAr ? "ابدأ مجاناً" : "Start free"} <ArrowRight size={16} />
+            {isAr ? "ابدأ الآن" : "Get started"} <ArrowRight size={16} />
           </Link>
           <Link href="/contact" style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
@@ -502,7 +502,7 @@ export function ChatbotsPage() {
             color: "#a78bfa", padding: "5px 14px", borderRadius: "9999px",
             fontSize: "12px", fontWeight: 600, marginBottom: "20px",
           }}>
-            <Star size={11} /> {isAr ? "مجاناً 30 يوم، ما في بطاقة ائتمان" : "Free 30 days, no credit card"}
+            <Star size={11} /> {isAr ? "أسعار مخصصة لعملك" : "Custom pricing, built for your business"}
           </div>
 
           <h2 style={{
@@ -525,7 +525,7 @@ export function ChatbotsPage() {
               fontSize: "15px", fontWeight: 600, textDecoration: "none",
               boxShadow: "0 4px 24px rgba(124,58,237,0.4)",
             }}>
-              {isAr ? "ابدأ مجاناً" : "Get started free"} <ArrowRight size={16} />
+              {isAr ? "ابدأ الآن" : "Get started"} <ArrowRight size={16} />
             </Link>
             <Link href="/contact" style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
