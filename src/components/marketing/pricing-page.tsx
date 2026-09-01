@@ -30,25 +30,6 @@ interface Module {
   isComingSoon: boolean;
 }
 
-// Chatbot pricing varies per template (market value differs by vertical —
-// see chatbot-plans.service.ts on the backend), so it isn't a single flat
-// catalog like it briefly was. Fetched (unfiltered — every template's tiers)
-// from GET /chatbot-plans, then grouped client-side by templateSlug so each
-// chatbot module can show its own Basic-tier starting price.
-interface ChatbotPlan {
-  _id: string;
-  name: string;
-  slug: string;
-  templateSlug: string;
-  tagline?: string;
-  monthlyFee: number;
-  currency: string;
-  trialDays: number;
-  features: string[];
-  isCustom: boolean;
-  customLabel?: string;
-}
-
 type FilterType = "all" | "industries" | "agents" | "automations" | "chatbots";
 
 const FILTER_TABS_EN = [
@@ -69,7 +50,6 @@ const FILTER_TABS_AR = [
 export function PricingPage() {
   const { colors, isDark } = useTheme();
   const [modules, setModules] = useState<Module[]>([]);
-  const [chatbotPlans, setChatbotPlans] = useState<ChatbotPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
@@ -82,8 +62,6 @@ export function PricingPage() {
     try {
       const data = await apiClient.get<{ data: Module[] }>("/modules");
       setModules((data as any).data || (data as any));
-      const plans = await apiClient.get<ChatbotPlan[]>("/chatbot-plans");
-      setChatbotPlans((plans as any) || []);
     } catch {
       setError("Failed to load pricing. Please try again.");
     } finally {
@@ -93,23 +71,18 @@ export function PricingPage() {
 
   useEffect(() => { fetchModules(); }, [fetchModules]);
 
+  // Chatbots are priced exactly like agents/automations now (module.pricing,
+  // admin-edited from /dashboard/cms-modules) — same withPricing/filtered
+  // pipeline, no special-casing needed.
   const withPricing = modules.filter((m) => m.pricing?.monthly > 0);
 
   const filtered = withPricing.filter((m) => {
     if (filter === "industries") return m.pipelineCategory === "niche_pipeline";
     if (filter === "agents")     return m.moduleType === "agent" && m.pipelineCategory !== "niche_pipeline";
     if (filter === "automations") return m.moduleType === "automation";
+    if (filter === "chatbots")   return m.moduleType === "chatbot";
     return true;
   });
-
-  // Chatbots aren't priced per-module (module.pricing.monthly is unused for
-  // them) — each template's "starting price" is its cheapest non-custom
-  // (Basic) tier from the plan catalog, matched by templateSlug === module.slug.
-  const chatbotModules = modules.filter((m) => m.moduleType === "chatbot");
-  const basicPlanFor = (templateSlug: string) =>
-    chatbotPlans
-      .filter((p) => p.templateSlug === templateSlug && !p.isCustom)
-      .sort((a, b) => a.monthlyFee - b.monthlyFee)[0];
 
   const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const annualSaving = 20;
@@ -157,8 +130,7 @@ export function PricingPage() {
             }
           </p>
 
-          {/* Billing toggle — chatbot plans are monthly-only, no annual rate */}
-          {filter !== "chatbots" && (
+          {/* Billing toggle */}
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "4px",
             background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
@@ -190,7 +162,6 @@ export function PricingPage() {
               </button>
             ))}
           </div>
-          )}
         </div>
 
         {/* Filter tabs */}
@@ -232,44 +203,7 @@ export function PricingPage() {
           </div>
         )}
 
-        {!loading && !error && filter === "chatbots" && (
-          <>
-            <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "8px", opacity: 0.6 }}>
-              {chatbotModules.length} template{chatbotModules.length !== 1 ? "s" : ""} available
-            </p>
-            <p style={{ textAlign: "center", fontSize: "13px", color: colors.textMuted, marginBottom: "24px", maxWidth: "460px", margin: "0 auto 24px" }}>
-              {isAr
-                ? "لكل قالب شات بوت أسعاره الخاصة. افتح قالباً لترى الخطط الكاملة (Basic/Pro/Enterprise)."
-                : "Each chatbot template has its own pricing. Open a template to see its full Basic/Pro/Enterprise plans."}
-            </p>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
-              gap: "16px",
-            }}>
-              {chatbotModules.map((module) => (
-                <ChatbotTemplateCard
-                  key={module._id}
-                  module={module}
-                  startingPlan={basicPlanFor(module.slug)}
-                  isDark={isDark}
-                  colors={colors}
-                  border={border}
-                  isAr={isAr}
-                />
-              ))}
-            </div>
-
-            {chatbotModules.length === 0 && (
-              <div style={{ textAlign: "center", padding: "60px" }}>
-                <p style={{ color: colors.textMuted }}>No chatbot templates available right now.</p>
-              </div>
-            )}
-          </>
-        )}
-
-        {!loading && !error && filter !== "chatbots" && (
+        {!loading && !error && (
           <>
             {/* Count */}
             <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "24px", opacity: 0.6 }}>
@@ -288,7 +222,8 @@ export function PricingPage() {
                   : module.pricing.monthly;
                 const isBundle = module.pipelineCategory === "niche_pipeline";
                 const isAuto = module.moduleType === "automation";
-                const href = isAuto ? `/automations/${module.slug}` : `/agents/${module.slug}`;
+                const isBot = module.moduleType === "chatbot";
+                const href = isBot ? `/chatbots/${module.slug}` : isAuto ? `/automations/${module.slug}` : `/agents/${module.slug}`;
 
                 return (
                   <PricingCard
@@ -298,6 +233,7 @@ export function PricingPage() {
                     billing={billing}
                     isBundle={isBundle}
                     isAuto={isAuto}
+                    isBot={isBot}
                     href={href}
                     isDark={isDark}
                     colors={colors}
@@ -362,12 +298,13 @@ export function PricingPage() {
   );
 }
 
-function PricingCard({ module, price, billing, isBundle, isAuto, href, isDark, colors, border }: {
+function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, isDark, colors, border }: {
   module: Module;
   price: number;
   billing: "monthly" | "annual";
   isBundle: boolean;
   isAuto: boolean;
+  isBot?: boolean;
   href: string;
   isDark: boolean;
   colors: { text: string; textMuted: string; bg: string };
@@ -375,9 +312,9 @@ function PricingCard({ module, price, billing, isBundle, isAuto, href, isDark, c
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const typeLabel = isBundle ? "Industry Bundle" : isAuto ? "Automation" : "AI Agent";
-  const typeColor = isBundle ? "#f59e0b" : isAuto ? "#a78bfa" : module.color;
-  const TypeIcon = isBundle ? Package : isAuto ? Zap : Bot;
+  const typeLabel = isBundle ? "Industry Bundle" : isBot ? "Chatbot" : isAuto ? "Automation" : "AI Agent";
+  const typeColor = isBundle ? "#f59e0b" : isBot ? "#a78bfa" : isAuto ? "#a78bfa" : module.color;
+  const TypeIcon = isBundle ? Package : isBot ? MessageCircle : isAuto ? Zap : Bot;
 
   return (
     <div
@@ -543,116 +480,3 @@ function PricingCard({ module, price, billing, isBundle, isAuto, href, isDark, c
   );
 }
 
-
-function ChatbotTemplateCard({ module, startingPlan, isDark, colors, border, isAr }: {
-  module: Module;
-  startingPlan?: ChatbotPlan;
-  isDark: boolean;
-  colors: { text: string; textMuted: string; bg: string };
-  border: string;
-  isAr: boolean;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const accent = module.color || "#a78bfa";
-  const href = `/chatbots/${module.slug}`;
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered
-          ? `${accent}06`
-          : (isDark ? "rgba(255,255,255,0.02)" : "#ffffff"),
-        border: `1px solid ${hovered ? accent + "35" : border}`,
-        borderRadius: "16px", padding: "28px",
-        transition: "all 0.2s",
-        display: "flex", flexDirection: "column",
-        boxShadow: hovered ? `0 8px 40px ${accent}12` : (isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)"),
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-        <div style={{
-          width: "48px", height: "48px", borderRadius: "12px",
-          background: `${accent}12`, border: `1px solid ${accent}25`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "22px", flexShrink: 0,
-        }}>
-          {module.icon}
-        </div>
-        <div>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "4px", lineHeight: 1.2 }}>
-            {module.name}
-          </h3>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: "4px",
-            fontSize: "10px", fontWeight: 600, padding: "2px 8px",
-            borderRadius: "9999px",
-            background: `${accent}12`, color: accent,
-            border: `1px solid ${accent}25`,
-          }}>
-            <MessageCircle size={9} /> {isAr ? "شات بوت" : "Chatbot"}
-          </span>
-        </div>
-      </div>
-
-      {module.tagline && (
-        <p style={{ fontSize: "12px", color: accent, fontWeight: 500, marginBottom: "8px" }}>
-          {module.tagline}
-        </p>
-      )}
-
-      <div style={{
-        display: "flex", alignItems: "flex-end", gap: "6px",
-        marginBottom: "20px", paddingBottom: "20px",
-        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-      }}>
-        {startingPlan ? (
-          <>
-            <span style={{ fontSize: "13px", color: colors.textMuted, paddingBottom: "10px" }}>
-              {isAr ? "من" : "From"}
-            </span>
-            <span style={{ fontSize: "36px", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em", lineHeight: 1 }}>
-              ${startingPlan.monthlyFee}
-            </span>
-            <div style={{ paddingBottom: "4px" }}>
-              <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.2 }}>/ month</p>
-              <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>
-                {startingPlan.trialDays}-{isAr ? "يوم مجاناً" : "day free trial"}
-              </p>
-            </div>
-          </>
-        ) : (
-          <span style={{ fontSize: "15px", color: colors.textMuted }}>
-            {isAr ? "التسعير قريباً" : "Pricing coming soon"}
-          </span>
-        )}
-      </div>
-
-      <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
-        {(startingPlan?.features || module.capabilities || []).slice(0, 4).map((feat, i) => (
-          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px", marginBottom: "10px" }}>
-            <div style={{
-              width: "16px", height: "16px", borderRadius: "50%",
-              background: `${accent}15`, border: `1px solid ${accent}30`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, marginTop: "1px",
-            }}>
-              <Check size={9} color={accent} strokeWidth={3} />
-            </div>
-            <span style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.5 }}>{feat}</span>
-          </li>
-        ))}
-      </ul>
-
-      <Link href={`${href}#pricing`} style={{
-        padding: "11px", borderRadius: "9px", textAlign: "center",
-        background: accent, color: "white",
-        fontSize: "13px", fontWeight: 600, textDecoration: "none",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-      }}>
-        {isAr ? "شوف كل الخطط" : "View all plans"} <ArrowRight size={12} />
-      </Link>
-    </div>
-  );
-}

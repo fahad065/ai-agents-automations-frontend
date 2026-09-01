@@ -53,21 +53,9 @@ interface ChatbotModule {
   faq: { question: string; answer: string }[];
   demoVideoUrl?: string;
   isComingSoon?: boolean;
-}
-
-interface ChatbotPlan {
-  _id: string;
-  name: string;
-  slug: string;
-  tagline?: string;
-  monthlyFee: number;
-  setupFee: number;
-  currency: string;
-  trialDays: number;
-  channelsAllowed: { website: boolean; whatsapp: boolean; instagram: boolean };
-  features: string[];
-  isCustom: boolean;
-  customLabel?: string;
+  // Same pricing shape agents/automations use — admin-edited from the same
+  // /dashboard/cms-modules form, not a separate chatbot-only system.
+  pricing?: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -123,19 +111,17 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   const [agent, setAgent] = useState<ChatbotModule | null>(null);
-  const [plans, setPlans] = useState<ChatbotPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [creatingPlanId, setCreatingPlanId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-
     const fetchAgent = async () => {
       try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
         const res = await fetch(`${apiUrl}/modules/${slug}`);
         if (!res.ok) throw new Error("Chatbot template not found");
         const data = await res.json();
@@ -147,18 +133,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         setLoading(false);
       }
     };
-
-    const fetchPlans = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/chatbot-plans?template=${slug}`);
-        if (res.ok) setPlans(await res.json());
-      } catch {
-        // Pricing section just won't render if this fails — not fatal to the page.
-      }
-    };
-
     fetchAgent();
-    fetchPlans();
   }, [slug]);
 
   useEffect(() => {
@@ -178,23 +153,26 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     return () => ctx.revert();
   }, [agent]);
 
-  // Picking a plan card creates the chatbot pre-filled with this template +
-  // that plan (auto-30-day-trial, per ChatbotsService.create() on the backend)
-  // and takes the owner straight into the config portal to set it up.
-  const handleChoosePlan = async (plan: ChatbotPlan) => {
+  // Picking a pricing card creates the chatbot pre-filled with this template
+  // (auto-30-day-trial, billed at module.pricing.monthly — see
+  // ChatbotsService.create() on the backend) and takes the owner straight
+  // into the config portal to set it up. One plan, everything included —
+  // same story as agents/automations, so Monthly and Annual both just start
+  // the trial; there's no separate tier to choose between.
+  const handleGetStarted = async () => {
     if (!agent) return;
     if (!isAuthenticated) {
       router.push("/auth/signup");
       return;
     }
-    setCreatingPlanId(plan._id);
+    setCreating(true);
     try {
       const res = await api.post("/chatbots", {
         name: agent.name,
         description: agent.description,
         template: TEMPLATE_ENUM[agent.slug] || "custom",
         language: "both",
-        planId: plan._id,
+        moduleSlug: agent.slug,
       });
       const created = res.data?.data || res.data;
       toast.success("Chatbot created — 30-day free trial started!");
@@ -202,7 +180,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to create chatbot");
     } finally {
-      setCreatingPlanId(null);
+      setCreating(false);
     }
   };
 
@@ -669,134 +647,146 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         </section>
       )}
 
-      {/* Pricing — one global catalog shared by every chatbot template */}
-      {plans.length > 0 && (
+      {/* Pricing — same shape as agents/automations: module.pricing, admin-edited from /dashboard/cms-modules */}
+      {agent.pricing && agent.pricing.monthly > 0 && (
         <section id="pricing" style={{
           padding: "80px 24px",
           background: colors.bgCard,
           borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
         }}>
-          <div style={{ maxWidth: "980px", margin: "0 auto", textAlign: "center" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
             <h2 style={{
               fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
               color: colors.text, marginBottom: "12px",
             }}>
-              {isAr ? "أسعار بسيطة وواضحة" : "Simple, transparent pricing"}
+              {isAr ? "تسعير بسيط" : "Simple pricing"}
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "16px" }}>
-              {isAr
-                ? "نفس الخطط لكل قوالب الشات بوت. 30 يوم تجربة مجانية على أي خطة."
-                : "The same plans across every chatbot template. 30-day free trial on any plan."}
-            </p>
-            <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "48px" }}>
-              {isAr
-                ? "كل الخطط تشمل الوصول للوحة التحكم لإدارة البوت — الفرق بين الخطط هو القنوات المتاحة."
-                : "Every plan includes the same dashboard access to configure your bot — plans differ by which channels are included."}
+            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "48px" }}>
+              {isAr ? "خطة واحدة. كل شيء مشمول — الموقع + واتساب + إنستغرام. إلغاء في أي وقت." : "One plan. Everything included — website + WhatsApp + Instagram. Cancel anytime."}
             </p>
 
             <div style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.min(plans.length, 3)}, 1fr)`,
+              gridTemplateColumns: agent.pricing?.hasCustomPlan ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
               gap: "16px",
+              maxWidth: agent.pricing?.hasCustomPlan ? "900px" : "640px",
+              margin: "0 auto",
             }}>
-              {plans.map((plan, i) => {
-                const popular = !plan.isCustom && i === 1;
-                return (
-                  <div key={plan._id} style={{
-                    background: popular
-                      ? "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))"
-                      : colors.bg,
-                    border: popular ? "2px solid rgba(124,58,237,0.4)" : `1px solid ${colors.border}`,
-                    borderRadius: "16px", padding: "28px",
-                    textAlign: "left", display: "flex", flexDirection: "column",
-                    position: "relative",
-                    boxShadow: popular ? "0 0 40px rgba(124,58,237,0.1)" : "none",
-                  }}>
-                    {popular && (
-                      <div style={{
-                        position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
-                        background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                        color: "white", padding: "4px 16px", borderRadius: "9999px",
-                        fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
-                      }}>
-                        ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
-                      </div>
-                    )}
-                    <p style={{
-                      fontSize: "13px", fontWeight: 600, marginBottom: "8px",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      color: popular ? "#a78bfa" : colors.textMuted,
-                    }}>
-                      {plan.name}
-                    </p>
-                    <div style={{ marginBottom: "4px" }}>
-                      {plan.isCustom ? (
-                        <span style={{ fontSize: "36px", fontWeight: 800, color: colors.text }}>
-                          {isAr ? "مخصص" : "Custom"}
-                        </span>
-                      ) : (
-                        <>
-                          <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${plan.monthlyFee}</span>
-                          <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
-                        </>
-                      )}
-                    </div>
-                    <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6, minHeight: "38px" }}>
-                      {plan.isCustom ? (plan.customLabel || plan.tagline) : plan.tagline}
-                    </p>
-                    <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
-                      {plan.features.map((feature) => (
-                        <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
-                          <CheckCircle2 size={13} color={popular ? "#a78bfa" : "#22c55e"} style={{ flexShrink: 0 }} />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    {plan.isCustom ? (
-                      <a href="mailto:hello@logicmate.io" style={{
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                        border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
-                        color: "#a78bfa", padding: "12px", borderRadius: "10px",
-                        fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                      }}>
-                        {isAr ? "تواصل معنا" : "Contact us"} →
-                      </a>
-                    ) : (
-                      <button
-                        onClick={() => handleChoosePlan(plan)}
-                        disabled={creatingPlanId === plan._id}
-                        style={{
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                          background: popular ? "linear-gradient(135deg, #7c3aed, #6d28d9)" : colors.bgCard,
-                          border: popular ? "none" : `1px solid ${colors.border}`,
-                          color: popular ? "white" : colors.text,
-                          padding: "12px", borderRadius: "10px",
-                          fontSize: "14px", fontWeight: 600,
-                          cursor: creatingPlanId === plan._id ? "default" : "pointer",
-                          boxShadow: popular ? "0 4px 20px rgba(124,58,237,0.35)" : "none",
-                          opacity: creatingPlanId === plan._id ? 0.7 : 1,
-                        }}
-                      >
-                        {creatingPlanId === plan._id ? (
-                          <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-                        ) : (
-                          <>
-                            {isAuthenticated
-                              ? (isAr ? `ابدأ مع ${plan.name}` : `Start with ${plan.name}`)
-                              : (isAr ? "ابدأ تجربة مجانية" : "Start free trial")}
-                            <ArrowRight size={14} />
-                          </>
-                        )}
-                      </button>
-                    )}
-                    {!plan.isCustom && (
-                      <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>
-                        {isAr ? `${plan.trialDays} يوم مجاناً — بدون بطاقة ائتمان` : `${plan.trialDays}-day free trial — no credit card required`}
-                      </p>
-                    )}
+
+              {/* Monthly */}
+              <div style={{
+                background: colors.bg, border: `1px solid ${colors.border}`,
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
+              }}>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "شهري" : "Monthly"}</p>
+                <div style={{ marginBottom: "20px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${agent.pricing.monthly}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                </div>
+                <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {agent.pricing.features.slice(0, 5).map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={handleGetStarted} disabled={creating} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  border: `1px solid ${colors.border}`, background: colors.bgCard,
+                  color: colors.text, padding: "12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, cursor: creating ? "default" : "pointer",
+                  opacity: creating ? 0.7 : 1,
+                }}>
+                  {creating ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : (isAuthenticated ? (isAr ? "ابدأ" : "Get started") : (isAr ? "ابدأ" : "Get started"))}
+                </button>
+              </div>
+
+              {/* Annual */}
+              <div style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
+                border: "2px solid rgba(124,58,237,0.4)",
+                borderRadius: "16px", padding: "28px",
+                textAlign: "left", display: "flex", flexDirection: "column",
+                position: "relative", boxShadow: "0 0 40px rgba(124,58,237,0.1)",
+              }}>
+                <div style={{
+                  position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", padding: "4px 16px", borderRadius: "9999px",
+                  fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
+                }}>
+                  ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
+                </div>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "سنوي" : "Annual"}</p>
+                <div style={{ marginBottom: "4px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${agent.pricing.annual}</span>
+                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                </div>
+                <p style={{ fontSize: "12px", color: "#22c55e", marginBottom: "20px", fontWeight: 600 }}>
+                  Save ${(agent.pricing.monthly - agent.pricing.annual) * 12}/year — billed annually
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  {agent.pricing.features.map((feature) => (
+                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
+                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={handleGetStarted} disabled={creating} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", padding: "12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: 600, cursor: creating ? "default" : "pointer",
+                  boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
+                  opacity: creating ? 0.7 : 1,
+                }}>
+                  {creating ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : (
+                    <>
+                      {isAr ? "ابدأ التجربة المجانية" : "Start free trial"}
+                      <ArrowRight size={14} />
+                    </>
+                  )}
+                </button>
+                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
+              </div>
+
+              {/* Custom / Enterprise */}
+              {agent.pricing?.hasCustomPlan && (
+                <div style={{
+                  background: colors.bg, border: `1px solid ${colors.border}`,
+                  borderRadius: "16px", padding: "28px",
+                  textAlign: "left", display: "flex", flexDirection: "column",
+                }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "مؤسسي" : "Enterprise"}</p>
+                  <div style={{ marginBottom: "20px" }}>
+                    <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>{isAr ? "مخصص" : "Custom"}</span>
                   </div>
-                );
-              })}
+                  <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                    {agent.pricing.customLabel || "Need a tailored solution for your business?"}
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                    {["Multiple locations / bots", "Dedicated onboarding", "Custom integrations", "Priority support"].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
+                        <CheckCircle2 size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="mailto:hello@logicmate.io" style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
+                    color: "#a78bfa", padding: "12px", borderRadius: "10px",
+                    fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                  }}>
+                    {isAr ? "تواصل معنا" : "Contact us"} →
+                  </a>
+                </div>
+              )}
+
             </div>
           </div>
         </section>
