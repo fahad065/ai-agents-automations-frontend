@@ -5,7 +5,7 @@ import { useLang } from "@/hooks/use-lang";
 import { apiClient } from "@/lib/api-client";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
-import { Check, ArrowRight, Loader2, Zap, Bot, Package, Star } from "lucide-react";
+import { Check, ArrowRight, Loader2, Zap, Bot, Package, Star, MessageCircle } from "lucide-react";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 
 interface Module {
@@ -30,24 +30,44 @@ interface Module {
   isComingSoon: boolean;
 }
 
-type FilterType = "all" | "industries" | "agents" | "automations";
+// Chatbot pricing is global across templates (Basic/Pro/Enterprise), not
+// per-module like agents/automations — see chatbot-plans module on the
+// backend. Fetched separately from GET /chatbot-plans, rendered with its
+// own card, not the module-driven PricingCard below.
+interface ChatbotPlan {
+  _id: string;
+  name: string;
+  slug: string;
+  tagline?: string;
+  monthlyFee: number;
+  currency: string;
+  trialDays: number;
+  features: string[];
+  isCustom: boolean;
+  customLabel?: string;
+}
+
+type FilterType = "all" | "industries" | "agents" | "automations" | "chatbots";
 
 const FILTER_TABS_EN = [
   { id: "all" as FilterType,         label: "All",         icon: <Star size={13} /> },
   { id: "industries" as FilterType,  label: "Industries",  icon: <Package size={13} /> },
   { id: "agents" as FilterType,      label: "AI Agents",   icon: <Bot size={13} /> },
   { id: "automations" as FilterType, label: "Automations", icon: <Zap size={13} /> },
+  { id: "chatbots" as FilterType,    label: "Chatbots",    icon: <MessageCircle size={13} /> },
 ];
 const FILTER_TABS_AR = [
   { id: "all" as FilterType,         label: "الكل",        icon: <Star size={13} /> },
   { id: "industries" as FilterType,  label: "القطاعات",    icon: <Package size={13} /> },
   { id: "agents" as FilterType,      label: "الوكلاء",     icon: <Bot size={13} /> },
   { id: "automations" as FilterType, label: "الأتمتة",     icon: <Zap size={13} /> },
+  { id: "chatbots" as FilterType,    label: "الشات بوت",   icon: <MessageCircle size={13} /> },
 ];
 
 export function PricingPage() {
   const { colors, isDark } = useTheme();
   const [modules, setModules] = useState<Module[]>([]);
+  const [chatbotPlans, setChatbotPlans] = useState<ChatbotPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
@@ -60,6 +80,8 @@ export function PricingPage() {
     try {
       const data = await apiClient.get<{ data: Module[] }>("/modules");
       setModules((data as any).data || (data as any));
+      const plans = await apiClient.get<ChatbotPlan[]>("/chatbot-plans");
+      setChatbotPlans((plans as any) || []);
     } catch {
       setError("Failed to load pricing. Please try again.");
     } finally {
@@ -124,7 +146,8 @@ export function PricingPage() {
             }
           </p>
 
-          {/* Billing toggle */}
+          {/* Billing toggle — chatbot plans are monthly-only, no annual rate */}
+          {filter !== "chatbots" && (
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "4px",
             background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
@@ -156,6 +179,7 @@ export function PricingPage() {
               </button>
             ))}
           </div>
+          )}
         </div>
 
         {/* Filter tabs */}
@@ -197,7 +221,36 @@ export function PricingPage() {
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && filter === "chatbots" && (
+          <>
+            <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "8px", opacity: 0.6 }}>
+              {chatbotPlans.length} plan{chatbotPlans.length !== 1 ? "s" : ""} available
+            </p>
+            <p style={{ textAlign: "center", fontSize: "13px", color: colors.textMuted, marginBottom: "24px", maxWidth: "460px", margin: "0 auto 24px" }}>
+              {isAr
+                ? "نفس الخطط عبر كل قوالب الشات بوت. اختر قالباً لتبدأ."
+                : "The same plans apply across every chatbot template. Pick a template to get started."}
+            </p>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
+              gap: "16px",
+            }}>
+              {chatbotPlans.map((plan) => (
+                <ChatbotPlanCard key={plan._id} plan={plan} isDark={isDark} colors={colors} border={border} isAr={isAr} />
+              ))}
+            </div>
+
+            {chatbotPlans.length === 0 && (
+              <div style={{ textAlign: "center", padding: "60px" }}>
+                <p style={{ color: colors.textMuted }}>No chatbot plans available right now.</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {!loading && !error && filter !== "chatbots" && (
           <>
             {/* Count */}
             <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "24px", opacity: 0.6 }}>
@@ -240,48 +293,50 @@ export function PricingPage() {
                 <p style={{ color: colors.textMuted }}>No plans available for this filter.</p>
               </div>
             )}
-
-            {/* Bottom CTA */}
-            <div style={{
-              marginTop: "80px", padding: "48px 40px",
-              background: isDark ? "rgba(124,58,237,0.06)" : "rgba(124,58,237,0.04)",
-              border: `1px solid rgba(124,58,237,0.2)`,
-              borderRadius: "20px", textAlign: "center",
-              position: "relative", overflow: "hidden",
-            }}>
-              <div style={{
-                position: "absolute", top: "50%", left: "50%",
-                transform: "translate(-50%,-50%)",
-                width: "500px", height: "300px",
-                background: "rgba(124,58,237,0.08)",
-                borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
-              }} />
-              <div style={{ position: "relative" }}>
-                <h3 style={{
-                  fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800,
-                  color: colors.text, letterSpacing: "-0.03em", marginBottom: "12px",
-                }}>
-                  {isAr ? "تحتاج خطة مخصصة؟" : "Need a custom plan?"}
-                </h3>
-                <p style={{ fontSize: "15px", color: colors.textMuted, marginBottom: "28px", maxWidth: "440px", margin: "0 auto 28px", lineHeight: 1.65 }}>
-                  {isAr
-                    ? "تشغّل قطاعات متعددة أو تبني مسار مخصص؟ تحدث معنا وسنبني الحزمة المناسبة لفريقك."
-                    : "Running multiple industries or building a custom pipeline? Talk to us and we'll build the right package for your team."
-                  }
-                </p>
-                <Link href="/contact" style={{
-                  display: "inline-flex", alignItems: "center", gap: "7px",
-                  padding: "13px 28px", borderRadius: "10px",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", fontSize: "14px", fontWeight: 600,
-                  textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(124,58,237,0.35)",
-                }}>
-                  {isAr ? "تحدث معنا" : "Talk to us"} <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
           </>
+        )}
+
+        {/* Bottom CTA — shown for every filter, not just modules */}
+        {!loading && !error && (
+          <div style={{
+            marginTop: "80px", padding: "48px 40px",
+            background: isDark ? "rgba(124,58,237,0.06)" : "rgba(124,58,237,0.04)",
+            border: `1px solid rgba(124,58,237,0.2)`,
+            borderRadius: "20px", textAlign: "center",
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{
+              position: "absolute", top: "50%", left: "50%",
+              transform: "translate(-50%,-50%)",
+              width: "500px", height: "300px",
+              background: "rgba(124,58,237,0.08)",
+              borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
+            }} />
+            <div style={{ position: "relative" }}>
+              <h3 style={{
+                fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800,
+                color: colors.text, letterSpacing: "-0.03em", marginBottom: "12px",
+              }}>
+                {isAr ? "تحتاج خطة مخصصة؟" : "Need a custom plan?"}
+              </h3>
+              <p style={{ fontSize: "15px", color: colors.textMuted, marginBottom: "28px", maxWidth: "440px", margin: "0 auto 28px", lineHeight: 1.65 }}>
+                {isAr
+                  ? "تشغّل قطاعات متعددة أو تبني مسار مخصص؟ تحدث معنا وسنبني الحزمة المناسبة لفريقك."
+                  : "Running multiple industries or building a custom pipeline? Talk to us and we'll build the right package for your team."
+                }
+              </p>
+              <Link href="/contact" style={{
+                display: "inline-flex", alignItems: "center", gap: "7px",
+                padding: "13px 28px", borderRadius: "10px",
+                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                color: "white", fontSize: "14px", fontWeight: 600,
+                textDecoration: "none",
+                boxShadow: "0 4px 24px rgba(124,58,237,0.35)",
+              }}>
+                {isAr ? "تحدث معنا" : "Talk to us"} <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -464,6 +519,126 @@ function PricingCard({ module, price, billing, isBundle, isAuto, href, isDark, c
             Coming soon
           </span>
         </div>
+      )}
+    </div>
+  );
+}
+
+function ChatbotPlanCard({ plan, isDark, colors, border, isAr }: {
+  plan: ChatbotPlan;
+  isDark: boolean;
+  colors: { text: string; textMuted: string; bg: string };
+  border: string;
+  isAr: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const accent = plan.isCustom ? "#7c3aed" : "#a78bfa";
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered
+          ? `${accent}06`
+          : (isDark ? "rgba(255,255,255,0.02)" : "#ffffff"),
+        border: `1px solid ${hovered ? accent + "35" : border}`,
+        borderRadius: "16px", padding: "28px",
+        transition: "all 0.2s",
+        display: "flex", flexDirection: "column",
+        boxShadow: hovered ? `0 8px 40px ${accent}12` : (isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)"),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "48px", height: "48px", borderRadius: "12px",
+            background: `${accent}12`, border: `1px solid ${accent}25`,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <MessageCircle size={20} color={accent} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "4px", lineHeight: 1.2 }}>
+              {plan.name}
+            </h3>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: "4px",
+              fontSize: "10px", fontWeight: 600, padding: "2px 8px",
+              borderRadius: "9999px",
+              background: `${accent}12`, color: accent,
+              border: `1px solid ${accent}25`,
+            }}>
+              <MessageCircle size={9} /> {isAr ? "شات بوت" : "Chatbot"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {plan.tagline && (
+        <p style={{ fontSize: "12px", color: accent, fontWeight: 500, marginBottom: "8px" }}>
+          {plan.tagline}
+        </p>
+      )}
+
+      <div style={{
+        display: "flex", alignItems: "flex-end", gap: "6px",
+        marginBottom: "20px", paddingBottom: "20px",
+        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+      }}>
+        {plan.isCustom ? (
+          <span style={{ fontSize: "32px", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em" }}>
+            {isAr ? "مخصص" : "Custom"}
+          </span>
+        ) : (
+          <>
+            <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text, letterSpacing: "-0.04em", lineHeight: 1 }}>
+              ${plan.monthlyFee}
+            </span>
+            <div style={{ paddingBottom: "4px" }}>
+              <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.2 }}>/ month</p>
+              <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>
+                {plan.trialDays}-{isAr ? "يوم مجاناً" : "day free trial"}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
+      <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+        {plan.features.slice(0, 5).map((feat, i) => (
+          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px", marginBottom: "10px" }}>
+            <div style={{
+              width: "16px", height: "16px", borderRadius: "50%",
+              background: `${accent}15`, border: `1px solid ${accent}30`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, marginTop: "1px",
+            }}>
+              <Check size={9} color={accent} strokeWidth={3} />
+            </div>
+            <span style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.5 }}>{feat}</span>
+          </li>
+        ))}
+      </ul>
+
+      {plan.isCustom ? (
+        <a href="mailto:hello@logicmate.io" style={{
+          padding: "11px", borderRadius: "9px", textAlign: "center",
+          border: `1px solid ${accent}30`, background: `${accent}08`,
+          color: accent, fontSize: "13px", fontWeight: 600, textDecoration: "none",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+        }}>
+          {isAr ? "تواصل معنا" : "Contact us"} <ArrowRight size={12} />
+        </a>
+      ) : (
+        <Link href="/chatbots" style={{
+          padding: "11px", borderRadius: "9px", textAlign: "center",
+          background: accent, color: "white",
+          fontSize: "13px", fontWeight: 600, textDecoration: "none",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+        }}>
+          {isAr ? "اختر قالباً" : "Choose a template"} <ArrowRight size={12} />
+        </Link>
       )}
     </div>
   );
