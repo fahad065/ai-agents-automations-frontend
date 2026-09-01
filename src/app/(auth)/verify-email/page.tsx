@@ -13,6 +13,8 @@ function VerifyEmailContent() {
   const { setAuth } = useAuthStore();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const redirect = searchParams.get("redirect");
+  const loginHref = redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : "/auth/login";
 
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">(
     token ? "verifying" : "idle"
@@ -35,7 +37,7 @@ function VerifyEmailContent() {
       }
       setStatus("success");
       setMessage(res.message || "Email verified successfully!");
-      setTimeout(() => router.push("/dashboard"), 2500);
+      setTimeout(() => router.push(redirect || "/dashboard"), 2500);
     } catch (err: any) {
       setStatus("error");
       setMessage(err?.response?.data?.message || "Invalid or expired verification link.");
@@ -89,7 +91,7 @@ function VerifyEmailContent() {
               Email verified! 🎉
             </h1>
             <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "24px" }}>
-              {message} Redirecting to your dashboard...
+              {message} Redirecting you now...
             </p>
             <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
               <div style={{ height: "100%", background: "#22c55e", borderRadius: "2px", animation: "progress 2.5s linear forwards" }} />
@@ -117,7 +119,7 @@ function VerifyEmailContent() {
                 {resending ? "Sending..." : resent ? "✓ Email sent!" : "Resend verification email"}
               </button>
             )}
-            <Link href="/login" style={{ color: "#7c3aed", fontSize: "14px", textDecoration: "none" }}>
+            <Link href={loginHref} style={{ color: "#7c3aed", fontSize: "14px", textDecoration: "none" }}>
               Back to login →
             </Link>
           </>
@@ -150,6 +152,16 @@ function VerifyEmailContent() {
                 💡 Can't find it? Check your spam folder or resend below.
               </p>
             </div>
+            {redirect && (
+              <button onClick={() => router.push(redirect)} style={{
+                background: "linear-gradient(135deg,#7c3aed,#6d28d9)",
+                color: "#fff", border: "none", padding: "12px 28px",
+                borderRadius: "10px", fontSize: "14px", fontWeight: 600,
+                cursor: "pointer", width: "100%", marginBottom: "16px",
+              }}>
+                Continue now — verify email later →
+              </button>
+            )}
             {email && !resent && (
               <button onClick={resendEmail} disabled={resending} style={{
                 background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)",
@@ -166,7 +178,7 @@ function VerifyEmailContent() {
                 ✓ New verification email sent!
               </p>
             )}
-            <Link href="/login" style={{ color: "#475569", fontSize: "13px", textDecoration: "none" }}>
+            <Link href={loginHref} style={{ color: "#475569", fontSize: "13px", textDecoration: "none" }}>
               Back to login
             </Link>
           </>

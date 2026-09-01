@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AuthWrapper } from "./auth-wrapper";
 import { FormField } from "./form-field";
@@ -20,6 +20,8 @@ interface FormErrors {
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const { setAuth } = useAuthStore();
   const { colors } = useTheme();
 
@@ -54,12 +56,7 @@ export function LoginForm() {
         localStorage.setItem("refreshToken", res.refreshToken);
         document.cookie = `accessToken=${res.accessToken}; path=/; max-age=900; SameSite=Lax`;
         
-        // Route based on role
-        if (res.user.role === "admin") {
-          router.push("/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+        router.push(redirect || "/dashboard");
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Invalid email or password";
       setErrors({ general: msg });
@@ -74,7 +71,7 @@ export function LoginForm() {
       subtitle="Sign in to your LogicMate account"
       footerText="Don't have an account?"
       footerLinkText="Sign up free"
-      footerLinkHref="/auth/signup"
+      footerLinkHref={redirect ? `/auth/signup?redirect=${encodeURIComponent(redirect)}` : "/auth/signup"}
     >
       <GoogleButton label="Continue with Google" />
       <AuthDivider label="or sign in with email" />

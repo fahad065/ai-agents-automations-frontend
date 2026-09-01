@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
@@ -110,6 +110,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const { isAr } = useLang();
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [agent, setAgent] = useState<ChatbotModule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -117,6 +118,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const [videoError, setVideoError] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const autoStartFired = useRef(false);
 
   useEffect(() => {
     const fetchAgent = async () => {
@@ -162,7 +164,8 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const handleGetStarted = async () => {
     if (!agent) return;
     if (!isAuthenticated) {
-      router.push("/auth/signup");
+      const redirectTo = `/chatbots/${agent.slug}?autostart=1`;
+      router.push(`/auth/signup?redirect=${encodeURIComponent(redirectTo)}`);
       return;
     }
     setCreating(true);
@@ -183,6 +186,21 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
       setCreating(false);
     }
   };
+
+  // A visitor who isn't logged in loses their place at the signup redirect
+  // unless we carry it through — ?redirect=/chatbots/slug?autostart=1 flows
+  // through signup -> verify-email -> login, and once they land back here
+  // authenticated, this effect fires the same creation call automatically
+  // instead of making them find this page and click again.
+  useEffect(() => {
+    if (autoStartFired.current) return;
+    if (searchParams.get("autostart") !== "1") return;
+    if (!agent || !isAuthenticated) return;
+    autoStartFired.current = true;
+    router.replace(`/chatbots/${slug}`, { scroll: false });
+    handleGetStarted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent, isAuthenticated, searchParams]);
 
   if (loading) {
     return (

@@ -8,6 +8,7 @@ import {
   Package, Plus, Play, Pause, Trash2, Eye,
   Loader2, Search, X, AlertTriangle,
   ChevronRight, Key, Check, Settings, Settings2,
+  MessageCircle, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { YouTubeConnectButton } from "./youtube-connect-button";
@@ -38,8 +39,20 @@ interface UserModule {
   };
 }
 
+// Maps a chatbot template module's slug to the Chatbot.template enum the
+// backend expects on creation (see chatbot.schema.ts) — same lookup used on
+// the marketing detail page (chatbot-detail-page.tsx).
+const CHATBOT_TEMPLATE_ENUM: Record<string, string> = {
+  "restaurant-chatbot": "restaurant",
+  "real-estate-chatbot": "real_estate",
+  "clinic-chatbot": "clinic",
+  "ecommerce-chatbot": "ecommerce",
+  "gym-chatbot": "gym",
+  "education-chatbot": "education",
+};
+
 interface AvailableModule {
-  _id: string; name: string; slug: string; tagline?: string;
+  _id: string; name: string; slug: string; tagline?: string; description?: string;
   moduleType: string; category: string; pipelineType: string;
   pipelineCategory: string; nicheSlug: string;
   icon: string; color: string; badge?: string;
@@ -67,6 +80,101 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   expired:   { color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
   cancelled: { color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
 };
+
+// ── Add Chatbot Modal ────────────────────────────────────────
+// Chatbots don't go through /usermodules/subscribe (SubscribeModal below) —
+// that endpoint creates a UserModule record, which is the wrong data model
+// entirely for a chatbot (no embedKey, no knowledge base, no channels).
+// This mirrors exactly what the marketing detail page's pricing section
+// does: POST /chatbots with moduleSlug so the backend prices the trial off
+// this template's module.pricing.monthly, then straight into the bot's own
+// config portal — same 30-day auto-trial, same destination.
+function AddChatbotModal({ module, onClose, onSuccess, colors, isDark }: {
+  module: AvailableModule; onClose: () => void; onSuccess: () => void; colors: any; isDark: boolean;
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const panelBg = isDark ? "#161616" : "#ffffff";
+  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)";
+
+  const handleAdd = async () => {
+    setSaving(true); setError("");
+    try {
+      const res = await api.post("/chatbots", {
+        name: module.name,
+        description: module.description || module.tagline,
+        template: CHATBOT_TEMPLATE_ENUM[module.slug] || "custom",
+        language: "both",
+        moduleSlug: module.slug,
+      });
+      const created = res.data?.data || res.data;
+      toast.success("Chatbot created — 30-day free trial started!");
+      onSuccess(); onClose();
+      router.push(`/dashboard/chatbots/${created._id}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to create chatbot");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: "18px", width: "100%", maxWidth: "460px", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
+        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${panelBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "9px", fontSize: "18px", background: `${module.color}12`, border: `1px solid ${module.color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {module.icon}
+            </div>
+            <div>
+              <p style={{ fontSize: "15px", fontWeight: 700, color: isDark ? "#e5e5e5" : "#111" }}>{module.name}</p>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "9999px", background: "rgba(167,139,250,0.12)", color: "#a78bfa" }}>
+                <MessageCircle size={9} /> Chatbot
+              </span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width: "28px", height: "28px", borderRadius: "7px", border: `1px solid ${panelBorder}`, background: "transparent", color: isDark ? "#737373" : "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={13} /></button>
+        </div>
+
+        <div style={{ padding: "20px 24px" }}>
+          {module.tagline && (
+            <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.6, marginBottom: "16px" }}>{module.tagline}</p>
+          )}
+
+          {module.pricing && module.pricing.monthly > 0 && (
+            <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "2px" }}>
+                <span style={{ fontSize: "22px", fontWeight: 800, color: isDark ? "#e5e5e5" : "#111" }}>${module.pricing.monthly}</span>
+                <span style={{ fontSize: "12px", color: colors.textMuted }}>/month</span>
+              </div>
+              <p style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>30-day free trial — no credit card required</p>
+            </div>
+          )}
+
+          <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.6, marginBottom: "20px" }}>
+            This creates the chatbot right away and takes you into its setup — add your knowledge base, connect channels, and go live whenever you're ready.
+          </p>
+
+          {error && (
+            <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginBottom: "16px", fontSize: "13px", color: "#ef4444" }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: "8px", cursor: "pointer", background: "transparent", border: `1px solid ${colors.border}`, color: colors.text, fontSize: "13px", fontWeight: 600 }}>
+              Cancel
+            </button>
+            <button onClick={handleAdd} disabled={saving} style={{ flex: 2, padding: "10px", borderRadius: "8px", cursor: saving ? "not-allowed" : "pointer", background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", opacity: saving ? 0.7 : 1 }}>
+              {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <>Add chatbot <ArrowRight size={13} /></>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Subscribe Modal ───────────────────────────────────────────
 function SubscribeModal({ module, country, onClose, onSuccess, colors, isDark }: {
@@ -377,6 +485,9 @@ function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCo
   });
 
   if (selected) {
+    if (selected.moduleType === "chatbot") {
+      return <AddChatbotModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} colors={colors} isDark={isDark} />;
+    }
     return <SubscribeModal module={selected} country={country} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} colors={colors} isDark={isDark} />;
   }
 
@@ -464,6 +575,9 @@ function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCo
                         <p style={{ fontSize: "13px", fontWeight: 600, color: isDark ? "#e5e5e5" : "#111" }}>{m.name}</p>
                         {m.pipelineCategory === "niche_pipeline" && (
                           <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: `${m.color}15`, color: m.color, fontWeight: 700, border: `1px solid ${m.color}25` }}>PIPELINE</span>
+                        )}
+                        {m.moduleType === "chatbot" && (
+                          <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "4px", background: "rgba(167,139,250,0.15)", color: "#a78bfa", fontWeight: 700, border: "1px solid rgba(167,139,250,0.3)" }}>CHATBOT</span>
                         )}
                       </div>
                       <p style={{ fontSize: "11px", color: isDark ? "#737373" : "#6b7280", textTransform: "capitalize" }}>{m.moduleType} · {m.category}</p>

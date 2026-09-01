@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthWrapper } from "./auth-wrapper";
 import { FormField } from "./form-field";
 import { SubmitButton } from "./submit-button";
@@ -22,6 +22,8 @@ interface FormErrors {
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const { setAuth } = useAuthStore();
   const { colors } = useTheme();
 
@@ -32,6 +34,8 @@ export function SignupForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const loginHref = redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : "/auth/login";
 
   const validate = (): boolean => {
     const errs: FormErrors = {};
@@ -62,7 +66,8 @@ export function SignupForm() {
         localStorage.setItem("refreshToken", res.refreshToken);
         document.cookie = `accessToken=${res.accessToken}; path=/; max-age=900; SameSite=Lax`;
         setSuccess(true);
-        router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+        const verifyUrl = `/verify-email?email=${encodeURIComponent(email.trim())}`;
+        router.push(redirect ? `${verifyUrl}&redirect=${encodeURIComponent(redirect)}` : verifyUrl);
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Registration failed. Please try again.";
       setErrors({ general: msg });
@@ -78,7 +83,7 @@ export function SignupForm() {
         subtitle="Your account has been created successfully."
         footerText="Already have an account?"
         footerLinkText="Sign in"
-        footerLinkHref="/auth/login"
+        footerLinkHref={loginHref}
       >
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <CheckCircle2 size={48} color="#22c55e" style={{ margin: "0 auto 16px" }} />
