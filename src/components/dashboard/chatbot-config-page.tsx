@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
+import { ChatbotTrialBanner } from "./chatbot-trial-banner";
 
 // ── Types ────────────────────────────────────────────────────
 interface WebsiteChannel {
@@ -541,6 +542,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           {statusMeta[chatbot.status]?.label || chatbot.status}
         </span>
       </div>
+
+      <ChatbotTrialBanner billing={chatbot.billing} onGoToBilling={() => setTab("billing")} />
 
       {/* Tabs */}
       <div style={{

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
@@ -44,68 +44,18 @@ const CHANNELS = [
   },
 ];
 
-const TEMPLATES = [
-  {
-    emoji: "🍽️",
-    name: "Restaurant Menu Bot",
-    name_ar: "بوت قائمة المطعم",
-    desc: "Answers menu questions, takes reservations, shares daily specials.",
-    desc_ar: "يرد على أسئلة القائمة، يحجز الطاولات، ويشارك العروض اليومية.",
-    tags: ["Food & Beverage", "Bookings"],
-    color: "#f59e0b",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/restaurant-bot-demo-final.mp4",
-  },
-  {
-    emoji: "🏠",
-    name: "Real Estate Lead Bot",
-    name_ar: "بوت العقارات",
-    desc: "Qualifies buyers and renters, schedules viewings, sends listings.",
-    desc_ar: "يؤهل المشترين والمستأجرين، يجدول المعاينات، ويرسل العروض.",
-    tags: ["Real Estate", "Lead Capture"],
-    color: "#7c3aed",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/real-estate-bot-demo.mp4",
-  },
-  {
-    emoji: "💆",
-    name: "Clinic Appointment Bot",
-    name_ar: "بوت حجز العيادة",
-    desc: "Books appointments, sends reminders, handles clinic FAQs.",
-    desc_ar: "يحجز المواعيد، يرسل التذكيرات، ويرد على أسئلة العيادة.",
-    tags: ["Healthcare", "Appointments"],
-    color: "#22c55e",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/clinic-appointment-bot-demo.mp4",
-  },
-  {
-    emoji: "🛍️",
-    name: "E-commerce Support Bot",
-    name_ar: "بوت دعم التجارة الإلكترونية",
-    desc: "Tracks orders, handles returns, answers product questions instantly.",
-    desc_ar: "يتابع الطلبات، يعالج الإرجاع، ويرد على أسئلة المنتجات فوراً.",
-    tags: ["E-commerce", "Support"],
-    color: "#3b82f6",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/ecommerce-bot-demo.mp4",
-  },
-  {
-    emoji: "🏋️",
-    name: "Gym Membership Bot",
-    name_ar: "بوت اشتراك الصالة",
-    desc: "Explains membership plans, books free trials, handles schedule queries.",
-    desc_ar: "يشرح خطط الاشتراك، يحجز التجارب المجانية، ويرد على استفسارات الجداول.",
-    tags: ["Fitness", "Memberships"],
-    color: "#ef4444",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/gym-membership-bot-demo.mp4",
-  },
-  {
-    emoji: "🎓",
-    name: "Education Enrolment Bot",
-    name_ar: "بوت التسجيل التعليمي",
-    desc: "Guides prospective students, answers course FAQs, collects applications.",
-    desc_ar: "يوجّه الطلاب المحتملين، يرد على أسئلة الدورات، ويجمع الطلبات.",
-    tags: ["Education", "Enrolment"],
-    color: "#8b5cf6",
-    demoVideoUrl: "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/education-enrolment-bot-demo.mp4",
-  },
-];
+interface ChatbotTemplateCard {
+  _id: string;
+  slug: string;
+  name: string;
+  name_ar?: string;
+  description: string;
+  description_ar?: string;
+  icon: string;
+  color: string;
+  capabilities: string[];
+  demoVideoUrl?: string;
+}
 
 const FEATURES = [
   {
@@ -164,6 +114,15 @@ export function ChatbotsPage() {
   const { isAr } = useLang();
   const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const [demoVideo, setDemoVideo] = useState<{ url: string; title: string } | null>(null);
+  const [templates, setTemplates] = useState<ChatbotTemplateCard[]>([]);
+
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+    fetch(`${apiUrl}/modules?moduleType=chatbot`)
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((json) => setTemplates(json.data || json || []))
+      .catch(() => setTemplates([]));
+  }, []);
 
   return (
     <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
@@ -343,28 +302,28 @@ export function ChatbotsPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: "16px" }}>
-            {TEMPLATES.map((t) => (
-              <div key={t.name} style={{
+            {templates.map((t) => (
+              <Link key={t._id} href={`/chatbots/${t.slug}`} style={{
+                display: "block", textDecoration: "none",
                 background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
                 border: `1px solid ${border}`, borderRadius: "16px",
                 padding: "24px", transition: "border-color 0.2s",
-                cursor: "default",
               }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = t.color + "40"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = border; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = t.color + "40"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = border; }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "12px" }}>
                   <span style={{
                     fontSize: "28px", width: "44px", height: "44px",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: t.color + "12", borderRadius: "12px", flexShrink: 0,
-                  }}>{t.emoji}</span>
+                  }}>{t.icon}</span>
                   <div>
                     <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
-                      {isAr ? t.name_ar : t.name}
+                      {(isAr && t.name_ar) ? t.name_ar : t.name}
                     </p>
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {t.tags.map(tag => (
+                      {t.capabilities?.slice(0, 2).map(tag => (
                         <span key={tag} style={{
                           fontSize: "10px", fontWeight: 600, padding: "2px 7px",
                           borderRadius: "4px", background: t.color + "12", color: t.color,
@@ -373,12 +332,16 @@ export function ChatbotsPage() {
                     </div>
                   </div>
                 </div>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65, marginBottom: (t as any).demoVideoUrl ? "16px" : 0 }}>
-                  {isAr ? t.desc_ar : t.desc}
+                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65, marginBottom: t.demoVideoUrl ? "16px" : 0 }}>
+                  {(isAr && t.description_ar) ? t.description_ar : t.description}
                 </p>
-                {(t as any).demoVideoUrl && (
+                {t.demoVideoUrl && (
                   <button
-                    onClick={() => setDemoVideo({ url: (t as any).demoVideoUrl, title: isAr ? t.name_ar : t.name })}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDemoVideo({ url: t.demoVideoUrl!, title: (isAr && t.name_ar) ? t.name_ar : t.name });
+                    }}
                     style={{
                       display: "flex", alignItems: "center", gap: "7px",
                       width: "100%", padding: "9px 12px", borderRadius: "9px",
@@ -399,7 +362,7 @@ export function ChatbotsPage() {
                     {isAr ? "شاهد كيف يعمل" : "Watch it in action"}
                   </button>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </div>

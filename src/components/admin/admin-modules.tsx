@@ -535,6 +535,7 @@ export function AdminModules() {
                     <select value={form.moduleType} onChange={e => setForm(f => ({ ...f, moduleType: e.target.value }))} style={inp}>
                       <option value="agent">Agent</option>
                       <option value="automation">Automation</option>
+                      <option value="chatbot">Chatbot</option>
                     </select>
                   </>)}
                   {fld(<>
