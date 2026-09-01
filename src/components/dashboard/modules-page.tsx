@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   Package, Plus, Play, Pause, Trash2, Eye,
@@ -451,9 +451,9 @@ function SubscribeModal({ module, country, onClose, onSuccess, colors, isDark }:
 }
 
 // ── Marketplace Modal ─────────────────────────────────────────
-function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCountryChange }: {
+function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCountryChange, initialSlug }: {
   onClose: () => void; onSubscribed: () => void; colors: any; isDark: boolean;
-  country: string; onCountryChange: (c: string) => void;
+  country: string; onCountryChange: (c: string) => void; initialSlug?: string | null;
 }) {
   const [modules, setModules] = useState<AvailableModule[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
@@ -472,11 +472,20 @@ function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCo
       api.get(`/modules?limit=100&country=${country}`),
       api.get(`/niches?country=${country}`),
     ]).then(([modRes, nicheRes]) => {
-      setModules(modRes.data?.data || []);
+      const mods: AvailableModule[] = modRes.data?.data || [];
+      setModules(mods);
       setNiches(nicheRes.data || []);
       setLoading(false);
+      // Coming from a marketing page's "Get started" via the signup redirect
+      // (or an already-logged-in user's own "Get started" link) — open this
+      // module's setup form directly instead of leaving them to rediscover
+      // it in the grid.
+      if (initialSlug) {
+        const match = mods.find((m) => m.slug === initialSlug);
+        if (match) setSelected(match);
+      }
     }).catch(() => setLoading(false));
-  }, [country]);
+  }, [country, initialSlug]);
 
   const filtered = modules.filter(m => {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
@@ -624,6 +633,7 @@ function MarketplaceModal({ onClose, onSubscribed, colors, isDark, country, onCo
 export function MyModulesPage() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [agents, setAgents] = useState<UserModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -632,8 +642,20 @@ export function MyModulesPage() {
   const [editModule, setEditModule] = useState<UserModule | null>(null);
   const [runningModuleId, setRunningModuleId] = useState<string | null>(null);
   const [country, setCountry] = useState("UAE");
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   useEffect(() => { fetchModules(); }, []);
+
+  // A marketing page's "Get started" link (or the post-signup redirect chain)
+  // lands here with ?openModule=<slug> — open the marketplace straight to
+  // that module's setup form instead of the plain grid.
+  useEffect(() => {
+    const slug = searchParams.get("openModule");
+    if (!slug) return;
+    setPendingSlug(slug);
+    setShowMarketplace(true);
+    router.replace("/dashboard/modules", { scroll: false });
+  }, [searchParams, router]);
 
   const fetchModules = async () => {
     setLoading(true);
@@ -834,7 +856,15 @@ export function MyModulesPage() {
 
       {/* Marketplace modal */}
       {showMarketplace && (
-        <MarketplaceModal onClose={() => setShowMarketplace(false)} onSubscribed={fetchModules} colors={colors} isDark={isDark} country={country} onCountryChange={setCountry} />
+        <MarketplaceModal
+          onClose={() => { setShowMarketplace(false); setPendingSlug(null); }}
+          onSubscribed={fetchModules}
+          colors={colors}
+          isDark={isDark}
+          country={country}
+          onCountryChange={setCountry}
+          initialSlug={pendingSlug}
+        />
       )}
 
       {/* Edit module modal */}

@@ -169,6 +169,16 @@ export function AgentDetailPage({ slug }: { slug: string }) {
     );
   }
 
+  // Deep-link straight to this module's setup form on My Modules instead of
+  // the plain grid — for a logged-in visitor that's an immediate jump, and
+  // for a logged-out one the redirect param carries it through signup (see
+  // signup-form.tsx / verify-email / login-form.tsx) so they land on the
+  // same setup form right after verifying instead of losing their intent.
+  const openModulePath = `/dashboard/modules?openModule=${agent.slug}`;
+  const getStartedHref = isAuthenticated
+    ? openModulePath
+    : `/auth/signup?redirect=${encodeURIComponent(openModulePath)}`;
+
   const embedUrl = agent.demoVideoUrl
     ? agent.demoVideoUrl
         .replace("youtu.be/", "www.youtube.com/embed/")
@@ -248,7 +258,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <Link
-                  href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"}
+                  href={getStartedHref}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: "8px",
                     background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
@@ -730,7 +740,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                     </li>
                   ))}
                 </ul>
-                <Link href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"} style={{
+                <Link href={getStartedHref} style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                   border: `1px solid ${colors.border}`, background: colors.bgCard,
                   color: colors.text, padding: "12px", borderRadius: "10px",
@@ -772,7 +782,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                     </li>
                   ))}
                 </ul>
-                <Link href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"} style={{
+                <Link href={getStartedHref} style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                   background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                   color: "white", padding: "12px", borderRadius: "10px",
@@ -864,7 +874,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             }
           </p>
           <Link
-            href={isAuthenticated ? "/dashboard/modules" : "/auth/signup"}
+            href={getStartedHref}
             style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",

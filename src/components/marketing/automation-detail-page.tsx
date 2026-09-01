@@ -154,6 +154,16 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     );
   }
 
+  // Deep-link straight to this module's setup form on My Modules instead of
+  // the plain grid/dashboard — mirrors agent-detail-page.tsx's fix, and
+  // fixes a pre-existing inconsistency where this page's "Get started"
+  // pointed authenticated users at bare /dashboard (no modules setup at
+  // all) instead of /dashboard/modules.
+  const openModulePath = `/dashboard/modules?openModule=${automation.slug}`;
+  const getStartedHref = isAuthenticated
+    ? openModulePath
+    : `/auth/signup?redirect=${encodeURIComponent(openModulePath)}`;
+
   const embedUrl = automation.demoVideoUrl
     ? automation.demoVideoUrl
         .replace("youtu.be/", "www.youtube.com/embed/")
@@ -223,7 +233,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <Link
-                  href={isAuthenticated ? "/dashboard" : "/auth/signup"}
+                  href={getStartedHref}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: "8px",
                     background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
@@ -668,7 +678,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                     </li>
                   ))}
                 </ul>
-                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                <Link href={getStartedHref} style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                   border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
                   color: colors.text, padding: "12px", borderRadius: "10px",
@@ -710,7 +720,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                     </li>
                   ))}
                 </ul>
-                <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"} style={{
+                <Link href={getStartedHref} style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                   background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                   color: "white", padding: "12px", borderRadius: "10px",
@@ -804,7 +814,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             }
           </p>
           <Link
-            href={isAuthenticated ? "/dashboard" : "/auth/signup"}
+            href={getStartedHref}
             style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
