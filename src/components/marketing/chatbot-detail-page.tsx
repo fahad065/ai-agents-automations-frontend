@@ -127,6 +127,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creatingPlanId, setCreatingPlanId] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +140,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         if (!res.ok) throw new Error("Chatbot template not found");
         const data = await res.json();
         setAgent(data);
+        setVideoError(false);
       } catch {
         setError("Chatbot template not found or failed to load.");
       } finally {
@@ -148,7 +150,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
 
     const fetchPlans = async () => {
       try {
-        const res = await fetch(`${apiUrl}/chatbot-plans`);
+        const res = await fetch(`${apiUrl}/chatbot-plans?template=${slug}`);
         if (res.ok) setPlans(await res.json());
       } catch {
         // Pricing section just won't render if this fails — not fatal to the page.
@@ -438,13 +440,30 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
               borderRadius: "14px", overflow: "hidden",
               border: `1px solid ${colors.border}`,
               boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+              minHeight: videoError ? "0" : undefined,
             }}>
-              <video
-                src={agent.demoVideoUrl}
-                controls
-                playsInline
-                style={{ width: "100%", display: "block", aspectRatio: "16/9", background: "black" }}
-              />
+              {videoError ? (
+                <div style={{
+                  aspectRatio: "16/9", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "black", color: "#a3a3a3", fontSize: "13px", flexDirection: "column", gap: "8px",
+                }}>
+                  <Play size={24} color="#525252" />
+                  {isAr ? "تعذر تحميل الفيديو حالياً." : "This video couldn't be loaded right now."}
+                  <a href={agent.demoVideoUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#a78bfa", fontSize: "12px" }}>
+                    {isAr ? "افتح الفيديو مباشرة" : "Open video directly"} →
+                  </a>
+                </div>
+              ) : (
+                <video
+                  key={agent.demoVideoUrl}
+                  src={agent.demoVideoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onError={() => setVideoError(true)}
+                  style={{ width: "100%", display: "block", aspectRatio: "16/9", background: "black" }}
+                />
+              )}
             </div>
           </div>
         </section>

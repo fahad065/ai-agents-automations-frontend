@@ -30,14 +30,16 @@ interface Module {
   isComingSoon: boolean;
 }
 
-// Chatbot pricing is global across templates (Basic/Pro/Enterprise), not
-// per-module like agents/automations — see chatbot-plans module on the
-// backend. Fetched separately from GET /chatbot-plans, rendered with its
-// own card, not the module-driven PricingCard below.
+// Chatbot pricing varies per template (market value differs by vertical —
+// see chatbot-plans.service.ts on the backend), so it isn't a single flat
+// catalog like it briefly was. Fetched (unfiltered — every template's tiers)
+// from GET /chatbot-plans, then grouped client-side by templateSlug so each
+// chatbot module can show its own Basic-tier starting price.
 interface ChatbotPlan {
   _id: string;
   name: string;
   slug: string;
+  templateSlug: string;
   tagline?: string;
   monthlyFee: number;
   currency: string;
@@ -99,6 +101,15 @@ export function PricingPage() {
     if (filter === "automations") return m.moduleType === "automation";
     return true;
   });
+
+  // Chatbots aren't priced per-module (module.pricing.monthly is unused for
+  // them) — each template's "starting price" is its cheapest non-custom
+  // (Basic) tier from the plan catalog, matched by templateSlug === module.slug.
+  const chatbotModules = modules.filter((m) => m.moduleType === "chatbot");
+  const basicPlanFor = (templateSlug: string) =>
+    chatbotPlans
+      .filter((p) => p.templateSlug === templateSlug && !p.isCustom)
+      .sort((a, b) => a.monthlyFee - b.monthlyFee)[0];
 
   const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const annualSaving = 20;
@@ -224,12 +235,12 @@ export function PricingPage() {
         {!loading && !error && filter === "chatbots" && (
           <>
             <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "8px", opacity: 0.6 }}>
-              {chatbotPlans.length} plan{chatbotPlans.length !== 1 ? "s" : ""} available
+              {chatbotModules.length} template{chatbotModules.length !== 1 ? "s" : ""} available
             </p>
             <p style={{ textAlign: "center", fontSize: "13px", color: colors.textMuted, marginBottom: "24px", maxWidth: "460px", margin: "0 auto 24px" }}>
               {isAr
-                ? "نفس الخطط عبر كل قوالب الشات بوت. اختر قالباً لتبدأ."
-                : "The same plans apply across every chatbot template. Pick a template to get started."}
+                ? "لكل قالب شات بوت أسعاره الخاصة. افتح قالباً لترى الخطط الكاملة (Basic/Pro/Enterprise)."
+                : "Each chatbot template has its own pricing. Open a template to see its full Basic/Pro/Enterprise plans."}
             </p>
 
             <div style={{
@@ -237,14 +248,22 @@ export function PricingPage() {
               gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
               gap: "16px",
             }}>
-              {chatbotPlans.map((plan) => (
-                <ChatbotPlanCard key={plan._id} plan={plan} isDark={isDark} colors={colors} border={border} isAr={isAr} />
+              {chatbotModules.map((module) => (
+                <ChatbotTemplateCard
+                  key={module._id}
+                  module={module}
+                  startingPlan={basicPlanFor(module.slug)}
+                  isDark={isDark}
+                  colors={colors}
+                  border={border}
+                  isAr={isAr}
+                />
               ))}
             </div>
 
-            {chatbotPlans.length === 0 && (
+            {chatbotModules.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px" }}>
-                <p style={{ color: colors.textMuted }}>No chatbot plans available right now.</p>
+                <p style={{ color: colors.textMuted }}>No chatbot templates available right now.</p>
               </div>
             )}
           </>
@@ -524,15 +543,18 @@ function PricingCard({ module, price, billing, isBundle, isAuto, href, isDark, c
   );
 }
 
-function ChatbotPlanCard({ plan, isDark, colors, border, isAr }: {
-  plan: ChatbotPlan;
+
+function ChatbotTemplateCard({ module, startingPlan, isDark, colors, border, isAr }: {
+  module: Module;
+  startingPlan?: ChatbotPlan;
   isDark: boolean;
   colors: { text: string; textMuted: string; bg: string };
   border: string;
   isAr: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
-  const accent = plan.isCustom ? "#7c3aed" : "#a78bfa";
+  const accent = module.color || "#a78bfa";
+  const href = `/chatbots/${module.slug}`;
 
   return (
     <div
@@ -549,35 +571,34 @@ function ChatbotPlanCard({ plan, isDark, colors, border, isAr }: {
         boxShadow: hovered ? `0 8px 40px ${accent}12` : (isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)"),
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{
-            width: "48px", height: "48px", borderRadius: "12px",
-            background: `${accent}12`, border: `1px solid ${accent}25`,
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+        <div style={{
+          width: "48px", height: "48px", borderRadius: "12px",
+          background: `${accent}12`, border: `1px solid ${accent}25`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "22px", flexShrink: 0,
+        }}>
+          {module.icon}
+        </div>
+        <div>
+          <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "4px", lineHeight: 1.2 }}>
+            {module.name}
+          </h3>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "4px",
+            fontSize: "10px", fontWeight: 600, padding: "2px 8px",
+            borderRadius: "9999px",
+            background: `${accent}12`, color: accent,
+            border: `1px solid ${accent}25`,
           }}>
-            <MessageCircle size={20} color={accent} />
-          </div>
-          <div>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "4px", lineHeight: 1.2 }}>
-              {plan.name}
-            </h3>
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: "4px",
-              fontSize: "10px", fontWeight: 600, padding: "2px 8px",
-              borderRadius: "9999px",
-              background: `${accent}12`, color: accent,
-              border: `1px solid ${accent}25`,
-            }}>
-              <MessageCircle size={9} /> {isAr ? "شات بوت" : "Chatbot"}
-            </span>
-          </div>
+            <MessageCircle size={9} /> {isAr ? "شات بوت" : "Chatbot"}
+          </span>
         </div>
       </div>
 
-      {plan.tagline && (
+      {module.tagline && (
         <p style={{ fontSize: "12px", color: accent, fontWeight: 500, marginBottom: "8px" }}>
-          {plan.tagline}
+          {module.tagline}
         </p>
       )}
 
@@ -586,27 +607,30 @@ function ChatbotPlanCard({ plan, isDark, colors, border, isAr }: {
         marginBottom: "20px", paddingBottom: "20px",
         borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
       }}>
-        {plan.isCustom ? (
-          <span style={{ fontSize: "32px", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em" }}>
-            {isAr ? "مخصص" : "Custom"}
-          </span>
-        ) : (
+        {startingPlan ? (
           <>
-            <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text, letterSpacing: "-0.04em", lineHeight: 1 }}>
-              ${plan.monthlyFee}
+            <span style={{ fontSize: "13px", color: colors.textMuted, paddingBottom: "10px" }}>
+              {isAr ? "من" : "From"}
+            </span>
+            <span style={{ fontSize: "36px", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em", lineHeight: 1 }}>
+              ${startingPlan.monthlyFee}
             </span>
             <div style={{ paddingBottom: "4px" }}>
               <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.2 }}>/ month</p>
               <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>
-                {plan.trialDays}-{isAr ? "يوم مجاناً" : "day free trial"}
+                {startingPlan.trialDays}-{isAr ? "يوم مجاناً" : "day free trial"}
               </p>
             </div>
           </>
+        ) : (
+          <span style={{ fontSize: "15px", color: colors.textMuted }}>
+            {isAr ? "التسعير قريباً" : "Pricing coming soon"}
+          </span>
         )}
       </div>
 
       <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
-        {plan.features.slice(0, 5).map((feat, i) => (
+        {(startingPlan?.features || module.capabilities || []).slice(0, 4).map((feat, i) => (
           <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px", marginBottom: "10px" }}>
             <div style={{
               width: "16px", height: "16px", borderRadius: "50%",
@@ -621,25 +645,14 @@ function ChatbotPlanCard({ plan, isDark, colors, border, isAr }: {
         ))}
       </ul>
 
-      {plan.isCustom ? (
-        <a href="mailto:hello@logicmate.io" style={{
-          padding: "11px", borderRadius: "9px", textAlign: "center",
-          border: `1px solid ${accent}30`, background: `${accent}08`,
-          color: accent, fontSize: "13px", fontWeight: 600, textDecoration: "none",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-        }}>
-          {isAr ? "تواصل معنا" : "Contact us"} <ArrowRight size={12} />
-        </a>
-      ) : (
-        <Link href="/chatbots" style={{
-          padding: "11px", borderRadius: "9px", textAlign: "center",
-          background: accent, color: "white",
-          fontSize: "13px", fontWeight: 600, textDecoration: "none",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-        }}>
-          {isAr ? "اختر قالباً" : "Choose a template"} <ArrowRight size={12} />
-        </Link>
-      )}
+      <Link href={`${href}#pricing`} style={{
+        padding: "11px", borderRadius: "9px", textAlign: "center",
+        background: accent, color: "white",
+        fontSize: "13px", fontWeight: 600, textDecoration: "none",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+      }}>
+        {isAr ? "شوف كل الخطط" : "View all plans"} <ArrowRight size={12} />
+      </Link>
     </div>
   );
 }
