@@ -260,6 +260,19 @@ A separate review (not this session originally) recommended: remove GSAP, add `n
 
 **Takeaway for future sessions:** treat a prior analysis's specific numeric/scope claims (file counts, "X is only used in Y", bundle-size estimates) as things to verify with `grep`/`du`/a real build before acting on, not as given facts — two of five claims here were wrong in ways that would have meant either a much bigger job than promised (GSAP) or redundant work (React Query "add").
 
+## Mobile first-load performance fix (2026-09)
+User-reported: first visit to `logicmate.io` on iPhone Safari/Chrome was slow to load, especially the hero's stats/mockup area. Root-caused (not guessed) two concrete issues in `hero-section.tsx`, both fixed without touching GSAP itself or redesigning anything — the user explicitly asked for a fix now, redesign later:
+- A fully dead `setInterval(() => setTick((t) => t + 1), 3000)` re-rendering the whole component every 3 seconds forever — `tick` was never read anywhere. Removed, along with its `useState` import.
+- Three `gsap.to(orb1/2/3, { repeat: -1, yoyo: true, ... })` animations moving the hero's large `blur(100–120px)` background orbs, continuously, for as long as the page stayed open. Animating position on a large-radius CSS `blur()` filter is one of the most expensive things you can hand a mobile browser every frame — especially Safari/WebKit. Removed; the orbs still render as static glow, just don't repaint every frame. The one-time GSAP entrance timeline (h1/subtitle/cta/niches/mockup fading/sliding in on load) was left untouched.
+- Also deferred the Crisp chat widget script in `src/app/(marketing)/layout.tsx` from `strategy="afterInteractive"` to `strategy="lazyOnload"` — the widget isn't needed for first paint or first interaction, so it now loads during browser idle time instead of competing with real content for bandwidth/main-thread time right after hydration.
+
+Deliberately not attempted here (per CLAUDE.md's existing "Performance pass" notes and the user's own "later we will redesign the landing page" framing): removing GSAP entirely, or any other landing-page redesign work.
+
+## Navbar language-only selector (2026-09)
+User-directed: country is being phased out as a platform concept — "In the future I will consider only language while creating any module. no consideration of country." As a first step, the navbar's country dropdown (UAE/Kenya flags) was removed entirely from `navbar.tsx` — desktop dropdown, mobile menu row, and all associated dead state (`country`, `countryOpen`, `countryRef`, `selectCountry`, the `lm_country` localStorage read, the `COUNTRIES` array). Only the EN/AR language selector remains, in both desktop and mobile nav.
+
+**Deliberately not touched in this pass:** every other `country`/`lm_country`/`COUNTRIES`/Kenya reference in the codebase (`admin-industries.tsx`, `admin-modules.tsx`, `about-page.tsx`, `industries-list-page.tsx`, `niches-section.tsx`, `stats-section.tsx`, `features-section.tsx`, `cms-modules-page.tsx`, `settings-page.tsx`, `modules-page.tsx`) — the user framed full country removal as a **future** consideration for module creation, not an immediate ask; this pass was scoped to just the navbar dropdown the user actually pointed at. A future session removing `country` as a module-creation concept needs to touch those files (and the corresponding backend `availableIn` field) — this note exists so that work isn't rediscovered from scratch.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow

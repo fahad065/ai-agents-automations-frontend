@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import { ArrowRight, Sparkles, Play } from "lucide-react";
@@ -43,19 +43,17 @@ export function HeroSection() {
   const orb2 = useRef<HTMLDivElement>(null);
   const orb3 = useRef<HTMLDivElement>(null);
 
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.to(orb1.current, { y: -50, x: 30, duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
-      gsap.to(orb2.current, { y: 40, x: -25, duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 2 });
-      gsap.to(orb3.current, { y: -30, x: 20, duration: 12, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 4 });
-
+      // The three background orbs used to animate forever (repeat: -1,
+      // yoyo: true) — animating position on a large-radius blur() filter
+      // element is one of the most expensive things you can ask a mobile
+      // browser to do every frame, especially on Safari/WebKit, and it never
+      // stopped for as long as the page was open. Reported as a real-device
+      // slowness complaint; removed rather than tuned. The orbs still render
+      // (static glow), just don't continuously repaint. Revisit with a
+      // cheaper technique (e.g. CSS-only, smaller blur radius) in the
+      // planned landing-page redesign if the motion is wanted back.
       const tl = gsap.timeline({ delay: 0.1 });
       tl.from(h1Ref.current, { y: 36, duration: 0.8, ease: "power3.out" })
         .from(subRef.current, { y: 20, duration: 0.6, ease: "power3.out" }, "-=0.4")

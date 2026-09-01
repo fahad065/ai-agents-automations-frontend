@@ -13,7 +13,10 @@ export default function MarketingLayout({
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
-      <Script id="crisp-chat" strategy="afterInteractive">
+      {/* lazyOnload: the chat widget isn't needed for first paint/interaction —
+          loading it during browser idle time instead of right after hydration
+          frees up real bandwidth/main-thread time on slower mobile connections. */}
+      <Script id="crisp-chat" strategy="lazyOnload">
         {`
           window.$crisp=[];
           window.CRISP_WEBSITE_ID="80a53b6d-647c-4a4d-a3d4-93f8fb064fc9";
