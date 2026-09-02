@@ -190,6 +190,20 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     }
   };
 
+  // Captured once, on mount, via the lazy useState initializer — NOT
+  // re-read from searchParams on every render. That distinction is the fix
+  // for a real bug: the effect below calls router.replace() to strip
+  // ?autostart=1 from the URL (so a refresh doesn't re-trigger creation),
+  // but that happens *before* handleGetStarted()'s POST + redirect finish —
+  // it's a real network round trip, not instant. Re-reading
+  // searchParams.get("autostart") live (the previous approach) meant the
+  // "hide the marketing page" guard flipped off the moment the URL was
+  // replaced, exposing the full marketing page for that in-flight window —
+  // exactly the flash a user reported seeing. Snapshotting it once means
+  // the guard stays on for the whole autostart lifecycle regardless of
+  // what happens to the URL in the meantime.
+  const [wasAutostartRequested] = useState(() => searchParams.get("autostart") === "1");
+
   // A visitor who isn't logged in loses their place at the signup redirect
   // unless we carry it through — ?redirect=/chatbots/slug?autostart=1 flows
   // through signup and back here authenticated, where this effect fires the
@@ -207,18 +221,18 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
 
   // Without this, a visitor landing here with ?autostart=1 would see the
   // full marketing page (hero, pricing cards, everything) flash on screen
-  // for the brief window between the page mounting and the effect above
-  // actually firing/finishing — jarring when the whole point of autostart
-  // is to skip straight to setup. Shown instead of the real page for that
-  // whole window; a timeout is the escape hatch for the (shouldn't-happen)
-  // case where autostart never actually fires, e.g. a stale/malformed link.
+  // for the whole autostart window — jarring when the whole point of
+  // autostart is to skip straight to setup. Shown instead of the real page
+  // for that entire window; a timeout is the escape hatch for the
+  // (shouldn't-happen) case where autostart never actually fires, e.g. a
+  // stale/malformed link or the visitor somehow isn't authenticated here.
   const [autostartTimedOut, setAutostartTimedOut] = useState(false);
   useEffect(() => {
-    if (searchParams.get("autostart") !== "1") return;
+    if (!wasAutostartRequested) return;
     const t = setTimeout(() => setAutostartTimedOut(true), 6000);
     return () => clearTimeout(t);
-  }, [searchParams]);
-  const isAutostarting = searchParams.get("autostart") === "1" && !autostartTimedOut;
+  }, [wasAutostartRequested]);
+  const isAutostarting = wasAutostartRequested && !autostartTimedOut;
 
   if (loading) {
     return (
