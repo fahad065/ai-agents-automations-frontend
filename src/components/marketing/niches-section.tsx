@@ -21,7 +21,7 @@ const NICHES = [
   {
     icon: "🏡", label: "Real Estate",
     slug: "real_estate", color: "#3b82f6",
-    agents: ["WhatsApp Sales Agent", "Real Estate Pipeline", "Lead Generation"],
+    agents: ["WhatsApp Sales Agent", "Real Estate Pipeline", "Lead Generation", "Real Estate Lead Bot"],
     desc: "Qualify leads on WhatsApp and follow up 24/7 across UAE and Kenyan markets.",
   },
   {
@@ -33,13 +33,13 @@ const NICHES = [
   {
     icon: "🛒", label: "E-commerce",
     slug: "ecommerce_retail", color: "#ef4444",
-    agents: ["Product Description AI", "Review Responder", "Social Commerce Agent"],
+    agents: ["Product Description AI", "Review Responder", "Social Commerce Agent", "E-commerce Support Bot"],
     desc: "Automate product listings, customer reviews and social selling.",
   },
   {
     icon: "🏥", label: "Healthcare",
     slug: "healthcare", color: "#22c55e",
-    agents: ["Patient Communication", "Appointment Reminder", "Health Content Agent"],
+    agents: ["Patient Communication", "Appointment Reminder", "Health Content Agent", "Clinic Appointment Bot"],
     desc: "HIPAA-aware agents for patient outreach and healthcare content.",
   },
   {
@@ -51,13 +51,13 @@ const NICHES = [
   {
     icon: "🏨", label: "Hospitality",
     slug: "hospitality", color: "#06b6d4",
-    agents: ["Guest Communication", "Review Management", "Social Media Agent"],
+    agents: ["Guest Communication", "Review Management", "Social Media Agent", "Restaurant Chatbot", "Hotel Concierge Bot"],
     desc: "Delight guests before, during and after their stay with automated outreach.",
   },
   {
     icon: "🎓", label: "Education",
     slug: "education", color: "#f97316",
-    agents: ["Course Marketing", "Student Engagement", "Content Creator"],
+    agents: ["Course Marketing", "Student Engagement", "Content Creator", "Education Enrolment Bot"],
     desc: "Grow enrollments and keep students engaged with AI-driven content.",
   },
   {
@@ -139,8 +139,8 @@ export function NichesSection() {
           </h2>
           <p style={{ fontSize: "15px", color: colors.textMuted, lineHeight: 1.65 }}>
             {isAr
-              ? "وكلاء جاهزون مصممون لقطاعك — وليس أدوات عامة تحتاج لتخصيصها بنفسك."
-              : "Pre-built agents tailored to your industry — not generic tools you have to customise yourself."
+              ? "وكلاء وأتمتة وشات بوتات جاهزة مصممة لقطاعك — وليس أدوات عامة تحتاج لتخصيصها بنفسك."
+              : "Pre-built agents, automations, and chatbots tailored to your industry — not generic tools you have to customise yourself."
             }
           </p>
         </div>

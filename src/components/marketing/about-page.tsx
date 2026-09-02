@@ -46,8 +46,8 @@ export function AboutPage() {
       icon: Zap, color: "#f59e0b",
       label: isAr ? "الجودة فوق الكمية" : "Quality over quantity",
       desc: isAr
-        ? "13 وكيل يشتغلون بكفاءة أحسن من 100 يشتغلون بشكل رديء. كل وحدة نطلقها تكون اختبرناها في بيئة الإنتاج قبل ما توصلك."
-        : "13 agents that work perfectly beats 100 that work poorly. Every module we ship is production-tested before it reaches you.",
+        ? "20 وحدة تشتغل بكفاءة أحسن من 100 تشتغل بشكل رديء. كل وكيل أو أتمتة أو شات بوت نطلقه يكون مُختبَراً في بيئة الإنتاج قبل ما يوصلك."
+        : "20+ modules that work perfectly beats 100 that work poorly. Every agent, automation, and chatbot we ship is production-tested before it reaches you.",
     },
     {
       icon: Shield, color: "#22c55e",
@@ -70,6 +70,7 @@ export function AboutPage() {
     { year: "2024 Q1", event: isAr ? "توسعنا لـ 4 وكلاء ذكاء اصطناعي. أول 50 مستخدم في السوق الإماراتي." : "Expanded to 4 AI agents. First 50 users in the UAE market." },
     { year: "2024 Q3", event: isAr ? "انطلقنا في كينيا. أضفنا خطوط أتمتة العقارات والتسويق." : "Launched in Kenya. Added Real Estate and Marketing pipelines." },
     { year: "2025", event: isAr ? "13 وكيل في 12 قطاع. خليجي أولاً، ونتوسع عالمياً." : "13 agents across 12 industries. GCC-first, expanding globally." },
+    { year: "2026", event: isAr ? "أطلقنا الشات بوتات — 9 قوالب جاهزة عبر الموقع وواتساب وإنستقرام. المنصة الآن أكثر من 20 وكيلاً وأتمتة وشات بوت." : "Launched chatbots — 9 ready-made templates across website, WhatsApp and Instagram. The platform is now 20+ agents, automations and chatbots strong." },
   ];
 
   return (

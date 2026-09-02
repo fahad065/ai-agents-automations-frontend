@@ -23,10 +23,12 @@ const INDUSTRIES = [
   { label: "Internal Tools", icon: "⚙️", color: "#a78bfa", slug: "internal_copilot" },
 ];
 
+// One row per service pillar (automation, agent, chatbot) so the mockup
+// reads as "the whole platform," not just agents.
 const RUNNING_AGENTS = [
   { name: "YouTube Automation", niche: "Content & Social", status: "Running", progress: 72, color: "#ef4444", icon: "🎬" },
   { name: "WhatsApp Sales Agent", niche: "Real Estate", status: "Scheduled", progress: 100, color: "#22c55e", icon: "🏡" },
-  { name: "Lead Generation", niche: "Marketing", status: "Running", progress: 45, color: "#f59e0b", icon: "📣" },
+  { name: "Restaurant Chatbot", niche: "Hospitality", status: "Running", progress: 100, color: "#3b82f6", icon: "💬" },
   { name: "Arabic Content Agent", niche: "Content & Social", status: "Completed", progress: 100, color: "#7c3aed", icon: "🎬" },
 ];
 
@@ -109,15 +111,18 @@ export function HeroSection() {
 
       <div style={{
         position: "relative", zIndex: 10,
-        maxWidth: "900px", margin: "0 auto",
+        maxWidth: "1040px", margin: "0 auto",
         padding: "48px 24px 80px", textAlign: "center",
       }}>
 
-        {/* Headline */}
+        {/* Headline — clamp's upper bound and the container width are tuned
+            together so "Your business never sleeps." holds one line instead
+            of breaking mid-sentence on wide screens; "Neither does your AI."
+            stays on its own (intentional) line via the <br/>. */}
         <h1 ref={h1Ref} style={{
-          fontSize: "clamp(44px, 8vw, 88px)",
-          fontWeight: 800, lineHeight: 1.04,
-          letterSpacing: "-0.04em",
+          fontSize: "clamp(38px, 6.4vw, 72px)",
+          fontWeight: 800, lineHeight: 1.08,
+          letterSpacing: "-0.03em",
           color: colors.text, marginBottom: "28px",
         }}>
           {isAr ? "عملك لا ينام." : "Your business never sleeps."}
@@ -136,11 +141,11 @@ export function HeroSection() {
         <p ref={subRef} style={{
           fontSize: "clamp(16px, 2.5vw, 20px)", lineHeight: 1.65,
           color: colors.textMuted,
-          maxWidth: "580px", margin: "0 auto 44px",
+          maxWidth: "620px", margin: "0 auto 44px",
         }}>
           {isAr
-            ? "وكلاء ذكاء اصطناعي وأتمتة جاهزة لكل قطاع — المحتوى، العقارات، الرعاية الصحية والمزيد. اشترك، انشر، ودعها تعمل."
-            : "Pre-built AI agents and automations for every industry — content, real estate, healthcare and more. Subscribe, deploy, and let them run."
+            ? "وكلاء ذكاء اصطناعي وأتمتة وشات بوتات جاهزة لكل قطاع — المحتوى، العقارات، الرعاية الصحية والمزيد. اشترك، فعّلها، ودعها تعمل على مدار الساعة."
+            : "Pre-built AI agents, automations, and chatbots for every industry — content, real estate, healthcare and more. Subscribe, deploy, and let them work around the clock."
           }
         </p>
 
@@ -174,6 +179,24 @@ export function HeroSection() {
         <p style={{ fontSize: "13px", color: colors.textSubtle ?? colors.textMuted, marginBottom: "48px", opacity: 0.7 }}>
           {isAr ? "لا بطاقة ائتمانية · تجربة 30 يوم مجاناً · إلغاء في أي وقت" : "No credit card required · 30-day free trial · Cancel anytime"}
         </p>
+
+        {/* Three service pillars */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center", marginBottom: "28px" }}>
+          {[
+            { icon: "🤖", label: isAr ? "وكلاء ذكاء اصطناعي" : "AI Agents", color: "#7c3aed" },
+            { icon: "⚡", label: isAr ? "أتمتة" : "Automations", color: "#22c55e" },
+            { icon: "💬", label: isAr ? "شات بوتات" : "Chatbots", color: "#3b82f6" },
+          ].map((p) => (
+            <span key={p.label} style={{
+              display: "inline-flex", alignItems: "center", gap: "7px",
+              padding: "7px 16px", borderRadius: "9999px",
+              background: `${p.color}0f`, border: `1px solid ${p.color}30`,
+              color: p.color, fontSize: "13px", fontWeight: 700,
+            }}>
+              <span style={{ fontSize: "14px" }}>{p.icon}</span>{p.label}
+            </span>
+          ))}
+        </div>
 
         {/* Niche pills */}
         <div ref={nichesRef} style={{ marginBottom: "64px" }}>
@@ -253,7 +276,7 @@ export function HeroSection() {
           }}>
             {/* Header row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text }}>My Agents</p>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text }}>My Modules</p>
               <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", animation: "pulse-dot 2s infinite" }} />
                 <span style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>4 active</span>

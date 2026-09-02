@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
-import { Zap, Sun, Moon } from "lucide-react";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -21,7 +20,7 @@ export function AuthWrapper({
   footerLinkText,
   footerLinkHref,
 }: AuthWrapperProps) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <div style={{
@@ -54,19 +53,6 @@ export function AuthWrapper({
             Logic<span style={{ color: "#a78bfa" }}>Mate</span>
           </span>
         </Link>
-
-        <button
-          onClick={toggleTheme}
-          style={{
-            width: "34px", height: "34px", borderRadius: "8px",
-            background: colors.bgCard,
-            border: `1px solid ${colors.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: colors.textMuted,
-          }}
-        >
-          {isDark ? <Sun size={14} /> : <Moon size={14} />}
-        </button>
       </div>
 
       {/* Main content */}

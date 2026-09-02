@@ -43,9 +43,17 @@ export function AgentsSection() {
     const fetchAgents = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/modules?limit=6`);
+        // /modules has no combined "agent+automation" filter (only a single
+        // moduleType), and its sort is a global sortOrder shared across all
+        // module types — chatbot templates also start at sortOrder 1, so an
+        // unfiltered fetch can genuinely surface a chatbot here. That would
+        // be a real bug, not a cosmetic one: this section links to
+        // /agents/:slug, which doesn't exist for a chatbot's slug (those
+        // live at /chatbots/:slug) — so it's filtered out client-side.
+        const res = await fetch(`${apiUrl}/modules?limit=20`);
         const data = await res.json();
-        setAgents((data.data || data).slice(0, 6));
+        const list = (data.data || data) as AgentTemplate[];
+        setAgents(list.filter((m) => m.moduleType !== "chatbot").slice(0, 6));
       } catch {}
       finally { setLoading(false); }
     };

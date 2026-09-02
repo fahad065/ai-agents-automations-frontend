@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
-import { Sun, Moon, Menu, X, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, ChevronDown, Globe } from "lucide-react";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -19,7 +19,7 @@ export function Navbar() {
   const [langOpen, setLangOpen] = useState(false);
   const [lang, setLang] = useState("en");
   const pathname = usePathname();
-  const { isDark, toggleTheme, colors } = useTheme();
+  const { isDark, colors } = useTheme();
   const { isAr } = useLang();
 
   const NAV_LINKS = [
@@ -149,17 +149,6 @@ export function Navbar() {
                 </div>
               )}
             </div>
-
-            {/* Theme toggle */}
-            <button onClick={toggleTheme} style={{
-              width: "34px", height: "34px", borderRadius: "8px",
-              background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", color: colors.textMuted,
-            }}>
-              {isDark ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
 
             {/* Sign in */}
             <Link href="/auth/login" className="desktop-nav" style={{

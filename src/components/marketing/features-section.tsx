@@ -22,8 +22,8 @@ export function FeaturesSection() {
       preview: [
         { label: isAr ? "أتمتة يوتيوب" : "YouTube Automation", sub: isAr ? "المحتوى والتواصل الاجتماعي" : "Content & Social", color: "#ef4444", icon: "🎬", badge: isAr ? "مباشر" : "Live" },
         { label: isAr ? "مسار العقارات" : "Real Estate Pipeline", sub: isAr ? "العقارات" : "Real Estate", color: "#3b82f6", icon: "🏡", badge: isAr ? "مسار" : "Pipeline" },
-        { label: isAr ? "توليد العملاء" : "Lead Generation", sub: isAr ? "التسويق" : "Marketing", color: "#f59e0b", icon: "📣", badge: isAr ? "مباشر" : "Live" },
-        { label: isAr ? "مبيعات واتساب" : "WhatsApp Sales", sub: isAr ? "العقارات" : "Real Estate", color: "#22c55e", icon: "💬", badge: isAr ? "مباشر" : "Live" },
+        { label: isAr ? "شات بوت مطعم" : "Restaurant Chatbot", sub: isAr ? "الضيافة" : "Hospitality", color: "#8b5cf6", icon: "💬", badge: isAr ? "مباشر" : "Live" },
+        { label: isAr ? "مبيعات واتساب" : "WhatsApp Sales", sub: isAr ? "العقارات" : "Real Estate", color: "#22c55e", icon: "🏡", badge: isAr ? "مباشر" : "Live" },
       ],
     },
     {

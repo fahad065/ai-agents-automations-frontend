@@ -5,12 +5,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
+import { useTheme } from "@/hooks/use-theme";
 import { Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const { colors, isDark } = useTheme();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
   const redirect = searchParams.get("redirect");
@@ -56,18 +58,19 @@ function VerifyEmailContent() {
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#080808",
+      minHeight: "100vh", background: colors.bg,
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "24px",
     }}>
       <div style={{
-        background: "#111", border: "1px solid rgba(255,255,255,0.08)",
+        background: colors.bgCard, border: `1px solid ${colors.border}`,
         borderRadius: "20px", padding: "48px 40px",
         width: "100%", maxWidth: "460px", textAlign: "center",
+        boxShadow: colors.shadowCard,
       }}>
         {/* Logo */}
         <div style={{ marginBottom: "32px" }}>
-          <span style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9" }}>
+          <span style={{ fontSize: "22px", fontWeight: 700, color: colors.text }}>
             Logic<span style={{ color: "#7c3aed" }}>Mate</span>
           </span>
         </div>
@@ -76,10 +79,10 @@ function VerifyEmailContent() {
         {status === "verifying" && (
           <>
             <Loader2 size={48} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto 24px" }} />
-            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", marginBottom: "8px" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
               Verifying your email...
             </h1>
-            <p style={{ color: "#64748b", fontSize: "14px" }}>Please wait a moment.</p>
+            <p style={{ color: colors.textMuted, fontSize: "14px" }}>Please wait a moment.</p>
           </>
         )}
 
@@ -87,13 +90,13 @@ function VerifyEmailContent() {
         {status === "success" && (
           <>
             <CheckCircle2 size={52} color="#22c55e" style={{ margin: "0 auto 24px" }} />
-            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", marginBottom: "8px" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
               Email verified! 🎉
             </h1>
-            <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "24px" }}>
+            <p style={{ color: colors.textMuted, fontSize: "14px", marginBottom: "24px" }}>
               {message} Redirecting you now...
             </p>
-            <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
+            <div style={{ width: "100%", height: "3px", background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", borderRadius: "2px", overflow: "hidden" }}>
               <div style={{ height: "100%", background: "#22c55e", borderRadius: "2px", animation: "progress 2.5s linear forwards" }} />
             </div>
           </>
@@ -103,10 +106,10 @@ function VerifyEmailContent() {
         {status === "error" && (
           <>
             <XCircle size={52} color="#ef4444" style={{ margin: "0 auto 24px" }} />
-            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", marginBottom: "8px" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
               Verification failed
             </h1>
-            <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "28px" }}>{message}</p>
+            <p style={{ color: colors.textMuted, fontSize: "14px", marginBottom: "28px" }}>{message}</p>
             {email && (
               <button onClick={resendEmail} disabled={resending || resent} style={{
                 background: "linear-gradient(135deg,#7c3aed,#6d28d9)",
@@ -136,10 +139,10 @@ function VerifyEmailContent() {
             }}>
               <Mail size={32} color="#7c3aed" />
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", marginBottom: "8px" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
               Check your inbox
             </h1>
-            <p style={{ color: "#64748b", fontSize: "15px", lineHeight: 1.7, marginBottom: "28px" }}>
+            <p style={{ color: colors.textMuted, fontSize: "15px", lineHeight: 1.7, marginBottom: "28px" }}>
               We sent a verification link to{" "}
               <strong style={{ color: "#a78bfa" }}>{email || "your email"}</strong>.
               Click the link to activate your account.
@@ -148,7 +151,7 @@ function VerifyEmailContent() {
               background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)",
               borderRadius: "12px", padding: "16px", marginBottom: "24px",
             }}>
-              <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
+              <p style={{ color: colors.textMuted, fontSize: "13px", margin: 0 }}>
                 💡 Can't find it? Check your spam folder or resend below.
               </p>
             </div>
@@ -168,7 +171,7 @@ function VerifyEmailContent() {
                 ✓ New verification email sent!
               </p>
             )}
-            <Link href={loginHref} style={{ color: "#475569", fontSize: "13px", textDecoration: "none" }}>
+            <Link href={loginHref} style={{ color: colors.textMuted, fontSize: "13px", textDecoration: "none" }}>
               Back to login
             </Link>
           </>
@@ -187,7 +190,7 @@ export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
       <div style={{
-        minHeight: "100vh", background: "#080808",
+        minHeight: "100vh", background: "#ffffff",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <div style={{ color: "#7c3aed", fontSize: "14px" }}>Loading...</div>

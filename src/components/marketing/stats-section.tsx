@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
-import { Bot, Zap, Globe, Clock } from "lucide-react";
+import { Bot, Zap, Globe, Clock, MessageCircle } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,8 +17,13 @@ export function StatsSection() {
   const STATS = [
     {
       icon: Bot, color: "#7c3aed",
-      value: "13+", label: isAr ? "وكلاء الذكاء الاصطناعي والأتمتة" : "AI Agents & Automations",
-      sub: isAr ? "المحتوى، العقارات، التسويق والمزيد" : "Content, real estate, marketing and more",
+      value: "22+", label: isAr ? "وكلاء وأتمتة وشات بوتات" : "Agents, automations & chatbots",
+      sub: isAr ? "المحتوى، العقارات، الرعاية الصحية والمزيد" : "Content, real estate, healthcare and more",
+    },
+    {
+      icon: MessageCircle, color: "#3b82f6",
+      value: "3", label: isAr ? "قنوات لكل شات بوت" : "Channels per chatbot",
+      sub: isAr ? "الموقع، واتساب، وإنستقرام" : "Website, WhatsApp & Instagram",
     },
     {
       icon: Zap, color: "#22c55e",
@@ -26,12 +31,12 @@ export function StatsSection() {
       sub: isAr ? "من البحث إلى النشر — بدون أي عمل يدوي" : "From research to publishing — zero manual work",
     },
     {
-      icon: Globe, color: "#3b82f6",
+      icon: Globe, color: "#f59e0b",
       value: "12", label: isAr ? "القطاعات المدعومة" : "Industries supported",
       sub: isAr ? "دعم المحتوى العربي، أسواق الإمارات وكينيا" : "Arabic content support, UAE & Kenya markets",
     },
     {
-      icon: Clock, color: "#f59e0b",
+      icon: Clock, color: "#ef4444",
       value: "30", label: isAr ? "يوم تجريب مجاني" : "Days free trial",
       sub: isAr ? "بدون بطاقة ائتمان. بدون مخاطر. إلغاء في أي وقت." : "No credit card. No risk. Cancel anytime.",
     },
@@ -65,7 +70,7 @@ export function StatsSection() {
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "1px",
           background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
           borderRadius: "18px", overflow: "hidden",

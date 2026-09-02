@@ -73,8 +73,8 @@ const t = {
   ctaHeadingLine1: { en: "Your competitors are already", ar: "منافسوك يعملون بالأتمتة" },
   ctaHeadingLine2: { en: "automating. Are you?", ar: "بالفعل. وأنت؟" },
   ctaSub: {
-    en: "Join businesses in the UAE and Kenya deploying AI agents that handle content, sales and marketing 24 hours a day.",
-    ar: "انضم إلى الشركات في الإمارات وكينيا التي تنشر وكلاء ذكاء اصطناعي يتولون المحتوى والمبيعات والتسويق على مدار 24 ساعة.",
+    en: "Join businesses in the UAE and Kenya deploying AI agents, automations and chatbots that handle content, sales, support and marketing 24 hours a day.",
+    ar: "انضم إلى الشركات في الإمارات وكينيا التي تنشر وكلاء ذكاء اصطناعي وأتمتة وشات بوتات تتولى المحتوى والمبيعات والدعم والتسويق على مدار 24 ساعة.",
   },
   ctaPrimary: { en: "Get started free", ar: "ابدأ مجاناً" },
   ctaSecondaryIndustries: { en: "Browse industries", ar: "تصفح القطاعات" },
@@ -93,8 +93,8 @@ const t = {
   step: { en: "Step", ar: "خطوة" },
   step1Title: { en: "Browse the marketplace", ar: "تصفح السوق" },
   step1Desc: {
-    en: "Choose from 13 pre-built agents and automations across 12 industries. Each one is production-ready with no configuration required.",
-    ar: "اختر من بين 13 وكيلاً وأتمتة جاهزة عبر 12 قطاعاً. كل واحد جاهز للإنتاج دون الحاجة لأي إعداد.",
+    en: "Choose from 20+ pre-built agents, automations and chatbots across 12 industries. Each one is production-ready with no configuration required.",
+    ar: "اختر من بين أكثر من 20 وكيلاً وأتمتة وشات بوت جاهزة عبر 12 قطاعاً. كل واحد جاهز للإنتاج دون الحاجة لأي إعداد.",
   },
   step2Title: { en: "Pick your country & niche", ar: "اختر بلدك وتخصصك" },
   step2Desc: {
