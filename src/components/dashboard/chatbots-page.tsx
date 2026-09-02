@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  Bot, Plus, Trash2, Loader2, X, Globe, Settings2, Check,
+  Bot, Plus, Trash2, Loader2, X, Globe, Settings2, Check, User,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -30,6 +31,17 @@ interface Chatbot {
   };
   createdAt: string;
   updatedAt?: string;
+  // Only present when fetched via GET /chatbots/admin/all — the backend
+  // populates the userId field itself with {_id, name, email} rather than
+  // adding a separate field, so this is the same "userId" key, just an
+  // object instead of a string when the admin listing is used.
+  userId?: string | { _id: string; name: string; email: string };
+}
+
+interface AdminUserOption {
+  _id: string;
+  name: string;
+  email: string;
 }
 
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
@@ -57,6 +69,9 @@ const TEMPLATES: Template[] = [
   { key: "ecommerce", emoji: "🛍️", name: "E-commerce" },
   { key: "gym", emoji: "🏋️", name: "Gym" },
   { key: "education", emoji: "🎓", name: "Education" },
+  { key: "salon", emoji: "💇", name: "Salon / Spa" },
+  { key: "hotel", emoji: "🏨", name: "Hotel / Travel" },
+  { key: "auto_dealership", emoji: "🚗", name: "Auto Dealership" },
   { key: "custom", emoji: "✨", name: "Custom / Blank" },
 ];
 
@@ -66,8 +81,8 @@ const TEMPLATE_EMOJI: Record<string, string> = TEMPLATES.reduce((acc, t) => {
 }, {} as Record<string, string>);
 
 // ── Create Chatbot Modal ────────────────────────────────────────
-function CreateChatbotModal({ onClose, onCreated, colors, isDark }: {
-  onClose: () => void; onCreated: (id: string) => void; colors: any; isDark: boolean;
+function CreateChatbotModal({ onClose, onCreated, colors, isDark, isAdmin }: {
+  onClose: () => void; onCreated: (id: string) => void; colors: any; isDark: boolean; isAdmin: boolean;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -75,6 +90,19 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark }: {
   const [language, setLanguage] = useState<"en" | "ar" | "both">("en");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Admin-only: build this bot under a specific client's account instead of
+  // their own — the "close the deal, build it for them" onboarding flow.
+  // Left unselected, it creates under the admin's own account same as before.
+  const [clients, setClients] = useState<AdminUserOption[]>([]);
+  const [clientId, setClientId] = useState("");
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/admin/users").then((res: any) => {
+      setClients(res.data || []);
+    }).catch(() => {});
+  }, [isAdmin]);
 
   const panelBg = isDark ? "#161616" : "#ffffff";
   const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)";
@@ -100,6 +128,7 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark }: {
         description: description.trim() || undefined,
         language,
         template: template !== "custom" ? template : undefined,
+        userId: isAdmin && clientId ? clientId : undefined,
       });
       const created = res.data?.data || res.data;
       toast.success("Chatbot created!");
@@ -140,6 +169,21 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark }: {
         </div>
 
         <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          {isAdmin && (
+            <div>
+              {lbl("Build for")}
+              <select value={clientId} onChange={(e) => setClientId(e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+                <option value="">Myself (admin account)</option>
+                {clients.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name || "Unnamed"} — {c.email}</option>
+                ))}
+              </select>
+              <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "5px" }}>
+                Pick a client to build and configure this bot under their account — they'll see it in their own dashboard right away.
+              </p>
+            </div>
+          )}
+
           <div>
             {lbl("Chatbot Name *")}
             <input value={name} onChange={(e) => setName(e.target.value)} style={inp} placeholder="e.g. Sunset Cafe Assistant" />
@@ -217,16 +261,20 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark }: {
 export function ChatbotsPage() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const { user } = useAuthStore();
+  const isAdmin = (user as any)?.role === "admin";
   const [chatbots, setChatbots] = useState<Chatbot[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => { fetchChatbots(); }, []);
+  useEffect(() => { fetchChatbots(); }, [isAdmin]);
 
+  // Admin sees every client's chatbot (so they can open and configure any of
+  // them — see admin bypass in ChatbotsService), not just their own.
   const fetchChatbots = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/chatbots");
+      const res = await api.get(isAdmin ? "/chatbots/admin/all" : "/chatbots");
       setChatbots(res.data?.data || res.data || []);
     } catch {
       toast.error("Failed to load chatbots");
@@ -298,7 +346,15 @@ export function ChatbotsPage() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bot.name}</p>
-                      <p style={{ fontSize: "11px", color: colors.textMuted }}>{new Date(bot.createdAt).toLocaleDateString()}</p>
+                      <p style={{ fontSize: "11px", color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {isAdmin && bot.userId && typeof bot.userId === "object" ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <User size={10} /> {bot.userId.name || bot.userId.email}
+                          </span>
+                        ) : (
+                          new Date(bot.createdAt).toLocaleDateString()
+                        )}
+                      </p>
                     </div>
                   </div>
                   <span style={{ fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px", background: sc.bg, color: sc.color, flexShrink: 0 }}>
@@ -358,7 +414,7 @@ export function ChatbotsPage() {
       )}
 
       {showCreate && (
-        <CreateChatbotModal onClose={() => setShowCreate(false)} onCreated={handleCreated} colors={colors} isDark={isDark} />
+        <CreateChatbotModal onClose={() => setShowCreate(false)} onCreated={handleCreated} colors={colors} isDark={isDark} isAdmin={isAdmin} />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

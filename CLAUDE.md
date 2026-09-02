@@ -286,12 +286,23 @@ User-directed: country is being phased out as a platform concept — "In the fut
 
 **Deliberately not touched in this pass:** every other `country`/`lm_country`/`COUNTRIES`/Kenya reference in the codebase (`admin-industries.tsx`, `admin-modules.tsx`, `about-page.tsx`, `industries-list-page.tsx`, `niches-section.tsx`, `stats-section.tsx`, `features-section.tsx`, `cms-modules-page.tsx`, `settings-page.tsx`, `modules-page.tsx`) — the user framed full country removal as a **future** consideration for module creation, not an immediate ask; this pass was scoped to just the navbar dropdown the user actually pointed at. A future session removing `country` as a module-creation concept needs to touch those files (and the corresponding backend `availableIn` field) — this note exists so that work isn't rediscovered from scratch.
 
+## 9 chatbot templates + admin can build a chatbot for a client (implemented, 2026-09)
+Backend added 3 new bilingual chatbot templates (`salon-chatbot`, `hotel-chatbot`, `auto-dealership-chatbot` — see backend CLAUDE.md) alongside real Arabic content for all 6 original ones, which had shipped English-only despite the schema always supporting `_ar` fields. Nothing to do on the frontend for that — `/chatbots`, `/chatbots/[slug]`, `/pricing`'s Chatbots tab, and the dashboard's "+ New Chatbot" template grid all already fetch the catalog generically (`GET /modules?moduleType=chatbot`), so new templates just show up. The only hardcoded lists that needed the 3 new slugs added: `chatbot-detail-page.tsx`'s and `modules-page.tsx`'s `TEMPLATE_ENUM`/`CHATBOT_TEMPLATE_ENUM` maps (slug → `Chatbot.template` enum value), and `chatbots-page.tsx`'s (dashboard) `TEMPLATES` picker-card array.
+
+**Admin onboarding flow** — this platform's actual sales motion is cold outreach → you close the deal → the client often isn't the one who should be expected to build a knowledge base from scratch. Until now admin had no way to do that setup for them: `dashboard/chatbots-page.tsx` always called `GET /chatbots` (the caller's own bots only), and the "+ New Chatbot" modal always created under the admin's own account. Now:
+
+- `ChatbotsPage` checks `isAdmin` (`useAuthStore()`, same pattern as `chatbot-config-page.tsx`'s Billing tab) and, when true, fetches `GET /chatbots/admin/all` instead — every client's chatbot, not just the admin's own. Each card shows the owner's name (from the backend's `.populate('userId', 'name email')`, so `bot.userId` is an object `{_id, name, email}` on this admin listing instead of the usual plain id string) in place of the created-date line.
+- `CreateChatbotModal` gained an admin-only "Build for" dropdown (fetches `GET /admin/users`, same call `settings-page.tsx`'s Email Sender tab already uses) — pick a client and the bot is created under their account (`POST /chatbots` with `{userId: clientId}`), or leave it on "Myself" to keep the old behavior.
+- Clicking "Configure" on any client's bot from this admin view opens the exact same `/dashboard/chatbots/[id]` config page a client would see — no separate admin editor was built, since the backend's `isAdmin` bypass (see backend CLAUDE.md) makes every existing route (update, knowledge base, channels, conversations, analytics, embed code, delete) already work cross-owner. The config page itself needed zero changes; it has no client-side ownership check to begin with.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
 3. ~~Demo videos for all 6 chatbot templates~~ ✅ done — real recordings, hosted on Vercel Blob, wired into `/chatbots`
 4. ~~Chatbot template detail pages + self-serve plan pricing~~ ✅ done — see above.
 5. ~~Standalone chatbot pricing on `/pricing`~~ ✅ done — see above.
-6. **WhatsApp / Instagram going live** — code and UI are done; needs the account owner's real Meta Business App credentials pasted into the Channels tab, plus Instagram needs Meta App Review for `instagram_manage_messages` (can take days)
-7. **Subscribe flow + payment integration for agents/automations** — chatbots now have real billing; agents/automations still only have the generic hardcoded `PLANS` list (YouTube Agent Monthly/Annual) in `payment-instructions-page.tsx`, not per-module pricing
-8. **Admin panel UI revamp** (on hold)
+6. ~~9 chatbot templates + admin builds for client~~ ✅ done — see above.
+7. **Demo videos for the 3 new templates** (Salon/Spa, Hotel/Hospitality, Auto Dealership) — needs the real puppeteer/TTS/ffmpeg recording pipeline against a live bot, not something to fake with a placeholder
+8. **WhatsApp / Instagram going live** — code and UI are done; needs the account owner's real Meta Business App credentials pasted into the Channels tab, plus Instagram needs Meta App Review for `instagram_manage_messages` (can take days)
+9. **Subscribe flow + payment integration for agents/automations** — chatbots now have real billing; agents/automations still only have the generic hardcoded `PLANS` list (YouTube Agent Monthly/Annual) in `payment-instructions-page.tsx`, not per-module pricing
+10. **Admin panel UI revamp** (on hold)

@@ -49,6 +49,9 @@ const CHATBOT_TEMPLATE_ENUM: Record<string, string> = {
   "ecommerce-chatbot": "ecommerce",
   "gym-chatbot": "gym",
   "education-chatbot": "education",
+  "salon-chatbot": "salon",
+  "hotel-chatbot": "hotel",
+  "auto-dealership-chatbot": "auto_dealership",
 };
 
 interface AvailableModule {
