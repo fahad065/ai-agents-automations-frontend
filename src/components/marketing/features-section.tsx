@@ -113,6 +113,12 @@ export function FeaturesSection() {
         </div>
 
         <div style={{
+          border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+          borderRadius: "20px",
+          padding: "24px",
+          background: isDark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.008)",
+        }}>
+        <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
           gap: "32px",
@@ -225,6 +231,7 @@ export function FeaturesSection() {
               ))}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </section>
