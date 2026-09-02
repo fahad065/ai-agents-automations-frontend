@@ -192,9 +192,9 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
 
   // A visitor who isn't logged in loses their place at the signup redirect
   // unless we carry it through — ?redirect=/chatbots/slug?autostart=1 flows
-  // through signup -> verify-email -> login, and once they land back here
-  // authenticated, this effect fires the same creation call automatically
-  // instead of making them find this page and click again.
+  // through signup and back here authenticated, where this effect fires the
+  // same creation call automatically instead of making them find this page
+  // and click again.
   useEffect(() => {
     if (autoStartFired.current) return;
     if (searchParams.get("autostart") !== "1") return;
@@ -204,6 +204,21 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     handleGetStarted();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent, isAuthenticated, searchParams]);
+
+  // Without this, a visitor landing here with ?autostart=1 would see the
+  // full marketing page (hero, pricing cards, everything) flash on screen
+  // for the brief window between the page mounting and the effect above
+  // actually firing/finishing — jarring when the whole point of autostart
+  // is to skip straight to setup. Shown instead of the real page for that
+  // whole window; a timeout is the escape hatch for the (shouldn't-happen)
+  // case where autostart never actually fires, e.g. a stale/malformed link.
+  const [autostartTimedOut, setAutostartTimedOut] = useState(false);
+  useEffect(() => {
+    if (searchParams.get("autostart") !== "1") return;
+    const t = setTimeout(() => setAutostartTimedOut(true), 6000);
+    return () => clearTimeout(t);
+  }, [searchParams]);
+  const isAutostarting = searchParams.get("autostart") === "1" && !autostartTimedOut;
 
   if (loading) {
     return (
@@ -237,6 +252,23 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
           </Link>
         </div>
         <Footer />
+      </div>
+    );
+  }
+
+  if (isAutostarting) {
+    return (
+      <div style={{ minHeight: "100vh", background: colors.bg }}>
+        <Navbar />
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          minHeight: "70vh", flexDirection: "column", gap: "16px",
+        }}>
+          <Loader2 size={32} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
+          <p style={{ color: colors.textMuted }}>Setting up your chatbot...</p>
+        </div>
+        <Footer />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }

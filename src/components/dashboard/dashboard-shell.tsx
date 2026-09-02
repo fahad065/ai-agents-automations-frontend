@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
+import { VerifyEmailBanner } from "./verify-email-banner";
 import {
   LayoutDashboard, Bot, Zap, Play, Key,
   Settings, CreditCard, Menu, X, Sun, Moon,
@@ -751,6 +752,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </header>
 
           {/* ── Profile completion banner ── */}
+          <VerifyEmailBanner />
           <ProfileCompletionBanner colors={colors} />
 
           {/* Page content */}

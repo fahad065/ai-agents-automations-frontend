@@ -152,16 +152,6 @@ function VerifyEmailContent() {
                 💡 Can't find it? Check your spam folder or resend below.
               </p>
             </div>
-            {redirect && (
-              <button onClick={() => router.push(redirect)} style={{
-                background: "linear-gradient(135deg,#7c3aed,#6d28d9)",
-                color: "#fff", border: "none", padding: "12px 28px",
-                borderRadius: "10px", fontSize: "14px", fontWeight: 600,
-                cursor: "pointer", width: "100%", marginBottom: "16px",
-              }}>
-                Continue now — verify email later →
-              </button>
-            )}
             {email && !resent && (
               <button onClick={resendEmail} disabled={resending} style={{
                 background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)",

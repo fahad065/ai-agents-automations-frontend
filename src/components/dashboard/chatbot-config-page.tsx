@@ -597,8 +597,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       await api.put(`/chatbots/${id}`, { status });
       setChatbot((prev) => (prev ? { ...prev, status } : prev));
       toast.success(`Chatbot is now ${status === "active" ? "live" : status}`);
-    } catch {
-      toast.error("Failed to change status");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to change status");
     }
     setStatusSaving(false);
   };

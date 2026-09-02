@@ -8,6 +8,7 @@ interface User {
   role: "user" | "admin";
   avatar?: string;
   provider: string;
+  isEmailVerified?: boolean;
   planType?: "trial" | "lifetime" | "pro" | "free";
   isFreeForever?: boolean;
   trialStartDate?: string;

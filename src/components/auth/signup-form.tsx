@@ -10,10 +10,10 @@ import { AuthDivider } from "./divider";
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
 import { useTheme } from "@/hooks/use-theme";
-import { CheckCircle2 } from "lucide-react";
 
 interface FormErrors {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   confirm?: string;
@@ -27,20 +27,20 @@ export function SignupForm() {
   const { setAuth } = useAuthStore();
   const { colors } = useTheme();
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   const loginHref = redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : "/auth/login";
 
   const validate = (): boolean => {
     const errs: FormErrors = {};
-    if (!name.trim() || name.trim().length < 2)
-      errs.name = "Name must be at least 2 characters";
+    if (!firstName.trim()) errs.firstName = "First name is required";
+    if (!lastName.trim()) errs.lastName = "Last name is required";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       errs.email = "Enter a valid email address";
     if (!password || password.length < 8)
@@ -60,14 +60,19 @@ export function SignupForm() {
     setErrors({});
 
     try {
-        const res = await authApi.register({ name: name.trim(), email: email.trim(), password });
+        const name = `${firstName.trim()} ${lastName.trim()}`.trim();
+        const res = await authApi.register({ name, email: email.trim(), password });
         setAuth(res.user, res.accessToken, res.refreshToken);
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
         document.cookie = `accessToken=${res.accessToken}; path=/; max-age=900; SameSite=Lax`;
-        setSuccess(true);
-        const verifyUrl = `/verify-email?email=${encodeURIComponent(email.trim())}`;
-        router.push(redirect ? `${verifyUrl}&redirect=${encodeURIComponent(redirect)}` : verifyUrl);
+        // Tokens are valid immediately — verification doesn't need to gate
+        // access. Go straight to wherever they were headed (or the
+        // dashboard) instead of an intermediate "check your inbox" page;
+        // a persistent banner (verify-email-banner.tsx) reminds them to
+        // verify until they do, without blocking anything they can already
+        // do with a real session.
+        router.push(redirect || "/dashboard");
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Registration failed. Please try again.";
       setErrors({ general: msg });
@@ -76,32 +81,13 @@ export function SignupForm() {
     }
   };
 
-  if (success) {
-    return (
-      <AuthWrapper
-        title="You're in!"
-        subtitle="Your account has been created successfully."
-        footerText="Already have an account?"
-        footerLinkText="Sign in"
-        footerLinkHref={loginHref}
-      >
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <CheckCircle2 size={48} color="#22c55e" style={{ margin: "0 auto 16px" }} />
-          <p style={{ color: colors.text, fontWeight: 500 }}>
-            Check your inbox for a verification link!
-          </p>
-        </div>
-      </AuthWrapper>
-    );
-  }
-
   return (
     <AuthWrapper
       title="Create your account"
       subtitle="Start automating your business with AI agents"
       footerText="Already have an account?"
       footerLinkText="Sign in"
-      footerLinkHref="/auth/login"
+      footerLinkHref={loginHref}
     >
       <GoogleButton label="Sign up with Google" />
       <AuthDivider label="or sign up with email" />
@@ -118,15 +104,30 @@ export function SignupForm() {
           </div>
         )}
 
-        <FormField
-          label="Full name"
-          placeholder="Enter your full name"
-          value={name}
-          onChange={setName}
-          error={errors.name}
-          autoComplete="name"
-          disabled={loading}
-        />
+        <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ flex: 1 }}>
+            <FormField
+              label="First name"
+              placeholder="Jane"
+              value={firstName}
+              onChange={setFirstName}
+              error={errors.firstName}
+              autoComplete="given-name"
+              disabled={loading}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <FormField
+              label="Last name"
+              placeholder="Doe"
+              value={lastName}
+              onChange={setLastName}
+              error={errors.lastName}
+              autoComplete="family-name"
+              disabled={loading}
+            />
+          </div>
+        </div>
         <FormField
           label="Email address"
           type="email"
