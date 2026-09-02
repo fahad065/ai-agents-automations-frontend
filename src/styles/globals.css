@@ -84,6 +84,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
 * {
@@ -94,7 +97,16 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 15px;
+  /* Kept at the real 16px root — nothing in this codebase uses rem/em
+     (every legacy inline-styled component sets its own explicit px
+     font-size, confirmed via grep), so this value only ever mattered
+     for Tailwind's rem-based utility classes (text-sm, p-8, --radius,
+     etc.) used by the shadcn/Tailwind pages (signup, and any future
+     ones). It used to be 15px (14px/13px on smaller viewports below),
+     which silently shrank every one of those utility classes below
+     its real intended size — harmless to the legacy px-based site
+     either way, since px doesn't scale with the root font-size. */
+  font-size: 16px;
 }
 
 body {
@@ -129,11 +141,7 @@ body.light {
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #6d28d9; }
 
-/* ── Responsive base ──────────────────────────────────── */
-@media (max-width: 768px) {
-  html { font-size: 14px; }
-}
-
-@media (max-width: 480px) {
-  html { font-size: 13px; }
-}
+/* Responsive root-font shrinking (14px/13px) was removed here — same
+   reasoning as the html font-size fix above: it only affected Tailwind's
+   rem-based utility classes, and shrinking them further on mobile is the
+   opposite of what those pages want. */
