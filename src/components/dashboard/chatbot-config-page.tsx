@@ -220,10 +220,118 @@ const copyText = async (text: string, label: string) => {
   }
 };
 
+// ── OpenAI key gate dialog ───────────────────────────────────
+// LogicMate is bring-your-own-key — a chatbot can't embed a knowledge base
+// or answer a single message without its owner's own OpenAI key on file
+// (no platform-wide fallback, see backend CLAUDE.md's BYOK section). Rather
+// than let someone build out a whole bot and only discover that at chat
+// time, this prompts for the key up front, before any setup work.
+function AddOpenAiKeyDialog({ ownerId, forOtherUser, onClose, onSaved, colors, isDark }: {
+  ownerId: string; forOtherUser: boolean; onClose: () => void; onSaved: () => void; colors: any; isDark: boolean;
+}) {
+  const [keyValue, setKeyValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const panelBg = isDark ? "#161616" : "#ffffff";
+  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)";
+  const inp = {
+    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
+    border: `1px solid ${colors.border}`, background: colors.bg,
+    color: colors.text, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+  };
+
+  const handleSave = async () => {
+    if (!keyValue.trim()) { setError("Enter an OpenAI API key"); return; }
+    setSaving(true); setError("");
+    try {
+      await api.post("/api-keys", {
+        provider: "openai",
+        label: "OpenAI",
+        key: keyValue.trim(),
+        userId: forOtherUser ? ownerId : undefined,
+      });
+      toast.success("OpenAI key saved");
+      onSaved();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to save key");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 600, background: "rgba(0,0,0,0.65)",
+      backdropFilter: "blur(6px)", display: "flex", alignItems: "center",
+      justifyContent: "center", padding: "24px",
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: panelBg, border: `1px solid ${panelBorder}`,
+        borderRadius: "16px", width: "100%", maxWidth: "440px",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.5)", overflow: "hidden",
+      }}>
+        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${panelBorder}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+          <div>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: isDark ? "#e5e5e5" : "#111" }}>Add an OpenAI API key</p>
+            <p style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280", marginTop: "4px", lineHeight: 1.5 }}>
+              {forOtherUser
+                ? "This client needs their own OpenAI key on file before their chatbot can embed knowledge or reply — paste it here to add it to their account."
+                : "Your chatbot needs an OpenAI key on file before it can embed its knowledge base or reply to customers."}
+            </p>
+          </div>
+          <button onClick={onClose} style={{
+            width: "28px", height: "28px", borderRadius: "7px", flexShrink: 0,
+            border: `1px solid ${panelBorder}`, background: "transparent",
+            color: isDark ? "#737373" : "#6b7280", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}><X size={13} /></button>
+        </div>
+
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>OpenAI API Key</label>
+            <input
+              type="password"
+              value={keyValue}
+              onChange={(e) => setKeyValue(e.target.value)}
+              placeholder="sk-..."
+              style={inp}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+            />
+          </div>
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#a78bfa" }}>
+            Get an API key from OpenAI →
+          </a>
+          {error && (
+            <p style={{ fontSize: "12px", color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,0.08)", borderRadius: "7px" }}>{error}</p>
+          )}
+        </div>
+
+        <div style={{ padding: "16px 24px", borderTop: `1px solid ${panelBorder}`, display: "flex", gap: "10px" }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: "8px", cursor: "pointer", border: `1px solid ${panelBorder}`, background: "transparent", color: isDark ? "#a3a3a3" : "#4b5563", fontSize: "13px" }}>
+            Not now
+          </button>
+          <button onClick={handleSave} disabled={saving} style={{
+            flex: 2, padding: "10px", borderRadius: "8px", cursor: saving ? "not-allowed" : "pointer",
+            background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none",
+            fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+            opacity: saving ? 0.7 : 1,
+          }}>
+            {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
+            {saving ? "Saving..." : "Save Key"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────
 export function ChatbotConfigPage({ id }: { id: string }) {
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const { user } = useAuthStore();
+  const isAdmin = (user as any)?.role === "admin";
 
   const [chatbot, setChatbot] = useState<Chatbot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -261,8 +369,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // Billing
-  const { user } = useAuthStore();
-  const isAdmin = (user as any)?.role === "admin";
   const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
   const [billingLoaded, setBillingLoaded] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -276,6 +382,15 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const [notifySending, setNotifySending] = useState(false);
   const [notifySent, setNotifySent] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
+
+  // OpenAI key gate — every chatbot capability (knowledge-base embedding,
+  // the live chat engine itself) needs the bot OWNER's own OpenAI key on
+  // file (BYOK, no platform fallback — see backend CLAUDE.md). Checked
+  // right after the bot loads so the prompt appears before any setup work,
+  // whether the viewer is the client themselves or an admin configuring a
+  // client's bot on their behalf.
+  const [openaiKeyMissing, setOpenaiKeyMissing] = useState(false);
+  const [showKeyDialog, setShowKeyDialog] = useState(false);
 
   useEffect(() => { fetchChatbot(); }, [id]);
 
@@ -294,12 +409,31 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, channels.website?.enabled, chatbot]);
 
+  // Checks the bot OWNER's OpenAI key (not the viewer's — an admin viewing
+  // a client's bot needs to know whether the client has one, not whether
+  // the admin does). Passing ?userId= is a no-op for a non-admin viewing
+  // their own bot since the backend only honors it for admins, so it's
+  // always safe to pass the bot's userId here regardless of who's viewing.
+  const checkOpenaiKey = async (ownerId: string) => {
+    try {
+      const res = await api.get(`/api-keys?userId=${ownerId}`);
+      const keys = res.data?.data || res.data || [];
+      const hasOpenAi = keys.some((k: any) => k.provider === "openai" && k.isActive !== false);
+      setOpenaiKeyMissing(!hasOpenAi);
+      setShowKeyDialog(!hasOpenAi);
+    } catch {
+      // Fail open — don't block setup over the check itself failing.
+      setOpenaiKeyMissing(false);
+    }
+  };
+
   const fetchChatbot = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/chatbots/${id}`);
       const bot: Chatbot = res.data?.data || res.data;
       setChatbot(bot);
+      checkOpenaiKey(bot.userId);
       setOverview({
         name: bot.name || "",
         description: bot.description || "",
@@ -545,6 +679,28 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
       <ChatbotTrialBanner billing={chatbot.billing} onGoToBilling={() => setTab("billing")} />
 
+      {/* Dismissed the OpenAI key dialog but it's still missing — keep a
+          quiet reminder visible instead of just letting it disappear. */}
+      {openaiKeyMissing && !showKeyDialog && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap",
+          padding: "12px 16px", borderRadius: "10px", marginBottom: "16px",
+          background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
+        }}>
+          <p style={{ fontSize: "13px", color: colors.text }}>
+            {isAdmin && chatbot.userId !== (user as any)?._id
+              ? "This client hasn't added an OpenAI API key yet — the bot can't answer until they do."
+              : "Add your OpenAI API key to power this chatbot's knowledge base and replies."}
+          </p>
+          <button onClick={() => setShowKeyDialog(true)} style={{
+            padding: "7px 14px", borderRadius: "7px", cursor: "pointer",
+            background: "#f59e0b", color: "#1a1200", border: "none", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap",
+          }}>
+            Add API Key
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div style={{
         display: "flex", gap: "2px", marginBottom: "20px", overflowX: "auto",
@@ -741,6 +897,17 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           submitNotifyPayment={submitNotifyPayment}
           confirming={confirming}
           confirmPayment={confirmPayment}
+        />
+      )}
+
+      {showKeyDialog && (
+        <AddOpenAiKeyDialog
+          ownerId={chatbot.userId}
+          forOtherUser={isAdmin && chatbot.userId !== (user as any)?._id}
+          onClose={() => setShowKeyDialog(false)}
+          onSaved={() => { setOpenaiKeyMissing(false); setShowKeyDialog(false); }}
+          colors={colors}
+          isDark={isDark}
         />
       )}
 
