@@ -21,9 +21,21 @@ interface FormErrors {
 }
 
 const FEATURES = [
-  { icon: Bot, text: "20+ AI agents, automations & chatbots, ready to deploy" },
-  { icon: Sparkles, text: "30-day free trial — no credit card required" },
-  { icon: ShieldCheck, text: "Bring your own API keys — you own your data, always" },
+  {
+    icon: Bot,
+    title: "20+ ready-made modules",
+    text: "AI agents, automations and chatbots you can deploy in minutes.",
+  },
+  {
+    icon: Sparkles,
+    title: "30-day free trial",
+    text: "Full platform access from day one — no credit card required.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Bring your own API keys",
+    text: "You connect your own OpenAI/provider keys — we never hold or bill for your usage.",
+  },
 ];
 
 export function SignupForm() {
@@ -96,93 +108,167 @@ export function SignupForm() {
     window.location.href = url;
   };
 
-  const passwordChecks = [
-    password.length >= 8,
-    /[A-Z]/.test(password),
-    /[0-9]/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ];
-
   return (
-    <div className={`${GeistSans.className} min-h-screen bg-zinc-50`}>
-      {/* Bounded + centered so the split-screen doesn't dissolve into empty
-          space on wide desktop monitors / ultrawides — below max-w it just
-          fills the viewport exactly like before, no visual change there. */}
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] bg-white lg:shadow-[0_0_60px_-15px_rgba(0,0,0,0.08)]">
-      {/* Left — brand / marketing panel. Hidden below lg so mobile just gets the form. */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-violet-50 via-white to-violet-50 p-10 lg:flex">
-        <div
-          className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl"
-          aria-hidden
-        />
+    <div className={`${GeistSans.className} flex min-h-screen items-center justify-center bg-zinc-100 px-6 py-16`}>
+      <div className="mx-auto grid w-full max-w-[1200px] items-center gap-16 lg:grid-cols-2">
+        {/* Left — brand / marketing copy. Hidden below lg; the card's own
+            logo (below) covers the "back to landing page" affordance on
+            mobile. */}
+        <div className="hidden lg:block">
+          <Link href="/" className="mb-10 flex w-fit items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
+              <img src="/icon.svg" width={30} height={30} className="rounded-lg" alt="" />
+            </div>
+            <span className="text-lg font-bold text-zinc-900">
+              Logic<span className="text-primary">Mate</span>
+            </span>
+          </Link>
 
-        <Link href="/" className="relative z-10 flex items-center gap-2 w-fit">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
-            <img src="/icon.svg" width={30} height={30} className="rounded-lg" alt="" />
-          </div>
-          <span className="text-lg font-bold text-zinc-900">
-            Logic<span className="text-primary">Mate</span>
-          </span>
-        </Link>
-
-        <div className="relative z-10 max-w-md">
           <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900">
-            Start your 30-day
-            <br />
-            free trial
+            Start your 30-day free trial
           </h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-zinc-500">
             Join businesses deploying AI agents, automations and chatbots that handle content, sales, support and marketing around the clock.
           </p>
 
-          <ul className="mt-8 flex flex-col gap-4">
+          <ul className="mt-10 flex flex-col gap-8">
             {FEATURES.map((f) => {
               const Icon = f.icon;
               return (
-                <li key={f.text} className="flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
-                    <Icon size={15} className="text-primary" />
-                  </span>
-                  <span className="pt-1.5 text-[13px] leading-snug text-zinc-600">{f.text}</span>
+                <li key={f.title} className="flex items-start gap-3">
+                  <Icon size={20} className="mt-0.5 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-semibold text-zinc-900">{f.title}</p>
+                    <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-zinc-500">{f.text}</p>
+                  </div>
                 </li>
               );
             })}
           </ul>
         </div>
 
-        <p className="relative z-10 text-xs text-zinc-400">© {new Date().getFullYear()} LogicMate. All rights reserved.</p>
-      </div>
-
-      {/* Right — form panel */}
-      <div className="flex w-full flex-col lg:w-1/2">
-        <div className="flex items-center justify-between p-6 lg:justify-end">
-          <Link href="/" className="flex items-center gap-2 lg:hidden">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
+        {/* Right — floating form card */}
+        <div className="mx-auto w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] sm:p-10 lg:mx-0">
+          <Link href="/" className="mb-8 flex w-fit items-center gap-2 lg:hidden">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
               <img src="/icon.svg" width={26} height={26} className="rounded-lg" alt="" />
             </div>
             <span className="text-base font-bold text-zinc-900">
               Logic<span className="text-primary">Mate</span>
             </span>
           </Link>
-          <Link href="/" className="text-[13px] font-medium text-zinc-500 hover:text-zinc-900">
-            ← Back to website
-          </Link>
-        </div>
 
-        <div className="flex flex-1 items-center justify-center px-6 pb-10">
-          <div className="w-full max-w-sm">
-            <div className="mb-7">
-              <h2 className="text-2xl font-bold text-zinc-900">Create your account</h2>
-              <p className="mt-1.5 text-[13px] text-zinc-500">
-                Already have an account?{" "}
-                <Link href={loginHref} className="font-medium text-primary hover:underline">
-                  Sign in
-                </Link>
-              </p>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {errors.general && (
+              <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">
+                {errors.general}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="firstName">First name</Label>
+                <Input
+                  id="firstName"
+                  placeholder="Jane"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  disabled={loading}
+                  aria-invalid={!!errors.firstName}
+                />
+                {errors.firstName && <p className="text-[11px] text-destructive">{errors.firstName}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  disabled={loading}
+                  aria-invalid={!!errors.lastName}
+                />
+                {errors.lastName && <p className="text-[11px] text-destructive">{errors.lastName}</p>}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                disabled={loading}
+                aria-invalid={!!errors.email}
+              />
+              {errors.email && <p className="text-[11px] text-destructive">{errors.email}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  disabled={loading}
+                  aria-invalid={!!errors.password}
+                  className="pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+              {errors.password ? (
+                <p className="text-[11px] text-destructive">{errors.password}</p>
+              ) : (
+                <p className="text-[11px] text-zinc-400">Minimum 8 characters, with an uppercase letter and a number.</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm">Confirm password</Label>
+              <Input
+                id="confirm"
+                type={showPassword ? "text" : "password"}
+                placeholder="Repeat your password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                autoComplete="new-password"
+                disabled={loading}
+                aria-invalid={!!errors.confirm}
+              />
+              {errors.confirm && <p className="text-[11px] text-destructive">{errors.confirm}</p>}
+            </div>
+
+            <Button type="submit" size="lg" className="mt-1 h-10 w-full" disabled={loading}>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign up"}
+            </Button>
+
+            <p className="text-center text-[13px] text-zinc-500">
+              Already have an account?{" "}
+              <Link href={loginHref} className="font-medium text-primary underline underline-offset-2">
+                Sign in
+              </Link>
+            </p>
+
+            <div className="my-1 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">or</span>
+              <span className="h-px flex-1 bg-border" />
             </div>
 
             <Button
@@ -206,129 +292,13 @@ export function SignupForm() {
               Sign up with Google
             </Button>
 
-            <div className="my-5 flex items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">or</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {errors.general && (
-                <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">
-                  {errors.general}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="firstName">First name</Label>
-                  <Input
-                    id="firstName"
-                    placeholder="Jane"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    autoComplete="given-name"
-                    disabled={loading}
-                    aria-invalid={!!errors.firstName}
-                  />
-                  {errors.firstName && <p className="text-[11px] text-destructive">{errors.firstName}</p>}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="lastName">Last name</Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Doe"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    autoComplete="family-name"
-                    disabled={loading}
-                    aria-invalid={!!errors.lastName}
-                  />
-                  {errors.lastName && <p className="text-[11px] text-destructive">{errors.lastName}</p>}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  disabled={loading}
-                  aria-invalid={!!errors.email}
-                />
-                {errors.email && <p className="text-[11px] text-destructive">{errors.email}</p>}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Minimum 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    disabled={loading}
-                    aria-invalid={!!errors.password}
-                    className="pr-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                {password.length > 0 && (
-                  <div className="mt-0.5">
-                    <div className="flex gap-1">
-                      {passwordChecks.map((met, i) => (
-                        <span
-                          key={i}
-                          className={`h-[3px] flex-1 rounded-full transition-colors ${met ? "bg-emerald-500" : "bg-zinc-200"}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {errors.password && <p className="text-[11px] text-destructive">{errors.password}</p>}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="confirm">Confirm password</Label>
-                <Input
-                  id="confirm"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Repeat your password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  autoComplete="new-password"
-                  disabled={loading}
-                  aria-invalid={!!errors.confirm}
-                />
-                {errors.confirm && <p className="text-[11px] text-destructive">{errors.confirm}</p>}
-              </div>
-
-              <Button type="submit" size="lg" className="mt-1 h-10 w-full" disabled={loading}>
-                {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign up"}
-              </Button>
-
-              <p className="mt-1 text-center text-[11px] leading-relaxed text-zinc-400">
-                By creating an account you agree to our{" "}
-                <a href="/terms" className="text-primary hover:underline">Terms</a> and{" "}
-                <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
-              </p>
-            </form>
-          </div>
+            <p className="mt-1 text-center text-[11px] leading-relaxed text-zinc-400">
+              By creating an account you agree to our{" "}
+              <a href="/terms" className="text-primary hover:underline">Terms</a> and{" "}
+              <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+            </p>
+          </form>
         </div>
-      </div>
       </div>
     </div>
   );
