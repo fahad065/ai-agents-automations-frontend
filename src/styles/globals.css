@@ -1,4 +1,16 @@
 @import "tailwindcss";
+/* Ships shadcn's own custom Tailwind v4 variants (data-horizontal,
+   data-vertical, data-open, data-closed, data-checked, data-unchecked,
+   data-selected, data-disabled, data-active) that the generated
+   src/components/ui/* primitives rely on — e.g. separator.tsx's
+   `data-horizontal:h-px` needs this to actually map to
+   `[data-orientation="horizontal"]`. Without it Tailwind falls back to
+   checking for a literal (nonexistent) `[data-horizontal]` attribute, so
+   the variant silently never matches — confirmed this was exactly why
+   the signup page's "OR" divider rendered with no line at all. */
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --color-brand-400: #a78bfa;
