@@ -104,7 +104,11 @@ export function SignupForm() {
   ];
 
   return (
-    <div className={`${GeistSans.className} flex min-h-screen bg-white`}>
+    <div className={`${GeistSans.className} min-h-screen bg-zinc-50`}>
+      {/* Bounded + centered so the split-screen doesn't dissolve into empty
+          space on wide desktop monitors / ultrawides — below max-w it just
+          fills the viewport exactly like before, no visual change there. */}
+      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] bg-white lg:shadow-[0_0_60px_-15px_rgba(0,0,0,0.08)]">
       {/* Left — brand / marketing panel. Hidden below lg so mobile just gets the form. */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-violet-50 via-white to-violet-50 p-10 lg:flex">
         <div
@@ -324,6 +328,7 @@ export function SignupForm() {
             </form>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
