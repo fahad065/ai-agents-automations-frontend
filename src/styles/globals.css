@@ -101,10 +101,22 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Wrapped in @layer base so Tailwind's utility classes (p-8, space-y-5,
+   px-6, gap-*, every margin/padding class) can still override it. CSS
+   cascade layers beat specificity: an unlayered rule like a bare `* {}`
+   always wins over ANY layered rule (Tailwind's utilities included) no
+   matter how specific the utility's selector is — so this reset was
+   silently zeroing out every spacing utility on every Tailwind/shadcn
+   page (confirmed via a signup-form.tsx card whose computed padding was
+   0px despite `p-8` being right there in its className). Harmless for
+   the legacy inline-styled pages either way, since they set explicit
+   px margin/padding inline and never depended on the browser default. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {
