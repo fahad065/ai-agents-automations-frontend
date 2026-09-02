@@ -21,6 +21,7 @@
     "country-list": "^2.4.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "geist": "^1.7.2",
     "gsap": "^3.14.2",
     "js-cookie": "^3.0.5",
     "lucide-react": "^1.7.0",
