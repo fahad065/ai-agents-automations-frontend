@@ -4,14 +4,23 @@ import { useTheme } from "@/hooks/use-theme";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-export function GoogleButton({ label = "Continue with Google" }: { label?: string }) {
+export function GoogleButton({ label = "Continue with Google", redirect }: { label?: string; redirect?: string | null }) {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = () => {
     setLoading(true);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    window.location.href = `${apiUrl}/auth/google`;
+    // This is a full page redirect through Google's own domain and back —
+    // unlike the email flow, there's no client-side router state that
+    // survives the round trip, so the intended post-login destination (e.g.
+    // /chatbots/some-slug?autostart=1) has to ride along as a query param.
+    // The backend forwards it through Google's OAuth `state` param and
+    // hands it back to /auth/callback on return — see auth.controller.ts.
+    const url = redirect
+      ? `${apiUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`
+      : `${apiUrl}/auth/google`;
+    window.location.href = url;
   };
 
   return (

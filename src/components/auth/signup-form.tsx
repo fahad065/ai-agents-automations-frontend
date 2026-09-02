@@ -89,7 +89,7 @@ export function SignupForm() {
       footerLinkText="Sign in"
       footerLinkHref={loginHref}
     >
-      <GoogleButton label="Sign up with Google" />
+      <GoogleButton label="Sign up with Google" redirect={redirect} />
       <AuthDivider label="or sign up with email" />
 
       <form onSubmit={handleSubmit}>

@@ -73,7 +73,7 @@ export function LoginForm() {
       footerLinkText="Sign up free"
       footerLinkHref={redirect ? `/auth/signup?redirect=${encodeURIComponent(redirect)}` : "/auth/signup"}
     >
-      <GoogleButton label="Continue with Google" />
+      <GoogleButton label="Continue with Google" redirect={redirect} />
       <AuthDivider label="or sign in with email" />
 
       <form onSubmit={handleSubmit}>

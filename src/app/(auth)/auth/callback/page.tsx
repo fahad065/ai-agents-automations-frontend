@@ -17,6 +17,7 @@ function CallbackContent() {
   useEffect(() => {
     const token = params.get("token");
     const refresh = params.get("refresh");
+    const redirect = params.get("redirect");
 
     if (!token || !refresh) {
       router.push("/auth/login?error=oauth_failed");
@@ -40,12 +41,8 @@ function CallbackContent() {
         
             // Small delay to ensure cookie is set
             await new Promise((r) => setTimeout(r, 100));
-        
-            if (user.role === "admin") {
-            router.push("/dashboard");
-            } else {
-            router.push("/dashboard");
-            }
+
+            router.push(redirect || "/dashboard");
         } catch {
             router.push("/auth/login?error=oauth_failed");
         }
