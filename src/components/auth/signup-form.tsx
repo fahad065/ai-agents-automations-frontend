@@ -8,6 +8,7 @@ import { Bot, Sparkles, ShieldCheck, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -109,37 +110,37 @@ export function SignupForm() {
   };
 
   return (
-    <div className={`${GeistSans.className} flex min-h-screen items-center justify-center bg-zinc-100 px-6 py-16`}>
-      <div className="mx-auto grid w-full max-w-[1200px] items-center gap-16 lg:grid-cols-2">
-        {/* Left — brand / marketing copy. Hidden below lg; the card's own
+    <div className={`${GeistSans.className} flex min-h-screen items-center justify-center bg-background px-6 py-16 md:px-10`}>
+      <div className="grid w-full max-w-5xl items-center gap-16 md:grid-cols-2">
+        {/* Left — brand / marketing copy. Hidden below md; the card's own
             logo (below) covers the "back to landing page" affordance on
             mobile. */}
-        <div className="hidden lg:block">
-          <Link href="/" className="mb-10 flex w-fit items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
-              <img src="/icon.svg" width={30} height={30} className="rounded-lg" alt="" />
+        <div className="hidden max-w-md md:block">
+          <Link href="/" className="mb-8 flex w-fit items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
+              <img src="/icon.svg" width={26} height={26} className="rounded-lg" alt="" />
             </div>
-            <span className="text-lg font-bold text-zinc-900">
+            <span className="text-base font-bold text-foreground">
               Logic<span className="text-primary">Mate</span>
             </span>
           </Link>
 
-          <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900">
+          <h1 className="mb-4 text-2xl font-semibold md:text-3xl">
             Start your 30-day free trial
           </h1>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-zinc-500">
+          <p className="mb-10 text-muted-foreground">
             Join businesses deploying AI agents, automations and chatbots that handle content, sales, support and marketing around the clock.
           </p>
 
-          <ul className="mt-10 flex flex-col gap-8">
+          <ul className="space-y-6">
             {FEATURES.map((f) => {
               const Icon = f.icon;
               return (
-                <li key={f.title} className="flex items-start gap-3">
-                  <Icon size={20} className="mt-0.5 shrink-0 text-primary" />
+                <li key={f.title} className="flex gap-4">
+                  <Icon className="mt-0.5 size-5 shrink-0 text-foreground" />
                   <div>
-                    <p className="font-semibold text-zinc-900">{f.title}</p>
-                    <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-zinc-500">{f.text}</p>
+                    <p className="font-medium">{f.title}</p>
+                    <p className="text-sm text-muted-foreground">{f.text}</p>
                   </div>
                 </li>
               );
@@ -147,27 +148,27 @@ export function SignupForm() {
           </ul>
         </div>
 
-        {/* Right — floating form card */}
-        <div className="mx-auto w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] sm:p-10 lg:mx-0">
-          <Link href="/" className="mb-8 flex w-fit items-center gap-2 lg:hidden">
+        {/* Right — form card */}
+        <div className="w-full rounded-xl border bg-card p-8 shadow-sm">
+          <Link href="/" className="mb-6 flex w-fit items-center gap-2 md:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
               <img src="/icon.svg" width={26} height={26} className="rounded-lg" alt="" />
             </div>
-            <span className="text-base font-bold text-zinc-900">
+            <span className="text-base font-bold text-foreground">
               Logic<span className="text-primary">Mate</span>
             </span>
           </Link>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {errors.general && (
-              <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[13px] text-destructive">
+              <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
                 {errors.general}
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="firstName">First name</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Name</Label>
                 <Input
                   id="firstName"
                   placeholder="Jane"
@@ -177,10 +178,10 @@ export function SignupForm() {
                   disabled={loading}
                   aria-invalid={!!errors.firstName}
                 />
-                {errors.firstName && <p className="text-[11px] text-destructive">{errors.firstName}</p>}
+                {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="lastName">Last name</Label>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
                 <Input
                   id="lastName"
                   placeholder="Doe"
@@ -190,11 +191,11 @@ export function SignupForm() {
                   disabled={loading}
                   aria-invalid={!!errors.lastName}
                 />
-                {errors.lastName && <p className="text-[11px] text-destructive">{errors.lastName}</p>}
+                {errors.lastName && <p className="text-xs text-destructive">{errors.lastName}</p>}
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -206,10 +207,10 @@ export function SignupForm() {
                 disabled={loading}
                 aria-invalid={!!errors.email}
               />
-              {errors.email && <p className="text-[11px] text-destructive">{errors.email}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
@@ -226,20 +227,20 @@ export function SignupForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
               {errors.password ? (
-                <p className="text-[11px] text-destructive">{errors.password}</p>
+                <p className="text-xs text-destructive">{errors.password}</p>
               ) : (
-                <p className="text-[11px] text-zinc-400">Minimum 8 characters, with an uppercase letter and a number.</p>
+                <p className="text-xs text-muted-foreground">Minimum 8 characters, with an uppercase letter and a number.</p>
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="space-y-2">
               <Label htmlFor="confirm">Confirm password</Label>
               <Input
                 id="confirm"
@@ -251,31 +252,30 @@ export function SignupForm() {
                 disabled={loading}
                 aria-invalid={!!errors.confirm}
               />
-              {errors.confirm && <p className="text-[11px] text-destructive">{errors.confirm}</p>}
+              {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
             </div>
 
-            <Button type="submit" size="lg" className="mt-1 h-10 w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign up"}
             </Button>
 
-            <p className="text-center text-[13px] text-zinc-500">
+            <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href={loginHref} className="font-medium text-primary underline underline-offset-2">
+              <Link href={loginHref} className="font-medium text-primary underline underline-offset-4">
                 Sign in
               </Link>
             </p>
 
-            <div className="my-1 flex items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">or</span>
-              <span className="h-px flex-1 bg-border" />
+            <div className="flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-xs text-muted-foreground">OR</span>
+              <Separator className="flex-1" />
             </div>
 
             <Button
               type="button"
               variant="outline"
-              size="lg"
-              className="h-10 w-full"
+              className="w-full"
               onClick={handleGoogleSignup}
               disabled={googleLoading}
             >
@@ -292,7 +292,7 @@ export function SignupForm() {
               Sign up with Google
             </Button>
 
-            <p className="mt-1 text-center text-[11px] leading-relaxed text-zinc-400">
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
               By creating an account you agree to our{" "}
               <a href="/terms" className="text-primary hover:underline">Terms</a> and{" "}
               <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
