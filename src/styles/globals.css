@@ -117,6 +117,15 @@
     margin: 0;
     padding: 0;
   }
+  /* Any bare `border` utility (no explicit border-* color class) falls
+     back to `currentColor` — on the signup card that meant a near-black
+     border (inherited text color), not the light gray it looked like it
+     should be. This is the reference's own base-layer rule, scoped here
+     to just border-color so it doesn't touch body/html globally like the
+     reference's full block does. */
+  * {
+    border-color: var(--border);
+  }
 }
 
 html {

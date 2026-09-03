@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GeistSans } from "geist/font/sans";
-import { Bot, Sparkles, ShieldCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Bot, Sparkles, ShieldCheck, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,7 +149,8 @@ export function SignupForm() {
         </div>
 
         {/* Right — form card */}
-        <div className="w-full rounded-xl border bg-card p-8 shadow-sm">
+        <div className="w-full">
+        <div className="rounded-xl border border-[rgba(0,0,0,0.07)] bg-card p-8 shadow-sm">
           <Link href="/" className="mb-6 flex w-fit items-center gap-2 md:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
               <img src="/icon.svg" width={26} height={26} className="rounded-lg" alt="" />
@@ -159,7 +160,7 @@ export function SignupForm() {
             </span>
           </Link>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {errors.general && (
               <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
                 {errors.general}
@@ -168,7 +169,9 @@ export function SignupForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">Name</Label>
+                <Label htmlFor="firstName">
+                  Name <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="firstName"
                   placeholder="Jane"
@@ -181,7 +184,9 @@ export function SignupForm() {
                 {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">
+                  Last Name <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="lastName"
                   placeholder="Doe"
@@ -196,7 +201,9 @@ export function SignupForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -211,7 +218,9 @@ export function SignupForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">
+                Password <span className="text-destructive">*</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -241,7 +250,9 @@ export function SignupForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm">Confirm password</Label>
+              <Label htmlFor="confirm">
+                Confirm password <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="confirm"
                 type={showPassword ? "text" : "password"}
@@ -298,6 +309,14 @@ export function SignupForm() {
               <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
             </p>
           </form>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/" className="inline-flex items-center gap-1.5 hover:text-foreground">
+            <ArrowLeft size={14} />
+            Back to home
+          </Link>
+        </p>
         </div>
       </div>
     </div>
