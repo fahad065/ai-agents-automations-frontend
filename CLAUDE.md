@@ -403,6 +403,17 @@ Kept the same deliberate, already-agreed differences from the literal reference:
 
 Verified via Playwright: card border computes to `rgba(0, 0, 0, 0.07)`, an empty-submit attempt on both pages shows only the custom red-border/inline-error state with no native browser popup, and the homepage (100% inline styles) is pixel-unchanged — the scoped `border-color` base rule has zero effect there since every legacy border is set via inline `style={{border: ...}}`, which always wins over any CSS class regardless of layer.
 
+**Seventh pass — forgot/reset password actually implemented, submit-button loaders confirmed.** User asked to (1) confirm Sign In/Sign Up buttons show a loader while their request is in flight, and (2) make sure "forgot password" actually works — turned out it never did.
+
+`forgot-password-form.tsx` was a complete mock: its whole submit handler was `await new Promise((r) => setTimeout(r, 1000))` with a comment "API call will go here when backend endpoint is ready" — no backend endpoint existed, and no `/reset-password` frontend page existed either, even though `EmailService.sendPasswordResetEmail()` already existed on the backend (built ahead of the rest of the flow, never called by anything until now — see backend CLAUDE.md's "Forgot / reset password" section for the new endpoints).
+
+- Rebuilt `forgot-password-form.tsx` on the same Tailwind/shadcn card system as login/signup (it had been left on the old `AuthWrapper`/`FormField` design through every earlier pass since those only touched signup, then login), wired to the new real `authApi.forgotPassword()`.
+- New `reset-password-form.tsx` + `/auth/reset-password` page (didn't exist before) — reads `?token=` from the URL, new-password + confirm-password with the same asterisk/inline-validation as signup, calls `authApi.resetPassword()`. Three states handled explicitly instead of left to crash: missing token, a backend-rejected (invalid/expired) token, and success (auto-redirects to `/auth/login` after 2.5s).
+- `authApi` gained `forgotPassword()`/`resetPassword()` — same axios + error-shape pattern (`err?.response?.data?.message`) already used everywhere else in this file.
+- The Sign In/Sign Up loaders turned out to already be correctly implemented from the redesign passes above — confirmed rather than assumed, via Playwright with a mocked slow API response on all three buttons (signup, login, and the new forgot-password one): each showed `disabled: true` and a spinning `Loader2` icon while the mocked request was pending.
+
+**Verification note, same caveat as the backend side:** this sandbox has no network path to the backend, MongoDB, or the production site, so the full request/response cycle was verified against mocked API responses (`page.route()` intercepting the specific POST calls, confirmed narrow enough to not also swallow the page's own navigation request — an early version of the test script accidentally did this and made the page appear to hang) rather than a live backend. Code-level logic (token flow, validation, error states) was traced carefully against the already-shipped signup/login pattern it mirrors.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
