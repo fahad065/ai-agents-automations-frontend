@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { CmsPage } from "./cms-page";
 import { ArrowLeft, Clock, Eye, Calendar, Loader2 } from "lucide-react";
@@ -25,7 +24,6 @@ interface BlogPost {
 }
 
 export function BlogPostPage({ slug }: { slug: string }) {
-  const { colors } = useTheme();
   const { isAr } = useLang();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,18 +39,17 @@ export function BlogPostPage({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 size={28} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="size-7 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!post) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px" }}>
-        <p style={{ color: colors.text, fontSize: "16px" }}>Post not found</p>
-        <Link href="/blog" style={{ color: "#a78bfa", textDecoration: "none", fontSize: "14px" }}>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <p className="text-base text-foreground">Post not found</p>
+        <Link href="/blog" className="text-sm text-primary no-underline">
           {isAr ? "رجوع للمدونة" : "Back to blog"}
         </Link>
       </div>
@@ -66,51 +63,26 @@ export function BlogPostPage({ slug }: { slug: string }) {
   return (
     <CmsPage title={title} subtitle={excerpt}>
       {/* Back + meta */}
-      <div dir={isAr ? "rtl" : "ltr"} style={{ marginBottom: "32px" }}>
-        <Link href="/blog" style={{
-          display: "inline-flex", alignItems: "center", gap: "6px",
-          color: colors.textMuted, textDecoration: "none",
-          fontSize: "13px", marginBottom: "20px",
-        }}>
-          <ArrowLeft size={13} /> {isAr ? "كل المقالات" : "All posts"}
+      <div dir={isAr ? "rtl" : "ltr"} className="mb-8">
+        <Link href="/blog" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline">
+          <ArrowLeft className="size-3" /> {isAr ? "كل المقالات" : "All posts"}
         </Link>
 
-        <div style={{
-          display: "flex", flexWrap: "wrap",
-          alignItems: "center", gap: "16px",
-          padding: "14px 0", borderBottom: `1px solid ${colors.border}`,
-        }}>
-          <span style={{
-            fontSize: "11px", fontWeight: 600, padding: "3px 10px",
-            borderRadius: "9999px", background: "rgba(124,58,237,0.1)",
-            color: "#a78bfa",
-          }}>
+        <div className="flex flex-wrap items-center gap-4 border-b py-3.5">
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
             {post.category}
           </span>
-          <span style={{
-            display: "flex", alignItems: "center", gap: "4px",
-            fontSize: "12px", color: colors.textMuted,
-          }}>
-            <Calendar size={12} />
-            {new Date(post.publishedAt).toLocaleDateString("en-GB", {
-              day: "numeric", month: "long", year: "numeric",
-            })}
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="size-3" />
+            {new Date(post.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </span>
-          <span style={{
-            display: "flex", alignItems: "center", gap: "4px",
-            fontSize: "12px", color: colors.textMuted,
-          }}>
-            <Clock size={12} /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="size-3" /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
           </span>
-          <span style={{
-            display: "flex", alignItems: "center", gap: "4px",
-            fontSize: "12px", color: colors.textMuted,
-          }}>
-            <Eye size={12} /> {post.viewCount} views
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Eye className="size-3" /> {post.viewCount} views
           </span>
-          <span style={{ fontSize: "12px", color: colors.textMuted }}>
-            By {post.authorName}
-          </span>
+          <span className="text-xs text-muted-foreground">By {post.authorName}</span>
         </div>
       </div>
 
@@ -118,41 +90,19 @@ export function BlogPostPage({ slug }: { slug: string }) {
       <div
         dir={isAr ? "rtl" : "ltr"}
         dangerouslySetInnerHTML={{ __html: content || (isAr ? "<p>المحتوى قادم قريباً.</p>" : "<p>Content coming soon.</p>") }}
-        style={{ fontSize: "16px", lineHeight: 1.8, color: colors.textMuted }}
+        className="text-base leading-[1.8] text-muted-foreground [&_a]:text-primary [&_code]:rounded [&_code]:bg-card [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-[22px] [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[17px] [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:ps-6 [&_p]:mb-4 [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:bg-card [&_pre]:p-4 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:mb-4 [&_ul]:ps-6"
       />
 
       {/* Tags */}
       {post.tags?.length > 0 && (
-        <div style={{
-          marginTop: "40px", paddingTop: "24px",
-          borderTop: `1px solid ${colors.border}`,
-          display: "flex", flexWrap: "wrap", gap: "8px",
-        }}>
+        <div className="mt-10 flex flex-wrap gap-2 border-t pt-6">
           {post.tags.map((tag) => (
-            <span key={tag} style={{
-              fontSize: "12px", padding: "4px 10px",
-              borderRadius: "9999px",
-              background: colors.bgCard,
-              border: `1px solid ${colors.border}`,
-              color: colors.textMuted,
-            }}>
+            <span key={tag} className="rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
               #{tag}
             </span>
           ))}
         </div>
       )}
-
-      <style>{`
-        h2 { font-size: 22px; font-weight: 700; color: ${colors.text}; margin: 32px 0 12px; }
-        h3 { font-size: 17px; font-weight: 600; color: ${colors.text}; margin: 24px 0 8px; }
-        p { margin-bottom: 16px; }
-        ul, ol { padding-left: 24px; margin-bottom: 16px; }
-        li { margin-bottom: 8px; }
-        strong { color: ${colors.text}; font-weight: 600; }
-        a { color: #a78bfa; }
-        code { background: ${colors.bgCard}; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; }
-        pre { background: ${colors.bgCard}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 16px; overflow-x: auto; margin-bottom: 16px; }
-      `}</style>
     </CmsPage>
   );
 }

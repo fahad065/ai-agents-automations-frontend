@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { ArrowRight, Clock, Eye, Loader2, BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface BlogPost {
   _id: string;
@@ -21,7 +21,6 @@ interface BlogPost {
 }
 
 export function BlogListPage() {
-  const { colors } = useTheme();
   const { isAr } = useLang();
 
   const CATEGORY_LABELS: Record<string, string> = {
@@ -55,52 +54,35 @@ export function BlogListPage() {
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
+    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-background">
       {/* Hero */}
-      <section style={{ padding: "100px 24px 48px", textAlign: "center" }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "6px",
-          border: "1px solid rgba(124,58,237,0.3)",
-          background: "rgba(124,58,237,0.08)",
-          color: "#a78bfa", padding: "4px 14px",
-          borderRadius: "9999px", fontSize: "12px",
-          fontWeight: 500, marginBottom: "16px",
-        }}>
-          <BookOpen size={11} /> {isAr ? "مدونة لوجيك ميت" : "LogicMate Blog"}
+      <section className="px-6 pt-25 pb-12 text-center">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1 text-xs font-medium text-primary">
+          <BookOpen className="size-2.5" /> {isAr ? "مدونة لوجيك ميت" : "LogicMate Blog"}
         </div>
-        <h1 style={{
-          fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800,
-          color: colors.text, marginBottom: "12px",
-          letterSpacing: "-0.02em",
-        }}>
+        <h1 className="mb-3 text-[clamp(32px,5vw,52px)] font-extrabold tracking-tight text-foreground">
           {isAr ? "رؤى ودروس تعليمية" : "Insights and tutorials"}
         </h1>
-        <p style={{ fontSize: "17px", color: colors.textMuted, maxWidth: "480px", margin: "0 auto" }}>
+        <p className="mx-auto max-w-md text-[17px] text-muted-foreground">
           {isAr
             ? "تحديثات المنتج، دروس الأتمتة، دراسات الحالة ونصائح من فريق لوجيك ميت."
             : "Product updates, automation tutorials, case studies and tips from the LogicMate team."}
         </p>
       </section>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px 96px" }}>
-
+      <div className="mx-auto max-w-6xl px-6 pb-24">
         {/* Category tabs */}
-        <div style={{
-          display: "flex", gap: "8px", flexWrap: "wrap",
-          marginBottom: "32px", justifyContent: "center",
-        }}>
+        <div className="mb-8 flex flex-wrap justify-center gap-2">
           {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
             <button
               key={cat}
               onClick={() => { setCategory(cat); setPage(1); }}
-              style={{
-                padding: "7px 16px", borderRadius: "9999px",
-                fontSize: "13px", fontWeight: 500,
-                cursor: "pointer", transition: "all 0.2s",
-                border: `1px solid ${category === cat ? "rgba(124,58,237,0.4)" : colors.border}`,
-                background: category === cat ? "rgba(124,58,237,0.1)" : "transparent",
-                color: category === cat ? "#a78bfa" : colors.textMuted,
-              }}
+              className={cn(
+                "rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors",
+                category === cat
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground"
+              )}
             >
               {label}
             </button>
@@ -108,96 +90,56 @@ export function BlogListPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "80px" }}>
-            <Loader2 size={28} color="#7c3aed"
-              style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div className="py-20 text-center">
+            <Loader2 className="mx-auto size-7 animate-spin text-primary" />
           </div>
         ) : posts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px" }}>
-            <BookOpen size={40} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
-            <p style={{ color: colors.textMuted, fontSize: "16px", marginBottom: "8px" }}>
+          <div className="py-20 text-center">
+            <BookOpen className="mx-auto mb-4 size-10 text-muted-foreground" />
+            <p className="mb-2 text-base text-muted-foreground">
               {isAr ? "لا توجد مقالات منشورة بعد." : "No posts published yet."}
             </p>
-            <p style={{ color: colors.textMuted, fontSize: "14px" }}>
+            <p className="text-sm text-muted-foreground">
               {isAr ? "تابعنا قريباً — نعمل على محتوى رائع." : "Check back soon — we are working on some great content."}
             </p>
           </div>
         ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: "20px",
-          }}>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
-              <Link key={post._id} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
-                <div style={{
-                  background: colors.bgCard,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: "14px", overflow: "hidden",
-                  height: "100%", transition: "all 0.25s", cursor: "pointer",
-                }}>
+              <Link key={post._id} href={`/blog/${post.slug}`} className="no-underline">
+                <div className="h-full overflow-hidden rounded-2xl border bg-card transition-colors hover:border-primary/30">
                   {/* Cover image placeholder */}
-                  <div style={{
-                    height: "160px",
-                    background: `linear-gradient(135deg, rgba(124,58,237,0.15), rgba(124,58,237,0.05))`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <BookOpen size={32} color="rgba(124,58,237,0.4)" />
+                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
+                    <BookOpen className="size-8 text-primary/40" />
                   </div>
 
-                  <div style={{ padding: "20px" }}>
-                    <div style={{
-                      display: "flex", alignItems: "center",
-                      gap: "8px", marginBottom: "10px",
-                    }}>
-                      <span style={{
-                        fontSize: "11px", fontWeight: 600,
-                        padding: "2px 8px", borderRadius: "9999px",
-                        background: "rgba(124,58,237,0.1)", color: "#a78bfa",
-                      }}>
+                  <div className="p-5">
+                    <div className="mb-2.5 flex items-center gap-2">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                         {CATEGORY_LABELS[post.category] || post.category}
                       </span>
                     </div>
 
-                    <h2 style={{
-                      fontSize: "16px", fontWeight: 700,
-                      color: colors.text, marginBottom: "8px",
-                      lineHeight: 1.4,
-                    }}>
-                      {post.title}
-                    </h2>
+                    <h2 className="mb-2 text-base leading-snug font-bold text-foreground">{post.title}</h2>
 
                     {post.excerpt && (
-                      <p style={{
-                        fontSize: "13px", color: colors.textMuted,
-                        lineHeight: 1.6, marginBottom: "14px",
-                      }}>
+                      <p className="mb-3.5 text-[13px] leading-relaxed text-muted-foreground">
                         {post.excerpt.slice(0, 120)}
                         {post.excerpt.length > 120 ? "..." : ""}
                       </p>
                     )}
 
-                    <div style={{
-                      display: "flex", alignItems: "center",
-                      justifyContent: "space-between",
-                    }}>
-                      <div style={{
-                        display: "flex", alignItems: "center",
-                        gap: "12px", fontSize: "12px", color: colors.textMuted,
-                      }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Clock size={11} /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-2.5" /> {post.readTimeMinutes} {isAr ? "د قراءة" : "min read"}
                         </span>
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Eye size={11} /> {post.viewCount}
+                        <span className="flex items-center gap-1">
+                          <Eye className="size-2.5" /> {post.viewCount}
                         </span>
                       </div>
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: "4px",
-                        fontSize: "12px", color: "#a78bfa",
-                      }}>
-                        {isAr ? "اقرأ" : "Read"} <ArrowRight size={12} />
+                      <div className="flex items-center gap-1 text-xs text-primary">
+                        {isAr ? "اقرأ" : "Read"} <ArrowRight className="size-3" />
                       </div>
                     </div>
                   </div>
