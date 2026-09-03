@@ -10,6 +10,8 @@ import {
   Users, Star, Headphones, Play, X,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const GENERAL_DEMO_URL = "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/logicmate-chatbots-product-demo.mp4";
 
@@ -110,11 +112,12 @@ const STEPS = [
 ];
 
 export function ChatbotsPage() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { isAr } = useLang();
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const [demoVideo, setDemoVideo] = useState<{ url: string; title: string } | null>(null);
   const [templates, setTemplates] = useState<ChatbotTemplateCard[]>([]);
+  const [hoveredChannel, setHoveredChannel] = useState<string | null>(null);
+  const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
@@ -125,154 +128,107 @@ export function ChatbotsPage() {
   }, []);
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
-
+    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-background">
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section style={{
-        padding: "120px 24px 80px", maxWidth: "820px",
-        margin: "0 auto", textAlign: "center", position: "relative",
-      }}>
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          transform: "translate(-50%,-50%)",
-          width: "600px", height: "600px",
-          background: "rgba(124,58,237,0.06)",
-          borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
-        }} />
+      <section className="relative mx-auto max-w-[820px] overflow-hidden px-6 pt-30 pb-20 text-center">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 size-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.06] blur-[100px]" />
 
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "8px",
-          border: "1px solid rgba(124,58,237,0.3)",
-          background: "rgba(124,58,237,0.08)",
-          color: "#a78bfa", padding: "6px 16px",
-          borderRadius: "9999px", fontSize: "13px",
-          fontWeight: 500, marginBottom: "28px",
-        }}>
+        <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/[0.08] px-4 py-1.5 text-[13px] font-medium text-primary">
           <Bot size={13} /> {isAr ? "جديد — الشات بوت بالذكاء الاصطناعي" : "New — AI Chatbots"}
         </div>
 
-        <h1 style={{
-          fontSize: "clamp(36px, 6vw, 68px)", fontWeight: 800,
-          letterSpacing: "-0.04em", color: colors.text,
-          marginBottom: "24px", lineHeight: 1.05,
-        }}>
+        <h1 className="mb-6 text-[clamp(36px,6vw,68px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
           {isAr ? (
             <>
               شات بوت ذكي يرد على{" "}
-              <span style={{
-                backgroundImage: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-              }}>
+              <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
                 عملاؤك بدلاً عنك
               </span>
             </>
           ) : (
             <>
               AI chatbots that talk{" "}
-              <span style={{
-                backgroundImage: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-              }}>
+              <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
                 to your customers for you
               </span>
             </>
           )}
         </h1>
 
-        <p style={{
-          fontSize: "18px", lineHeight: 1.75,
-          color: colors.textMuted, maxWidth: "600px",
-          margin: "0 auto 40px",
-        }}>
+        <p className="mx-auto mb-10 max-w-[600px] text-lg leading-[1.75] text-muted-foreground">
           {isAr
             ? "نشر شات بوت على موقعك، واتساب، أو إنستغرام في دقائق. يرد بالعربي والإنجليزي. متاح 24/7. ما في كود."
             : "Deploy a chatbot on your website, WhatsApp, or Instagram in minutes. Responds in Arabic and English. On 24/7. No code required."}
         </p>
 
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/auth/signup" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-            color: "white", padding: "14px 32px", borderRadius: "10px",
-            fontSize: "15px", fontWeight: 600, textDecoration: "none",
-            boxShadow: "0 4px 24px rgba(124,58,237,0.4)",
-          }}>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button
+            nativeButton={false}
+            render={<Link href="/auth/signup" />}
+            className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_24px_rgba(124,58,237,0.4)]"
+          >
             {isAr ? "ابدأ الآن" : "Get started"} <ArrowRight size={16} />
-          </Link>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => setDemoVideo({ url: GENERAL_DEMO_URL, title: "LogicMate Chatbots" })}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              border: `1px solid ${border}`, color: colors.textMuted,
-              padding: "14px 28px", borderRadius: "10px",
-              fontSize: "15px", fontWeight: 500, background: "transparent", cursor: "pointer",
-            }}
+            className="rounded-[10px] px-7 py-6 text-[15px] font-medium"
           >
             {isAr ? "شوف ديمو" : "See a demo"}
-          </button>
+          </Button>
         </div>
 
         {/* Social proof */}
-        <div style={{
-          marginTop: "48px", display: "flex",
-          alignItems: "center", justifyContent: "center",
-          gap: "24px", flexWrap: "wrap",
-        }}>
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
           {[
             { v: "< 5 min", label: isAr ? "وقت الإعداد" : "setup time" },
             { v: "24/7", label: isAr ? "ردود تلقائية" : "automated replies" },
             { v: "2 langs", label: isAr ? "عربي وإنجليزي" : "AR + EN" },
           ].map(({ v, label }) => (
-            <div key={label} style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "22px", fontWeight: 800, color: colors.text, letterSpacing: "-0.02em" }}>{v}</p>
-              <p style={{ fontSize: "12px", color: colors.textMuted }}>{label}</p>
+            <div key={label} className="text-center">
+              <p className="text-[22px] font-extrabold tracking-[-0.02em] text-foreground">{v}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Channels ─────────────────────────────────────────── */}
-      <section style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 24px 96px" }}>
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <p style={{ fontSize: "11px", fontWeight: 700, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px" }}>
+      <section className="mx-auto max-w-[1000px] px-6 pb-24">
+        <div className="mb-12 text-center">
+          <p className="mb-3 text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
             {isAr ? "القنوات" : "Channels"}
           </p>
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 38px)", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em" }}>
+          <h2 className="text-[clamp(24px,4vw,38px)] font-extrabold tracking-[-0.03em] text-foreground">
             {isAr ? "كل قناة. نقرة واحدة." : "Every channel. One click."}
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           {CHANNELS.map((ch) => {
             const Icon = ch.icon;
+            const isHovered = hoveredChannel === ch.label;
             return (
-              <div key={ch.label} style={{
-                background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                border: `1px solid ${border}`,
-                borderRadius: "16px", padding: "28px 24px",
-                transition: "border-color 0.2s, transform 0.2s",
-              }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = ch.color + "50";
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+              <div
+                key={ch.label}
+                className="rounded-2xl border px-6 py-7 transition-all"
+                style={{
+                  borderColor: isHovered ? ch.color + "50" : undefined,
+                  transform: isHovered ? "translateY(-2px)" : undefined,
                 }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = border;
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                }}
+                onMouseEnter={() => setHoveredChannel(ch.label)}
+                onMouseLeave={() => setHoveredChannel(null)}
               >
-                <div style={{
-                  width: "44px", height: "44px", borderRadius: "12px",
-                  background: ch.color + "15", border: `1px solid ${ch.color}30`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: "16px",
-                }}>
+                <div
+                  className="mb-4 flex size-11 items-center justify-center rounded-xl border"
+                  style={{ background: ch.color + "15", borderColor: `${ch.color}30` }}
+                >
                   <Icon size={20} color={ch.color} />
                 </div>
-                <p style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
+                <p className="mb-2 text-[15px] font-bold text-foreground">
                   {isAr ? ch.label_ar : ch.label}
                 </p>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   {isAr ? ch.desc_ar : ch.desc}
                 </p>
               </div>
@@ -282,128 +238,99 @@ export function ChatbotsPage() {
       </section>
 
       {/* ── Templates ────────────────────────────────────────── */}
-      <section style={{
-        borderTop: `1px solid ${border}`,
-        padding: "96px 24px",
-      }}>
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px" }}>
+      <section className="border-t px-6 py-24">
+        <div className="mx-auto max-w-[1000px]">
+          <div className="mb-12 text-center">
+            <p className="mb-3 text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
               {isAr ? "القوالب" : "Templates"}
             </p>
-            <h2 style={{ fontSize: "clamp(24px, 4vw, 38px)", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em", marginBottom: "12px" }}>
+            <h2 className="mb-3 text-[clamp(24px,4vw,38px)] font-extrabold tracking-[-0.03em] text-foreground">
               {isAr ? "جاهز لقطاعك" : "Ready for your industry"}
             </h2>
-            <p style={{ fontSize: "15px", color: colors.textMuted, maxWidth: "500px", margin: "0 auto" }}>
+            <p className="mx-auto max-w-[500px] text-[15px] text-muted-foreground">
               {isAr
                 ? "قوالب مُعدّة مسبقاً لأعمال الخليج. عدّل، انشر، وخلّ البوت يشتغل."
                 : "Pre-built templates for GCC businesses. Customise, deploy, and let the bot handle the rest."}
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: "16px" }}>
-            {templates.map((t) => (
-              <Link key={t._id} href={`/chatbots/${t.slug}`} style={{
-                display: "block", textDecoration: "none",
-                background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                border: `1px solid ${border}`, borderRadius: "16px",
-                padding: "24px", transition: "border-color 0.2s",
-              }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = t.color + "40"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = border; }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "12px" }}>
-                  <span style={{
-                    fontSize: "28px", width: "44px", height: "44px",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: t.color + "12", borderRadius: "12px", flexShrink: 0,
-                  }}>{t.icon}</span>
-                  <div>
-                    <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
-                      {(isAr && t.name_ar) ? t.name_ar : t.name}
-                    </p>
-                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {t.capabilities?.slice(0, 2).map(tag => (
-                        <span key={tag} style={{
-                          fontSize: "10px", fontWeight: 600, padding: "2px 7px",
-                          borderRadius: "4px", background: t.color + "12", color: t.color,
-                        }}>{tag}</span>
-                      ))}
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
+            {templates.map((t) => {
+              const isHovered = hoveredTemplate === t._id;
+              return (
+                <Link
+                  key={t._id}
+                  href={`/chatbots/${t.slug}`}
+                  className="block rounded-2xl border p-6 no-underline transition-colors"
+                  style={{ borderColor: isHovered ? t.color + "40" : undefined }}
+                  onMouseEnter={() => setHoveredTemplate(t._id)}
+                  onMouseLeave={() => setHoveredTemplate(null)}
+                >
+                  <div className="mb-3 flex items-start gap-3.5">
+                    <span
+                      className="flex size-11 shrink-0 items-center justify-center rounded-xl text-[28px]"
+                      style={{ background: t.color + "12" }}
+                    >{t.icon}</span>
+                    <div>
+                      <p className="mb-1 text-sm font-bold text-foreground">
+                        {(isAr && t.name_ar) ? t.name_ar : t.name}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {t.capabilities?.slice(0, 2).map(tag => (
+                          <span key={tag} className="rounded px-1.75 py-0.5 text-[10px] font-semibold" style={{ background: t.color + "12", color: t.color }}>{tag}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65, marginBottom: t.demoVideoUrl ? "16px" : 0 }}>
-                  {(isAr && t.description_ar) ? t.description_ar : t.description}
-                </p>
-                {t.demoVideoUrl && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setDemoVideo({ url: t.demoVideoUrl!, title: (isAr && t.name_ar) ? t.name_ar : t.name });
-                    }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "7px",
-                      width: "100%", padding: "9px 12px", borderRadius: "9px",
-                      background: t.color + "10", border: `1px solid ${t.color}30`,
-                      color: t.color, fontSize: "12.5px", fontWeight: 600,
-                      cursor: "pointer", transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.color + "1c"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.color + "10"; }}
-                  >
-                    <span style={{
-                      width: "20px", height: "20px", borderRadius: "50%",
-                      background: t.color, display: "flex", alignItems: "center",
-                      justifyContent: "center", flexShrink: 0,
-                    }}>
-                      <Play size={9} fill="white" color="white" />
-                    </span>
-                    {isAr ? "شاهد كيف يعمل" : "Watch it in action"}
-                  </button>
-                )}
-              </Link>
-            ))}
+                  <p className={cn("text-[13px] leading-relaxed text-muted-foreground", t.demoVideoUrl ? "mb-4" : "mb-0")}>
+                    {(isAr && t.description_ar) ? t.description_ar : t.description}
+                  </p>
+                  {t.demoVideoUrl && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDemoVideo({ url: t.demoVideoUrl!, title: (isAr && t.name_ar) ? t.name_ar : t.name });
+                      }}
+                      className="flex w-full items-center gap-1.75 rounded-[9px] border px-3 py-2.25 text-[12.5px] font-semibold transition-colors"
+                      style={{ background: t.color + "10", borderColor: `${t.color}30`, color: t.color }}
+                    >
+                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full" style={{ background: t.color }}>
+                        <Play size={9} fill="white" color="white" />
+                      </span>
+                      {isAr ? "شاهد كيف يعمل" : "Watch it in action"}
+                    </button>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ── Features ─────────────────────────────────────────── */}
-      <section style={{
-        borderTop: `1px solid ${border}`,
-        padding: "96px 24px",
-      }}>
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "56px" }}>
-            <h2 style={{ fontSize: "clamp(24px, 4vw, 38px)", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em", marginBottom: "12px" }}>
+      <section className="border-t px-6 py-24">
+        <div className="mx-auto max-w-[1000px]">
+          <div className="mb-14 text-center">
+            <h2 className="text-[clamp(24px,4vw,38px)] font-extrabold tracking-[-0.03em] text-foreground">
               {isAr ? "كل شي تحتاجه. لا شي تحتاج تبرمجه." : "Everything you need. Nothing to code."}
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+          <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
             {FEATURES.map((f) => {
               const Icon = f.icon;
               return (
-                <div key={f.title} style={{
-                  display: "flex", gap: "16px", alignItems: "flex-start",
-                  padding: "20px", borderRadius: "14px",
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${border}`,
-                }}>
-                  <div style={{
-                    width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
-                    background: f.color + "12", border: `1px solid ${f.color}25`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
+                <div key={f.title} className="flex items-start gap-4 rounded-2xl border p-5">
+                  <div
+                    className="flex size-9.5 shrink-0 items-center justify-center rounded-[10px] border"
+                    style={{ background: f.color + "12", borderColor: `${f.color}25` }}
+                  >
                     <Icon size={17} color={f.color} />
                   </div>
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text, marginBottom: "5px" }}>
-                      {isAr ? f.title_ar : f.title}
-                    </p>
-                    <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
-                      {isAr ? f.desc_ar : f.desc}
-                    </p>
+                    <p className="mb-1 text-sm font-bold text-foreground">{isAr ? f.title_ar : f.title}</p>
+                    <p className="text-[13px] leading-relaxed text-muted-foreground">{isAr ? f.desc_ar : f.desc}</p>
                   </div>
                 </div>
               );
@@ -413,39 +340,27 @@ export function ChatbotsPage() {
       </section>
 
       {/* ── How it works ─────────────────────────────────────── */}
-      <section style={{
-        borderTop: `1px solid ${border}`,
-        padding: "96px 24px",
-      }}>
-        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "56px" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px" }}>
+      <section className="border-t px-6 py-24">
+        <div className="mx-auto max-w-[900px]">
+          <div className="mb-14 text-center">
+            <p className="mb-3 text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
               {isAr ? "كيف يعمل" : "How it works"}
             </p>
-            <h2 style={{ fontSize: "clamp(24px, 4vw, 38px)", fontWeight: 800, color: colors.text, letterSpacing: "-0.03em" }}>
+            <h2 className="text-[clamp(24px,4vw,38px)] font-extrabold tracking-[-0.03em] text-foreground">
               {isAr ? "من الصفر للنشر في 4 خطوات" : "From zero to live in 4 steps"}
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "2px" }}>
+          <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
             {STEPS.map((s, i) => (
-              <div key={s.n} style={{
-                padding: "32px 24px", textAlign: "center",
-                background: i === STEPS.length - 1
-                  ? "rgba(124,58,237,0.05)" : "transparent",
-                border: `1px solid ${i === STEPS.length - 1 ? "rgba(124,58,237,0.25)" : border}`,
-                borderRadius: "14px",
-              }}>
-                <div style={{
-                  fontSize: "28px", fontWeight: 900, color: "#a78bfa",
-                  opacity: 0.25, marginBottom: "12px", letterSpacing: "-0.04em",
-                }}>{s.n}</div>
-                <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
-                  {isAr ? s.title_ar : s.title}
-                </p>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
-                  {isAr ? s.desc_ar : s.desc}
-                </p>
+              <div
+                key={s.n}
+                className="rounded-[14px] border p-8 text-center"
+                style={i === STEPS.length - 1 ? { background: "rgba(124,58,237,0.05)", borderColor: "rgba(124,58,237,0.25)" } : undefined}
+              >
+                <div className="mb-3 text-[28px] font-black tracking-[-0.04em] text-primary opacity-25">{s.n}</div>
+                <p className="mb-2 text-sm font-bold text-foreground">{isAr ? s.title_ar : s.title}</p>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{isAr ? s.desc_ar : s.desc}</p>
               </div>
             ))}
           </div>
@@ -453,79 +368,50 @@ export function ChatbotsPage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────── */}
-      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "0 24px 120px" }}>
-        <div style={{
-          background: isDark
-            ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(109,40,217,0.06))"
-            : "linear-gradient(135deg, rgba(124,58,237,0.06), rgba(109,40,217,0.02))",
-          border: "1px solid rgba(124,58,237,0.25)",
-          borderRadius: "20px", padding: "56px 48px",
-          textAlign: "center", position: "relative", overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute", top: "-80px", right: "-80px",
-            width: "280px", height: "280px",
-            background: "rgba(124,58,237,0.1)", borderRadius: "50%",
-            filter: "blur(60px)", pointerEvents: "none",
-          }} />
+      <section className="mx-auto max-w-[900px] px-6 pb-30">
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[20px] border border-primary/25 p-14 text-center",
+            isDark ? "bg-gradient-to-br from-primary/12 to-[#6d28d9]/6" : "bg-gradient-to-br from-primary/6 to-[#6d28d9]/2"
+          )}
+        >
+          <div className="pointer-events-none absolute -top-20 -right-20 size-[280px] rounded-full bg-primary/10 blur-[60px]" />
 
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)",
-            color: "#a78bfa", padding: "5px 14px", borderRadius: "9999px",
-            fontSize: "12px", fontWeight: 600, marginBottom: "20px",
-          }}>
+          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.25 text-xs font-semibold text-primary">
             <Star size={11} /> {isAr ? "أسعار مخصصة لعملك" : "Custom pricing, built for your business"}
           </div>
 
-          <h2 style={{
-            fontSize: "clamp(24px, 4vw, 38px)", fontWeight: 800,
-            color: colors.text, marginBottom: "16px", letterSpacing: "-0.03em",
-          }}>
+          <h2 className="mb-4 text-[clamp(24px,4vw,38px)] font-extrabold tracking-[-0.03em] text-foreground">
             {isAr ? "جاهز تنشر أول بوت؟" : "Ready to deploy your first bot?"}
           </h2>
-          <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "36px", maxWidth: "480px", margin: "0 auto 36px" }}>
+          <p className="mx-auto mb-9 max-w-[480px] text-base text-muted-foreground">
             {isAr
               ? "عملاؤك ينتظرون. بوتك يمكن يكون شغّال خلال أقل من 5 دقائق."
               : "Your customers are waiting. Your bot can be live in under 5 minutes."}
           </p>
 
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/auth/signup" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-              color: "white", padding: "14px 32px", borderRadius: "10px",
-              fontSize: "15px", fontWeight: 600, textDecoration: "none",
-              boxShadow: "0 4px 24px rgba(124,58,237,0.4)",
-            }}>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button
+              nativeButton={false}
+              render={<Link href="/auth/signup" />}
+              className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_24px_rgba(124,58,237,0.4)]"
+            >
               {isAr ? "ابدأ الآن" : "Get started"} <ArrowRight size={16} />
-            </Link>
-            <Link href="/contact" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              border: `1px solid ${border}`, color: colors.textMuted,
-              padding: "14px 28px", borderRadius: "10px",
-              fontSize: "15px", fontWeight: 500, textDecoration: "none",
-            }}>
+            </Button>
+            <Button nativeButton={false} variant="outline" render={<Link href="/contact" />} className="rounded-[10px] px-7 py-6 text-[15px] font-medium">
               {isAr ? "تحدث مع الفريق" : "Talk to the team"}
-            </Link>
+            </Button>
           </div>
 
           {/* Checklist */}
-          <div style={{
-            marginTop: "32px", display: "flex",
-            alignItems: "center", justifyContent: "center",
-            gap: "20px", flexWrap: "wrap",
-          }}>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
             {[
               isAr ? "ما في كود" : "No code",
               isAr ? "نشر في دقائق" : "Deploy in minutes",
               isAr ? "إلغاء في أي وقت" : "Cancel anytime",
             ].map((item) => (
-              <span key={item} style={{
-                display: "flex", alignItems: "center", gap: "5px",
-                fontSize: "12px", color: colors.textMuted,
-              }}>
-                <Check size={12} color="#22c55e" /> {item}
+              <span key={item} className="flex items-center gap-1.25 text-xs text-muted-foreground">
+                <Check size={12} className="text-[#22c55e]" /> {item}
               </span>
             ))}
           </div>
@@ -536,38 +422,20 @@ export function ChatbotsPage() {
       {demoVideo && (
         <div
           onClick={() => setDemoVideo(null)}
-          style={{
-            position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "24px",
-          }}
+          className="fixed inset-0 z-1000 flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%", maxWidth: "800px",
-              background: isDark ? "#111" : "#000",
-              borderRadius: "16px", overflow: "hidden",
-              boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
-            }}
+            className="w-full max-w-[800px] overflow-hidden rounded-2xl bg-black shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
           >
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "14px 18px",
-            }}>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>
+            <div className="flex items-center justify-between px-4.5 py-3.5">
+              <p className="text-[13px] font-semibold text-white">
                 {demoVideo.title} — {isAr ? "ديمو مباشر" : "Live demo"}
               </p>
               <button
                 onClick={() => setDemoVideo(null)}
                 aria-label={isAr ? "إغلاق" : "Close"}
-                style={{
-                  width: "28px", height: "28px", borderRadius: "50%",
-                  background: "rgba(255,255,255,0.1)", border: "none",
-                  color: "white", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
+                className="flex size-7 items-center justify-center rounded-full bg-white/10 text-white"
               >
                 <X size={14} />
               </button>
@@ -577,7 +445,7 @@ export function ChatbotsPage() {
               controls
               autoPlay
               playsInline
-              style={{ width: "100%", display: "block", aspectRatio: "16/9", background: "black" }}
+              className="block aspect-video w-full bg-black"
             />
           </div>
         </div>

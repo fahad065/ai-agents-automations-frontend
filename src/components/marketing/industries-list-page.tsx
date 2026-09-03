@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr, industryName, industryDesc } from "@/lib/translations";
 import { ArrowRight, Bot, Zap } from "lucide-react";
@@ -23,137 +23,103 @@ const INDUSTRIES = [
 ];
 
 export function IndustriesListPage() {
-  const { colors, isDark } = useTheme();
   const { lang, isAr } = useLang();
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.bg }} dir={isAr ? "rtl" : "ltr"}>
-
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px 100px", position: "relative" }}>
+    <div className="min-h-screen bg-background" dir={isAr ? "rtl" : "ltr"}>
+      <div className="relative mx-auto max-w-[1200px] overflow-hidden px-6 pb-25">
         {/* Glow */}
-        <div style={{
-          position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-          width: "700px", height: "400px",
-          background: "rgba(124,58,237,0.06)",
-          borderRadius: "50%", filter: "blur(120px)", pointerEvents: "none",
-        }} />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-primary/[0.06] blur-[120px]" />
 
         {/* Breadcrumb */}
-        <div style={{ paddingTop: "110px", marginBottom: "32px", position: "relative" }}>
+        <div className="relative mb-8 pt-27.5">
           <BreadcrumbNav items={[{ label: "Industries" }]} />
         </div>
 
         {/* Hero */}
-        <div style={{ marginBottom: "56px", textAlign: "center", position: "relative" }}>
-          <h1 style={{
-            fontSize: "clamp(36px, 5.5vw, 62px)", fontWeight: 800,
-            color: colors.text, marginBottom: "16px",
-            letterSpacing: "-0.04em", lineHeight: 1.05,
-          }}>
+        <div className="relative mb-14 text-center">
+          <h1 className="mb-4 text-[clamp(36px,5.5vw,62px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
             {isAr ? "ذكاء اصطناعي مصمم لقطاعك." : "AI built for your industry."}
             <br />
-            <span style={{
-              backgroundImage: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-            }}>{isAr ? "ليس للتقنية فحسب." : "Not just for tech."}</span>
+            <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
+              {isAr ? "ليس للتقنية فحسب." : "Not just for tech."}
+            </span>
           </h1>
-          <p style={{ fontSize: "17px", color: colors.textMuted, lineHeight: 1.7, maxWidth: "500px", margin: "0 auto" }}>
+          <p className="mx-auto max-w-[500px] text-[17px] leading-[1.7] text-muted-foreground">
             {tr("industriesSubtitle", lang)}
           </p>
         </div>
 
-      {/* Grid */}
-      <div>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "12px",
-        }}>
+        {/* Grid */}
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
           {INDUSTRIES.map((ind) => (
-            <IndustryCard key={ind.slug} industry={ind} isDark={isDark} colors={colors} border={border} lang={lang} isAr={isAr} />
+            <IndustryCard key={ind.slug} industry={ind} lang={lang} isAr={isAr} />
           ))}
         </div>
-      </div>
       </div>
     </div>
   );
 }
 
-function IndustryCard({ industry, isDark, colors, border, lang, isAr }: {
+function IndustryCard({ industry, lang, isAr }: {
   industry: typeof INDUSTRIES[0];
-  isDark: boolean;
-  colors: { text: string; textMuted: string };
-  border: string;
   lang: import("@/lib/translations").Lang;
   isAr: boolean;
 }) {
+  const [hovered, setHovered] = useState(false);
   const label = industryName(industry.slug, lang);
   const desc = industryDesc(industry.slug, lang) || industry.desc;
 
   return (
-    <Link href={`/industries/${industry.slug}`} style={{ textDecoration: "none" }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLAnchorElement;
-        el.style.borderColor = `${industry.color}35`;
-        el.style.background = `${industry.color}06`;
-        el.style.boxShadow = `0 0 28px ${industry.color}12`;
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLAnchorElement;
-        el.style.borderColor = border;
-        el.style.background = isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)";
-        el.style.boxShadow = "none";
-      }}
+    <Link
+      href={`/industries/${industry.slug}`}
+      className="no-underline"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div style={{
-        background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-        border: `1px solid ${border}`,
-        borderRadius: "16px", padding: "24px",
-        transition: "all 0.2s", height: "100%",
-        display: "flex", flexDirection: "column",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
-          <div style={{
-            width: "46px", height: "46px", borderRadius: "11px",
-            background: `${industry.color}12`, border: `1px solid ${industry.color}25`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "21px", flexShrink: 0,
-          }}>
+      <div
+        className="flex h-full flex-col rounded-2xl border p-6 transition-all"
+        style={{
+          background: hovered ? `${industry.color}06` : undefined,
+          borderColor: hovered ? industry.color + "35" : undefined,
+          boxShadow: hovered ? `0 0 28px ${industry.color}12` : undefined,
+        }}
+      >
+        <div className="mb-3.5 flex items-center gap-3">
+          <div
+            className="flex size-11.5 shrink-0 items-center justify-center rounded-[11px] border text-[21px]"
+            style={{ background: `${industry.color}12`, borderColor: `${industry.color}25` }}
+          >
             {industry.icon}
           </div>
           <div>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "3px" }}>
-              {label}
-            </h3>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "11px", color: industry.color }}>
+            <h3 className="mb-0.75 text-[15px] font-bold text-foreground">{label}</h3>
+            <div className="flex gap-2.5">
+              <span className="flex items-center gap-0.75 text-[11px]" style={{ color: industry.color }}>
                 <Bot size={10} /> Agents
               </span>
-              <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "11px", color: industry.color, opacity: 0.7 }}>
+              <span className="flex items-center gap-0.75 text-[11px] opacity-70" style={{ color: industry.color }}>
                 <Zap size={10} /> Automations
               </span>
             </div>
           </div>
         </div>
 
-        <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65, marginBottom: "14px", flex: 1 }}>
-          {desc}
-        </p>
+        <p className="mb-3.5 flex-1 text-[13px] leading-relaxed text-muted-foreground">{desc}</p>
 
-        <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "14px" }}>
+        <div className="mb-3.5 flex flex-wrap gap-1.25">
           {industry.agents.slice(0, 3).map((a) => (
-            <span key={a} style={{
-              fontSize: "10px", padding: "2px 8px", borderRadius: "4px",
-              background: `${industry.color}10`, color: industry.color,
-              border: `1px solid ${industry.color}20`,
-            }}>
+            <span
+              key={a}
+              className="rounded px-2 py-0.5 text-[10px]"
+              style={{ background: `${industry.color}10`, color: industry.color, border: `1px solid ${industry.color}20` }}
+            >
               {a}
             </span>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", color: industry.color, fontSize: "12px", fontWeight: 600 }}>
+        <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: industry.color }}>
           {tr("viewBundle", lang)} <ArrowRight size={12} />
         </div>
       </div>

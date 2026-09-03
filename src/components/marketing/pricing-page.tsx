@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
 import { Check, ArrowRight, Loader2, Zap, Bot, Package, Star, MessageCircle } from "lucide-react";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Module {
   _id: string;
@@ -48,7 +50,7 @@ const FILTER_TABS_AR = [
 ];
 
 export function PricingPage() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -84,46 +86,29 @@ export function PricingPage() {
     return true;
   });
 
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const annualSaving = 20;
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.bg }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px 100px", position: "relative" }}>
-
+    <div className="min-h-screen bg-background">
+      <div className="relative mx-auto max-w-[1200px] overflow-hidden px-6 pb-25">
         {/* Glow */}
-        <div style={{
-          position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-          width: "800px", height: "500px",
-          background: "rgba(124,58,237,0.06)",
-          borderRadius: "50%", filter: "blur(140px)", pointerEvents: "none",
-        }} />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/[0.06] blur-[140px]" />
 
         {/* Breadcrumb */}
-        <div style={{ paddingTop: "110px", marginBottom: "32px", position: "relative" }}>
+        <div className="relative mb-8 pt-27.5">
           <BreadcrumbNav items={[{ label: "Pricing" }]} />
         </div>
 
         {/* Hero */}
-        <div style={{ textAlign: "center", marginBottom: "56px", position: "relative" }}>
-          <h1 style={{
-            fontSize: "clamp(36px, 5.5vw, 64px)", fontWeight: 800,
-            color: colors.text, marginBottom: "16px",
-            letterSpacing: "-0.04em", lineHeight: 1.05,
-          }}>
+        <div className="relative mb-14 text-center">
+          <h1 className="mb-4 text-[clamp(36px,5.5vw,64px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
             {isAr ? "تسعير بسيط وشفاف." : "Simple, transparent pricing."}
             <br />
-            <span style={{
-              backgroundImage: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-            }}>
+            <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
               {isAr ? "ادفع فقط مقابل ما تستخدمه." : "Pay only for what you use."}
             </span>
           </h1>
-          <p style={{
-            fontSize: "17px", color: colors.textMuted,
-            maxWidth: "500px", margin: "0 auto 40px", lineHeight: 1.7,
-          }}>
+          <p className="mx-auto mb-10 max-w-[500px] text-[17px] leading-[1.7] text-muted-foreground">
             {isAr
               ? "اشترك في وكلاء فردية أو أتمتة كاملة أو حزم قطاعية متكاملة. كل خطة تشمل 30 يوم تجريب مجاني."
               : "Subscribe to individual agents, full automations, or complete industry bundles. Every plan includes a 30-day free trial."
@@ -131,31 +116,21 @@ export function PricingPage() {
           </p>
 
           {/* Billing toggle */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "4px",
-            background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-            border: `1px solid ${border}`,
-            borderRadius: "10px", padding: "4px",
-          }}>
+          <div className={cn("inline-flex items-center gap-1 rounded-[10px] border p-1", isDark ? "bg-white/5" : "bg-black/4")}>
             {(["monthly", "annual"] as const).map((b) => (
-              <button key={b} onClick={() => setBilling(b)} style={{
-                padding: "8px 20px", borderRadius: "7px",
-                fontSize: "13px", fontWeight: 600, cursor: "pointer", border: "none",
-                background: billing === b
-                  ? (isDark ? "rgba(124,58,237,0.3)" : "#ffffff")
-                  : "transparent",
-                color: billing === b ? (isDark ? "#c4b5fd" : "#7c3aed") : colors.textMuted,
-                boxShadow: billing === b ? "0 1px 6px rgba(0,0,0,0.12)" : "none",
-                transition: "all 0.15s",
-                display: "flex", alignItems: "center", gap: "6px",
-              }}>
+              <button
+                key={b}
+                onClick={() => setBilling(b)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[7px] border-0 px-5 py-2 text-[13px] font-semibold transition-all",
+                  billing === b
+                    ? cn(isDark ? "bg-primary/30 text-[#c4b5fd]" : "bg-white text-primary", "shadow-[0_1px_6px_rgba(0,0,0,0.12)]")
+                    : "text-muted-foreground"
+                )}
+              >
                 {b === "monthly" ? (isAr ? "شهري" : "Monthly") : (isAr ? "سنوي" : "Annual")}
                 {b === "annual" && (
-                  <span style={{
-                    fontSize: "10px", padding: "1px 6px", borderRadius: "4px",
-                    background: "rgba(34,197,94,0.15)", color: "#22c55e",
-                    fontWeight: 700,
-                  }}>
+                  <span className="rounded px-1.5 py-0.25 text-[10px] font-bold text-[#22c55e]" style={{ background: "rgba(34,197,94,0.15)" }}>
                     -{annualSaving}%
                   </span>
                 )}
@@ -165,20 +140,16 @@ export function PricingPage() {
         </div>
 
         {/* Filter tabs */}
-        <div style={{
-          display: "flex", gap: "6px", marginBottom: "36px",
-          justifyContent: "center", flexWrap: "wrap",
-        }}>
+        <div className="mb-9 flex flex-wrap justify-center gap-1.5">
           {(isAr ? FILTER_TABS_AR : FILTER_TABS_EN).map((tab) => (
-            <button key={tab.id} onClick={() => setFilter(tab.id)} style={{
-              display: "flex", alignItems: "center", gap: "6px",
-              padding: "8px 18px", borderRadius: "9999px",
-              fontSize: "13px", fontWeight: 500, cursor: "pointer",
-              border: `1px solid ${filter === tab.id ? "rgba(124,58,237,0.4)" : border}`,
-              background: filter === tab.id ? "rgba(124,58,237,0.1)" : "transparent",
-              color: filter === tab.id ? "#a78bfa" : colors.textMuted,
-              transition: "all 0.15s",
-            }}>
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-4.5 py-2 text-[13px] font-medium transition-all",
+                filter === tab.id ? "border-primary/40 bg-primary/10 text-primary" : "text-muted-foreground"
+              )}
+            >
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -186,36 +157,28 @@ export function PricingPage() {
 
         {/* Content */}
         {loading && (
-          <div style={{ textAlign: "center", padding: "80px" }}>
-            <Loader2 size={30} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto 14px" }} />
-            <p style={{ color: colors.textMuted, fontSize: "14px" }}>Loading pricing...</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div className="p-20 text-center">
+            <Loader2 size={30} className="mx-auto mb-3.5 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading pricing...</p>
           </div>
         )}
 
         {error && !loading && (
-          <div style={{ textAlign: "center", padding: "60px" }}>
-            <p style={{ color: "#ef4444", marginBottom: "14px" }}>{error}</p>
-            <button onClick={fetchModules} style={{
-              padding: "9px 20px", borderRadius: "8px",
-              background: "#7c3aed", color: "white", border: "none", cursor: "pointer", fontWeight: 600,
-            }}>Try again</button>
+          <div className="p-15 text-center">
+            <p className="mb-3.5 text-destructive">{error}</p>
+            <Button onClick={fetchModules}>Try again</Button>
           </div>
         )}
 
         {!loading && !error && (
           <>
             {/* Count */}
-            <p style={{ textAlign: "center", fontSize: "12px", color: colors.textMuted, marginBottom: "24px", opacity: 0.6 }}>
+            <p className="mb-6 text-center text-xs text-muted-foreground opacity-60">
               {filtered.length} plan{filtered.length !== 1 ? "s" : ""} available
             </p>
 
             {/* Cards grid */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
-              gap: "16px",
-            }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))" }}>
               {filtered.map((module) => {
                 const price = billing === "annual"
                   ? Math.round(module.pricing.monthly * (1 - annualSaving / 100))
@@ -236,16 +199,14 @@ export function PricingPage() {
                     isBot={isBot}
                     href={href}
                     isDark={isDark}
-                    colors={colors}
-                    border={border}
                   />
                 );
               })}
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ textAlign: "center", padding: "60px" }}>
-                <p style={{ color: colors.textMuted }}>No plans available for this filter.</p>
+              <div className="p-15 text-center">
+                <p className="text-muted-foreground">No plans available for this filter.</p>
               </div>
             )}
           </>
@@ -253,43 +214,26 @@ export function PricingPage() {
 
         {/* Bottom CTA — shown for every filter, not just modules */}
         {!loading && !error && (
-          <div style={{
-            marginTop: "80px", padding: "48px 40px",
-            background: isDark ? "rgba(124,58,237,0.06)" : "rgba(124,58,237,0.04)",
-            border: `1px solid rgba(124,58,237,0.2)`,
-            borderRadius: "20px", textAlign: "center",
-            position: "relative", overflow: "hidden",
-          }}>
-            <div style={{
-              position: "absolute", top: "50%", left: "50%",
-              transform: "translate(-50%,-50%)",
-              width: "500px", height: "300px",
-              background: "rgba(124,58,237,0.08)",
-              borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
-            }} />
-            <div style={{ position: "relative" }}>
-              <h3 style={{
-                fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800,
-                color: colors.text, letterSpacing: "-0.03em", marginBottom: "12px",
-              }}>
+          <div
+            className={cn(
+              "relative mt-20 overflow-hidden rounded-[20px] border border-primary/20 p-12 text-center",
+              isDark ? "bg-primary/6" : "bg-primary/4"
+            )}
+          >
+            <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[80px]" />
+            <div className="relative">
+              <h3 className="mb-3 text-[clamp(22px,3vw,34px)] font-extrabold tracking-[-0.03em] text-foreground">
                 {isAr ? "تحتاج خطة مخصصة؟" : "Need a custom plan?"}
               </h3>
-              <p style={{ fontSize: "15px", color: colors.textMuted, marginBottom: "28px", maxWidth: "440px", margin: "0 auto 28px", lineHeight: 1.65 }}>
+              <p className="mx-auto mb-7 max-w-[440px] text-[15px] leading-relaxed text-muted-foreground">
                 {isAr
                   ? "تشغّل قطاعات متعددة أو تبني مسار مخصص؟ تحدث معنا وسنبني الحزمة المناسبة لفريقك."
                   : "Running multiple industries or building a custom pipeline? Talk to us and we'll build the right package for your team."
                 }
               </p>
-              <Link href="/contact" style={{
-                display: "inline-flex", alignItems: "center", gap: "7px",
-                padding: "13px 28px", borderRadius: "10px",
-                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                color: "white", fontSize: "14px", fontWeight: 600,
-                textDecoration: "none",
-                boxShadow: "0 4px 24px rgba(124,58,237,0.35)",
-              }}>
+              <Button nativeButton={false} render={<Link href="/contact" />} className="gap-1.75 rounded-[10px] px-7 py-5.5 text-sm shadow-[0_4px_24px_rgba(124,58,237,0.35)]">
                 {isAr ? "تحدث معنا" : "Talk to us"} <ArrowRight size={14} />
-              </Link>
+              </Button>
             </div>
           </div>
         )}
@@ -298,7 +242,7 @@ export function PricingPage() {
   );
 }
 
-function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, isDark, colors, border }: {
+function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, isDark }: {
   module: Module;
   price: number;
   billing: "monthly" | "annual";
@@ -307,8 +251,6 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
   isBot?: boolean;
   href: string;
   isDark: boolean;
-  colors: { text: string; textMuted: string; bg: string };
-  border: string;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -320,64 +262,43 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={cn("relative flex flex-col overflow-hidden rounded-2xl border p-7 transition-all", !isDark && !hovered && "bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]")}
       style={{
-        background: hovered
-          ? `${module.color}06`
-          : (isDark ? "rgba(255,255,255,0.02)" : "#ffffff"),
-        border: `1px solid ${hovered ? module.color + "35" : border}`,
-        borderRadius: "16px", padding: "28px",
-        transition: "all 0.2s",
-        display: "flex", flexDirection: "column",
-        boxShadow: hovered
-          ? `0 8px 40px ${module.color}12`
-          : (isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)"),
-        position: "relative", overflow: "hidden",
+        background: hovered ? `${module.color}06` : undefined,
+        borderColor: hovered ? module.color + "35" : undefined,
+        boxShadow: hovered ? `0 8px 40px ${module.color}12` : undefined,
       }}
     >
       {/* Bundle spotlight */}
       {isBundle && (
-        <div style={{
-          position: "absolute", top: "-30px", right: "-30px",
-          width: "120px", height: "120px",
-          background: `${module.color}15`,
-          borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none",
-        }} />
+        <div
+          className="pointer-events-none absolute -top-7.5 -right-7.5 size-[120px] rounded-full blur-[40px]"
+          style={{ background: `${module.color}15` }}
+        />
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{
-            width: "48px", height: "48px", borderRadius: "12px",
-            background: `${module.color}12`, border: `1px solid ${module.color}25`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "22px", flexShrink: 0,
-          }}>
+      <div className="mb-5 flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex size-12 items-center justify-center rounded-xl border text-[22px]"
+            style={{ background: `${module.color}12`, borderColor: `${module.color}25` }}
+          >
             {module.icon}
           </div>
           <div>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "4px", lineHeight: 1.2 }}>
-              {module.name}
-            </h3>
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: "4px",
-              fontSize: "10px", fontWeight: 600, padding: "2px 8px",
-              borderRadius: "9999px",
-              background: `${typeColor}12`, color: typeColor,
-              border: `1px solid ${typeColor}25`,
-            }}>
+            <h3 className="mb-1 text-[15px] leading-tight font-bold text-foreground">{module.name}</h3>
+            <span
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+              style={{ background: `${typeColor}12`, color: typeColor, borderColor: `${typeColor}25` }}
+            >
               <TypeIcon size={9} /> {typeLabel}
             </span>
           </div>
         </div>
 
         {module.badge === "Popular" || module.badge === "Hot" ? (
-          <span style={{
-            fontSize: "10px", fontWeight: 700, padding: "3px 9px",
-            borderRadius: "9999px",
-            background: "rgba(234,179,8,0.15)", color: "#eab308",
-            border: "1px solid rgba(234,179,8,0.25)",
-          }}>
+          <span className="rounded-full border border-[#eab308]/25 px-2.25 py-0.75 text-[10px] font-bold text-[#eab308]" style={{ background: "rgba(234,179,8,0.15)" }}>
             ⭐ {module.badge}
           </span>
         ) : null}
@@ -385,93 +306,59 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
 
       {/* Tagline */}
       {module.tagline && (
-        <p style={{ fontSize: "12px", color: module.color, fontWeight: 500, marginBottom: "8px" }}>
+        <p className="mb-2 text-xs font-medium" style={{ color: module.color }}>
           {module.tagline}
         </p>
       )}
 
       {/* Price */}
-      <div style={{
-        display: "flex", alignItems: "flex-end", gap: "6px",
-        marginBottom: "20px", paddingBottom: "20px",
-        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-      }}>
-        <span style={{
-          fontSize: "40px", fontWeight: 800, color: colors.text,
-          letterSpacing: "-0.04em", lineHeight: 1,
-        }}>
+      <div className="mb-5 flex items-end gap-1.5 border-b pb-5">
+        <span className="text-[40px] leading-none font-extrabold tracking-[-0.04em] text-foreground">
           ${price}
         </span>
-        <div style={{ paddingBottom: "4px" }}>
-          <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.2 }}>
-            / month
-          </p>
+        <div className="pb-1">
+          <p className="text-xs leading-tight text-muted-foreground">/ month</p>
           {billing === "annual" && (
-            <p style={{ fontSize: "10px", color: "#22c55e", fontWeight: 600 }}>
-              billed annually
-            </p>
+            <p className="text-[10px] font-semibold text-[#22c55e]">billed annually</p>
           )}
         </div>
       </div>
 
       {/* Features */}
-      <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+      <ul className="mb-6 flex-1 list-none p-0">
         {(module.pricing.features || module.capabilities || []).slice(0, 5).map((feat: string, i: number) => (
-          <li key={i} style={{
-            display: "flex", alignItems: "flex-start", gap: "9px",
-            marginBottom: "10px",
-          }}>
-            <div style={{
-              width: "16px", height: "16px", borderRadius: "50%",
-              background: `${module.color}15`, border: `1px solid ${module.color}30`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, marginTop: "1px",
-            }}>
+          <li key={i} className="mb-2.5 flex items-start gap-2.25">
+            <div
+              className="mt-0.25 flex size-4 shrink-0 items-center justify-center rounded-full border"
+              style={{ background: `${module.color}15`, borderColor: `${module.color}30` }}
+            >
               <Check size={9} color={module.color} strokeWidth={3} />
             </div>
-            <span style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.5 }}>
-              {feat}
-            </span>
+            <span className="text-[13px] leading-normal text-muted-foreground">{feat}</span>
           </li>
         ))}
       </ul>
 
       {/* CTA */}
-      <div style={{ display: "flex", gap: "8px" }}>
-        <Link href="/auth/signup" style={{
-          flex: 1, padding: "11px", borderRadius: "9px", textAlign: "center",
-          background: module.color, color: "white",
-          fontSize: "13px", fontWeight: 600, textDecoration: "none",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-          transition: "opacity 0.15s",
-        }}>
+      <div className="flex gap-2">
+        <Link
+          href="/auth/signup"
+          className="flex flex-1 items-center justify-center gap-1.25 rounded-[9px] p-2.75 text-center text-[13px] font-semibold text-white no-underline transition-opacity"
+          style={{ background: module.color }}
+        >
           Start free trial <ArrowRight size={12} />
         </Link>
-        <Link href={href} style={{
-          padding: "11px 14px", borderRadius: "9px",
-          border: `1px solid ${border}`,
-          background: "transparent",
-          fontSize: "12px", fontWeight: 500, color: colors.textMuted,
-          textDecoration: "none",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          whiteSpace: "nowrap",
-        }}>
+        <Link
+          href={href}
+          className="flex items-center justify-center rounded-[9px] border px-3.5 py-2.75 text-xs font-medium whitespace-nowrap text-muted-foreground no-underline"
+        >
           Details
         </Link>
       </div>
 
       {module.isComingSoon && (
-        <div style={{
-          position: "absolute", inset: 0, borderRadius: "16px",
-          background: isDark ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          backdropFilter: "blur(2px)",
-        }}>
-          <span style={{
-            fontSize: "13px", fontWeight: 600, color: colors.textMuted,
-            border: `1px solid ${border}`, padding: "8px 18px", borderRadius: "9999px",
-            background: isDark ? "rgba(255,255,255,0.05)" : "#ffffff",
-          }}>
+        <div className={cn("absolute inset-0 flex items-center justify-center rounded-2xl backdrop-blur-[2px]", isDark ? "bg-black/70" : "bg-white/85")}>
+          <span className={cn("rounded-full border px-4.5 py-2 text-[13px] font-semibold text-muted-foreground", isDark ? "bg-white/5" : "bg-white")}>
             Coming soon
           </span>
         </div>
@@ -479,4 +366,3 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
     </div>
   );
 }
-
