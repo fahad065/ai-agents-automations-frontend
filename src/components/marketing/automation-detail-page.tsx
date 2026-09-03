@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
 import { gsap } from "gsap";
@@ -12,6 +11,8 @@ import {
   CheckCircle2, Play, Loader2, ExternalLink,
   ArrowLeft,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -42,42 +43,21 @@ interface AutomationTemplate {
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
-  const { colors, isDark } = useTheme();
   const [open, setOpen] = useState(false);
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   return (
-    <div style={{
-      border: `1px solid ${open ? "rgba(124,58,237,0.25)" : border}`,
-      borderRadius: "12px", overflow: "hidden", marginBottom: "8px",
-      background: open ? "rgba(124,58,237,0.04)" : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)"),
-      transition: "all 0.2s",
-    }}>
+    <div
+      className={cn("mb-2 overflow-hidden rounded-xl border transition-all", open ? "border-primary/25 bg-primary/[0.04]" : "bg-foreground/[0.015]")}
+    >
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          width: "100%", padding: "18px 22px",
-          display: "flex", alignItems: "center",
-          justifyContent: "space-between",
-          background: "transparent", border: "none",
-          cursor: "pointer", textAlign: "left", gap: "16px",
-        }}
+        className="flex w-full items-center justify-between gap-4 border-0 bg-transparent px-5.5 py-4.5 text-left"
       >
-        <span style={{ fontSize: "14px", fontWeight: 500, color: colors.text }}>
-          {question}
-        </span>
-        {open
-          ? <ChevronUp size={16} color={colors.textMuted} style={{ flexShrink: 0 }} />
-          : <ChevronDown size={16} color={colors.textMuted} style={{ flexShrink: 0 }} />
-        }
+        <span className="text-sm font-medium text-foreground">{question}</span>
+        {open ? <ChevronUp size={16} className="shrink-0 text-muted-foreground" /> : <ChevronDown size={16} className="shrink-0 text-muted-foreground" />}
       </button>
       {open && (
-        <div style={{
-          padding: "0 20px 16px", background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-          borderTop: `1px solid ${colors.border}`,
-        }}>
-          <p style={{ fontSize: "14px", color: colors.textMuted, lineHeight: 1.7, paddingTop: "12px" }}>
-            {answer}
-          </p>
+        <div className="border-t bg-foreground/[0.015] px-5 pb-4">
+          <p className="pt-3 text-sm leading-[1.7] text-muted-foreground">{answer}</p>
         </div>
       )}
     </div>
@@ -85,7 +65,6 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function AutomationDetailPage({ slug }: { slug: string }) {
-  const { colors, isDark } = useTheme();
   const { isAr } = useLang();
   const { isAuthenticated } = useAuthStore();
   const [automation, setAutomation] = useState<AutomationTemplate | null>(null);
@@ -127,27 +106,18 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "60vh", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        flexDirection: "column", gap: "16px",
-      }}>
-        <Loader2 size={32} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
-        <p style={{ color: colors.textMuted }}>Loading...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 size={32} className="animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (error || !automation) {
     return (
-      <div style={{
-        minHeight: "60vh", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        flexDirection: "column", gap: "16px",
-      }}>
-        <p style={{ fontSize: "18px", color: colors.text }}>Automation not found</p>
-        <Link href="/automations" style={{ color: "#a78bfa", textDecoration: "none" }}>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <p className="text-lg text-foreground">Automation not found</p>
+        <Link href="/automations" className="text-[#a78bfa] no-underline">
           Browse all automations
         </Link>
       </div>
@@ -170,98 +140,67 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         .replace("watch?v=", "embed/")
     : "";
 
+  const ctaLabel = automation.badge === "Live"
+    ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free"))
+    : (isAr ? "انضم للقائمة" : "Join waitlist");
+
   return (
     <div>
       {/* Hero */}
-      <section ref={heroRef} style={{ padding: "100px 24px 72px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-          <Link href="/automations" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            color: colors.textMuted, textDecoration: "none",
-            fontSize: "13px", marginBottom: "32px",
-          }}>
+      <section ref={heroRef} className="border-b px-6 pt-25 pb-18">
+        <div className="mx-auto max-w-[1100px]">
+          <Link href="/automations" className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline">
             <ArrowLeft size={14} /> {isAr ? "كل الأتمتة" : "All automations"}
           </Link>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "48px", alignItems: "center",
-          }}>
+          <div className="grid items-center gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
             {/* Left */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{
-                  width: "56px", height: "56px", borderRadius: "14px",
-                  background: `${automation.color}15`,
-                  border: `1px solid ${automation.color}30`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "26px",
-                }}>
+              <div className="mb-5 flex items-center gap-3">
+                <div
+                  className="flex size-14 items-center justify-center rounded-2xl border text-[26px]"
+                  style={{ background: `${automation.color}15`, borderColor: `${automation.color}30` }}
+                >
                   {automation.icon}
                 </div>
-                <span style={{
-                  fontSize: "12px", fontWeight: 600,
-                  padding: "4px 12px", borderRadius: "9999px",
-                  background: automation.badge === "Live"
-                    ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
-                  color: automation.badge === "Live" ? "#22c55e" : colors.textMuted,
-                  border: `1px solid ${automation.badge === "Live"
-                    ? "rgba(34,197,94,0.2)" : colors.border}`,
-                }}>
+                <span
+                  className="rounded-full border px-3 py-1 text-xs font-semibold"
+                  style={{
+                    background: automation.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
+                    color: automation.badge === "Live" ? "#22c55e" : undefined,
+                    borderColor: automation.badge === "Live" ? "rgba(34,197,94,0.2)" : undefined,
+                  }}
+                >
                   {automation.badge}
                 </span>
               </div>
 
-              <h1 style={{
-                fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800,
-                color: colors.text, marginBottom: "12px",
-                letterSpacing: "-0.04em", lineHeight: 1.05,
-              }}>
+              <h1 className="mb-3 text-[clamp(32px,5vw,52px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
                 {(isAr && automation.name_ar) ? automation.name_ar : automation.name}
               </h1>
 
               {((isAr && automation.tagline_ar) ? automation.tagline_ar : automation.tagline) && (
-                <p style={{ fontSize: "18px", color: automation.color, fontWeight: 500, marginBottom: "16px" }}>
+                <p className="mb-4 text-lg font-medium" style={{ color: automation.color }}>
                   {(isAr && automation.tagline_ar) ? automation.tagline_ar : automation.tagline}
                 </p>
               )}
 
-              <p style={{ fontSize: "16px", color: colors.textMuted, lineHeight: 1.7, marginBottom: "32px" }}>
+              <p className="mb-8 text-base leading-[1.7] text-muted-foreground">
                 {(isAr && automation.description_ar) ? automation.description_ar : automation.description}
               </p>
 
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <Link
-                  href={getStartedHref}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: "8px",
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    color: "white", padding: "13px 28px", borderRadius: "10px",
-                    fontSize: "15px", fontWeight: 600, textDecoration: "none",
-                    boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-                  }}
-                >
-                  {automation.badge === "Live"
-                    ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free"))
-                    : (isAr ? "انضم للقائمة" : "Join waitlist")
-                  }
+              <div className="flex flex-wrap gap-3">
+                <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-7 py-5.5 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
+                  {ctaLabel}
                   <ArrowRight size={15} />
-                </Link>
+                </Button>
 
                 {automation.demoVideoUrl && (
                   <a
                     href={automation.demoVideoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "8px",
-                      border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                      color: colors.textMuted, padding: "13px 28px",
-                      borderRadius: "10px", fontSize: "15px",
-                      fontWeight: 500, textDecoration: "none",
-                      background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                    }}
+                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.015] px-7 py-3.25 text-[15px] font-medium text-muted-foreground no-underline"
                   >
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
@@ -271,20 +210,13 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
             {/* Hero stats */}
             {automation.heroStats?.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="grid grid-cols-2 gap-3">
                 {automation.heroStats.map((stat) => (
-                  <div key={stat.label} style={{
-                    background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                    border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                    borderRadius: "12px", padding: "20px", textAlign: "center",
-                  }}>
-                    <p style={{
-                      fontSize: "26px", fontWeight: 800, color: automation.color,
-                      lineHeight: 1, marginBottom: "6px",
-                    }}>
+                  <div key={stat.label} className="rounded-xl border bg-foreground/[0.015] p-5 text-center">
+                    <p className="mb-1.5 text-2xl leading-none font-extrabold" style={{ color: automation.color }}>
                       {stat.value}
                     </p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted }}>{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -295,90 +227,60 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Coming Soon */}
       {automation.isComingSoon && (
-        <section style={{
-          padding: "32px 24px",
-          background: `${automation.color}08`,
-          borderBottom: `1px solid ${automation.color}20`,
-        }}>
-          <div style={{
-            maxWidth: "1100px", margin: "0 auto",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            flexWrap: "wrap", gap: "16px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <div style={{
-                width: "44px", height: "44px", borderRadius: "12px",
-                background: `${automation.color}15`, border: `1px solid ${automation.color}30`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "20px", flexShrink: 0,
-              }}>
+        <section className="border-b px-6 py-8" style={{ background: `${automation.color}08`, borderColor: `${automation.color}20` }}>
+          <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl border text-xl"
+                style={{ background: `${automation.color}15`, borderColor: `${automation.color}30` }}
+              >
                 🚀
               </div>
               <div>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+                <p className="mb-0.5 text-[15px] font-semibold text-foreground">
                   This automation is coming soon
                 </p>
-                <p style={{ fontSize: "13px", color: colors.textMuted }}>
+                <p className="text-[13px] text-muted-foreground">
                   We're actively building this. Join the waitlist to get notified and receive 40% off at launch.
                 </p>
               </div>
             </div>
-            <Link href="/auth/signup" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: `linear-gradient(135deg, ${automation.color}, ${automation.color}cc)`,
-              color: "white", padding: "11px 24px", borderRadius: "10px",
-              fontSize: "14px", fontWeight: 600, textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}>
+            <Button
+              nativeButton={false}
+              render={<Link href="/auth/signup" />}
+              className="gap-2 whitespace-nowrap"
+              style={{ background: `linear-gradient(135deg, ${automation.color}, ${automation.color}cc)` }}
+            >
               Join waitlist <ArrowRight size={14} />
-            </Link>
+            </Button>
           </div>
         </section>
       )}
 
       {/* Demo video */}
       {automation.demoVideoUrl && embedUrl && (
-        <section style={{
-          padding: "64px 24px",
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-        }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
-            <h2 style={{
-              fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
-              color: colors.text, marginBottom: "12px",
-            }}>
+        <section className="border-b bg-foreground/[0.015] px-6 py-16">
+          <div className="mx-auto max-w-[800px] text-center">
+            <h2 className="mb-3 text-[clamp(24px,3vw,36px)] font-bold text-foreground">
               See it in action
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "32px" }}>
+            <p className="mb-8 text-base text-muted-foreground">
               A real example of this automation running end to end.
             </p>
-            <div style={{
-              position: "relative", paddingBottom: "56.25%",
-              borderRadius: "14px", overflow: "hidden",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-              boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
-            }}>
+            <div className="relative overflow-hidden rounded-2xl border pb-[56.25%] shadow-[0_24px_48px_rgba(0,0,0,0.3)]">
               <iframe
                 src={embedUrl}
                 title={`${automation.name} demo`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                style={{
-                  position: "absolute", top: 0, left: 0,
-                  width: "100%", height: "100%", border: "none",
-                }}
+                className="absolute inset-0 size-full border-0"
               />
             </div>
             <a
               href={automation.demoVideoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                marginTop: "16px", color: colors.textMuted,
-                fontSize: "13px", textDecoration: "none",
-              }}
+              className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline"
             >
               <ExternalLink size={13} /> Watch on YouTube
             </a>
@@ -388,38 +290,21 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Capabilities */}
       {automation.capabilities?.length > 0 && (
-        <section style={{ padding: "64px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "40px" }}>
-              <h2 style={{
-                fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700,
-                color: colors.text, marginBottom: "8px",
-              }}>
+        <section className="border-b px-6 py-16">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-10 text-center">
+              <h2 className="mb-2 text-[clamp(22px,3vw,36px)] font-bold text-foreground">
                 {isAr ? `ما تفعله ${(isAr && automation.name_ar) ? automation.name_ar : automation.name}` : `What ${automation.name} does`}
               </h2>
-              <p style={{ fontSize: "15px", color: colors.textMuted }}>
+              <p className="text-[15px] text-muted-foreground">
                 {isAr ? "يتم التعامل مع كل شيء تلقائياً — لا يلزم أي عمل يدوي." : "Everything handled automatically — no manual work required."}
               </p>
             </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: "12px",
-            }}>
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
               {((isAr && automation.capabilities_ar?.length) ? automation.capabilities_ar : automation.capabilities).map((cap) => (
-                <div key={cap} style={{
-                  display: "flex", alignItems: "center", gap: "10px",
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "10px", padding: "14px 16px",
-                }}>
-                  <div style={{
-                    width: "8px", height: "8px", borderRadius: "50%",
-                    background: automation.color, flexShrink: 0,
-                  }} />
-                  <span style={{ fontSize: "13px", color: colors.text, fontWeight: 500 }}>
-                    {cap}
-                  </span>
+                <div key={cap} className="flex items-center gap-2.5 rounded-[10px] border bg-foreground/[0.015] px-4 py-3.5">
+                  <div className="size-2 shrink-0 rounded-full" style={{ background: automation.color }} />
+                  <span className="text-[13px] font-medium text-foreground">{cap}</span>
                 </div>
               ))}
             </div>
@@ -429,35 +314,24 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Features */}
       {automation.features?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "كل شيء مشمول" : "Everything included"}
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted }}>
+              <p className="text-base text-muted-foreground">
                 {isAr ? "لا حاجة لأدوات إضافية. الأتمتة تتولى كل شيء." : "No extra tools needed. The automation handles everything."}
               </p>
             </div>
-            <div ref={featuresRef} style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "16px",
-            }}>
+            <div ref={featuresRef} className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
               {automation.features.map((feature) => (
-                <div key={feature.title} style={{
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "12px", padding: "22px",
-                }}>
-                  <div style={{ fontSize: "24px", marginBottom: "12px" }}>{feature.icon}</div>
-                  <h3 style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "8px" }}>
+                <div key={feature.title} className="rounded-xl border bg-foreground/[0.015] p-5.5">
+                  <div className="mb-3 text-2xl">{feature.icon}</div>
+                  <h3 className="mb-2 text-[15px] font-semibold text-foreground">
                     {feature.title}
                   </h3>
-                  <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.7 }}>
+                  <p className="text-[13px] leading-[1.7] text-muted-foreground">
                     {feature.description}
                   </p>
                 </div>
@@ -469,59 +343,38 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* How it works */}
       {automation.howItWorks?.length > 0 && (
-        <section style={{
-          padding: "80px 24px",
-          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b bg-foreground/[0.015] px-6 py-20">
+          <div className="mx-auto max-w-[800px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "كيف يعمل" : "How it works"}
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted }}>
+              <p className="text-base text-muted-foreground">
                 {isAr ? "جاهز للعمل في أقل من 10 دقائق." : "Up and running in under 10 minutes."}
               </p>
             </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div className="flex flex-col">
               {automation.howItWorks.map((step, i) => (
-                <div key={step.step} style={{
-                  display: "flex", gap: "20px",
-                  paddingBottom: i < automation.howItWorks.length - 1 ? "32px" : 0,
-                  position: "relative",
-                }}>
+                <div key={step.step} className={cn("relative flex gap-5", i < automation.howItWorks.length - 1 && "pb-8")}>
                   {i < automation.howItWorks.length - 1 && (
-                    <div style={{
-                      position: "absolute", left: "19px", top: "44px",
-                      width: "2px", bottom: 0,
-                      background: `${automation.color}30`,
-                    }} />
+                    <div
+                      className="absolute top-11 bottom-0 left-4.75 w-0.5"
+                      style={{ background: `${automation.color}30` }}
+                    />
                   )}
-                  <div style={{
-                    width: "40px", height: "40px", borderRadius: "50%",
-                    background: `${automation.color}15`,
-                    border: `2px solid ${automation.color}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, zIndex: 1,
-                  }}>
-                    <span style={{
-                      fontSize: "12px", fontWeight: 700,
-                      color: automation.color, fontFamily: "monospace",
-                    }}>
+                  <div
+                    className="z-1 flex size-10 shrink-0 items-center justify-center rounded-full border-2"
+                    style={{ background: `${automation.color}15`, borderColor: `${automation.color}40` }}
+                  >
+                    <span className="font-mono text-xs font-bold" style={{ color: automation.color }}>
                       {step.step}
                     </span>
                   </div>
-                  <div style={{ paddingTop: "6px" }}>
-                    <h3 style={{
-                      fontSize: "16px", fontWeight: 600,
-                      color: colors.text, marginBottom: "6px",
-                    }}>
+                  <div className="pt-1.5">
+                    <h3 className="mb-1.5 text-base font-semibold text-foreground">
                       {step.title}
                     </h3>
-                    <p style={{ fontSize: "14px", color: colors.textMuted, lineHeight: 1.7 }}>
+                    <p className="text-sm leading-[1.7] text-muted-foreground">
                       {step.description}
                     </p>
                   </div>
@@ -534,35 +387,24 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Integrations */}
       {automation.integrations?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "40px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-10 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 Integrations
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted }}>
+              <p className="text-base text-muted-foreground">
                 Works with the tools you already use.
               </p>
             </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-              gap: "12px",
-            }}>
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
               {automation.integrations.map((integration) => (
-                <div key={integration.name} style={{
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "12px", padding: "16px", textAlign: "center",
-                }}>
-                  <div style={{ fontSize: "28px", marginBottom: "8px" }}>{integration.icon}</div>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "4px" }}>
+                <div key={integration.name} className="rounded-xl border bg-foreground/[0.015] p-4 text-center">
+                  <div className="mb-2 text-[28px]">{integration.icon}</div>
+                  <p className="mb-1 text-[13px] font-semibold text-foreground">
                     {integration.name}
                   </p>
-                  <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                  <p className="text-[11px] text-muted-foreground">
                     {integration.description}
                   </p>
                 </div>
@@ -574,57 +416,36 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Testimonials */}
       {automation.testimonials?.length > 0 && (
-        <section style={{
-          padding: "80px 24px",
-          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b bg-foreground/[0.015] px-6 py-20">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 What users say
               </h2>
             </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "16px",
-            }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
               {automation.testimonials.map((t) => (
-                <div key={t.name} style={{
-                  background: colors.bg,
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "12px", padding: "22px",
-                }}>
-                  <div style={{ display: "flex", gap: "3px", marginBottom: "14px" }}>
+                <div key={t.name} className="rounded-xl border bg-background p-5.5">
+                  <div className="mb-3.5 flex gap-0.75">
                     {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} size={13} color="#f59e0b" fill="#f59e0b" />
+                      <Star key={i} size={13} className="fill-[#f59e0b] text-[#f59e0b]" />
                     ))}
                   </div>
-                  <p style={{
-                    fontSize: "14px", color: colors.textMuted,
-                    lineHeight: 1.7, marginBottom: "16px",
-                  }}>
+                  <p className="mb-4 text-sm leading-[1.7] text-muted-foreground">
                     &ldquo;{t.text}&rdquo;
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{
-                      width: "36px", height: "36px", borderRadius: "50%",
-                      background: `${automation.color}20`,
-                      border: `1px solid ${automation.color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "12px", fontWeight: 700, color: automation.color,
-                    }}>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex size-9 items-center justify-center rounded-full border text-xs font-bold"
+                      style={{ background: `${automation.color}20`, borderColor: `${automation.color}30`, color: automation.color }}
+                    >
                       {t.avatar}
                     </div>
                     <div>
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>
+                      <p className="text-[13px] font-semibold text-foreground">
                         {t.name}
                       </p>
-                      <p style={{ fontSize: "12px", color: colors.textMuted }}>{t.role}</p>
+                      <p className="text-xs text-muted-foreground">{t.role}</p>
                     </div>
                   </div>
                 </div>
@@ -636,131 +457,87 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* Pricing */}
       {automation.pricing && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
-            <h2 style={{
-              fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-              color: colors.text, marginBottom: "12px",
-            }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[900px] text-center">
+            <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
               {isAr ? "تسعير بسيط" : "Simple pricing"}
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "48px" }}>
+            <p className="mb-12 text-base text-muted-foreground">
               {isAr ? "خطة واحدة. كل شيء مشمول. إلغاء في أي وقت." : "One plan. Everything included. Cancel anytime."}
             </p>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: automation.pricing?.hasCustomPlan
-                ? "repeat(3, 1fr)"
-                : "repeat(2, 1fr)",
-              gap: "16px",
-              maxWidth: automation.pricing?.hasCustomPlan ? "900px" : "640px",
-              margin: "0 auto",
-            }}>
-
+            <div
+              className={cn("mx-auto grid grid-cols-1 gap-4", automation.pricing?.hasCustomPlan ? "sm:grid-cols-3" : "sm:grid-cols-2")}
+              style={{ maxWidth: automation.pricing?.hasCustomPlan ? "900px" : "640px" }}
+            >
               {/* Monthly */}
-              <div style={{
-                background: colors.bg, border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                borderRadius: "16px", padding: "28px",
-                textAlign: "left", display: "flex", flexDirection: "column",
-              }}>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "شهري" : "Monthly"}</p>
-                <div style={{ marginBottom: "20px" }}>
-                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.monthly}</span>
-                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+              <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
+                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "شهري" : "Monthly"}</p>
+                <div className="mb-5">
+                  <span className="text-4xl font-extrabold text-foreground">${automation.pricing.monthly}</span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
-                <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
-                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
+                <ul className="mb-6 flex-1 list-none p-0">
                   {automation.pricing.features.slice(0, 5).map((feature) => (
-                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
-                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
+                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Link href={getStartedHref} style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  color: colors.text, padding: "12px", borderRadius: "10px",
-                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                }}>
+                <Button nativeButton={false} variant="outline" render={<Link href={getStartedHref} />} className="w-full">
                   {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
-                </Link>
+                </Button>
               </div>
 
               {/* Annual — highlighted */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
-                border: "2px solid rgba(124,58,237,0.4)",
-                borderRadius: "16px", padding: "28px",
-                textAlign: "left", display: "flex", flexDirection: "column",
-                position: "relative", boxShadow: "0 0 40px rgba(124,58,237,0.1)",
-              }}>
-                <div style={{
-                  position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "4px 16px", borderRadius: "9999px",
-                  fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
-                }}>
+              <div className="relative flex flex-col rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/8 to-[#6d28d9]/4 p-7 text-left shadow-[0_0_40px_rgba(124,58,237,0.1)]">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-primary to-[#6d28d9] px-4 py-1 text-[11px] font-bold whitespace-nowrap text-white">
                   ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
                 </div>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "سنوي" : "Annual"}</p>
-                <div style={{ marginBottom: "4px" }}>
-                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${automation.pricing.annual}</span>
-                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-[#a78bfa] uppercase">{isAr ? "سنوي" : "Annual"}</p>
+                <div className="mb-1">
+                  <span className="text-4xl font-extrabold text-foreground">${automation.pricing.annual}</span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
-                <p style={{ fontSize: "12px", color: "#22c55e", marginBottom: "20px", fontWeight: 600 }}>
+                <p className="mb-5 text-xs font-semibold text-[#22c55e]">
                   Save ${(automation.pricing.monthly - automation.pricing.annual) * 12}/year — billed annually
                 </p>
-                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                <ul className="mb-6 flex-1 list-none p-0">
                   {automation.pricing.features.map((feature) => (
-                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
-                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-foreground">
+                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Link href={getStartedHref} style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "12px", borderRadius: "10px",
-                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-                }}>
+                <Button nativeButton={false} render={<Link href={getStartedHref} />} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
                   {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                   <ArrowRight size={14} />
-                </Link>
-                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
+                </Button>
+                <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
               </div>
 
               {/* Enterprise */}
               {automation.pricing?.hasCustomPlan && (
-                <div style={{
-                  background: colors.bg, border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "16px", padding: "28px",
-                  textAlign: "left", display: "flex", flexDirection: "column",
-                }}>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "مؤسسي" : "Enterprise"}</p>
-                  <div style={{ marginBottom: "20px" }}>
-                    <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>Custom</span>
+                <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
+                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "مؤسسي" : "Enterprise"}</p>
+                  <div className="mb-5">
+                    <span className="text-4xl font-extrabold text-foreground">Custom</span>
                   </div>
-                  <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                  <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
                     {automation.pricing.customLabel || "Need a tailored solution for your team or business?"}
                   </p>
-                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  <ul className="mb-6 flex-1 list-none p-0">
                     {["Custom pipeline configuration", "Dedicated support", "SLA guarantee", "Custom integrations", "Team management"].map((f) => (
-                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
-                        <CheckCircle2 size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                      <li key={f} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
+                        <CheckCircle2 size={13} className="shrink-0 text-primary" />
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <a href="mailto:hello@logicmate.io" style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                    border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
-                    color: "#a78bfa", padding: "12px", borderRadius: "10px",
-                    fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                  }}>
+                  <a href="mailto:hello@logicmate.io" className="flex items-center justify-center gap-1.5 rounded-[10px] border border-primary/30 bg-primary/6 p-3 text-sm font-semibold text-[#a78bfa] no-underline">
                     Contact us →
                   </a>
                 </div>
@@ -772,13 +549,10 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
 
       {/* FAQ */}
       {automation.faq?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "680px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "40px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[680px]">
+            <div className="mb-10 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "الأسئلة الشائعة" : "Frequently asked questions"}
               </h2>
             </div>
@@ -790,49 +564,30 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       )}
 
       {/* Final CTA */}
-      <section style={{ padding: "80px 24px" }}>
-        <div style={{
-          maxWidth: "600px", margin: "0 auto", textAlign: "center",
-          background: `${automation.color}08`,
-          border: `1px solid ${automation.color}20`,
-          borderRadius: "20px", padding: "56px 40px",
-        }}>
-          <div style={{ fontSize: "40px", marginBottom: "16px" }}>{automation.icon}</div>
-          <h2 style={{
-            fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
-            color: colors.text, marginBottom: "12px",
-          }}>
+      <section className="px-6 py-20">
+        <div
+          className="mx-auto max-w-[600px] rounded-[20px] border p-14 text-center"
+          style={{ background: `${automation.color}08`, borderColor: `${automation.color}20` }}
+        >
+          <div className="mb-4 text-4xl">{automation.icon}</div>
+          <h2 className="mb-3 text-[clamp(24px,3vw,36px)] font-bold text-foreground">
             {isAr ? `هل أنت مستعد لنشر ${(isAr && automation.name_ar) ? automation.name_ar : automation.name}؟` : `Ready to deploy ${automation.name}?`}
           </h2>
-          <p style={{
-            fontSize: "16px", color: colors.textMuted,
-            marginBottom: "28px", lineHeight: 1.7,
-          }}>
+          <p className="mb-7 text-base leading-[1.7] text-muted-foreground">
             {automation.badge === "Live"
               ? (isAr ? "ابدأ في دقائق. لا يلزم إعداد تقني." : "Get started in minutes. No technical setup required.")
               : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
-          <Link
-            href={getStartedHref}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-              color: "white", padding: "14px 32px", borderRadius: "10px",
-              fontSize: "15px", fontWeight: 600, textDecoration: "none",
-              boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-            }}
-          >
+          <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
             {automation.badge === "Live"
               ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Start free"))
               : (isAr ? "انضم للقائمة" : "Join waitlist")
             }
             <ArrowRight size={15} />
-          </Link>
+          </Button>
         </div>
       </section>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

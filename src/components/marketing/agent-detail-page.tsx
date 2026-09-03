@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
 import { Navbar } from "@/components/layout/navbar";
@@ -14,6 +13,8 @@ import {
   CheckCircle2, Play, Loader2, ExternalLink,
   ArrowLeft,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -43,44 +44,23 @@ interface AgentTemplate {
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
-  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{
-      border: `1px solid ${colors.border}`,
-      borderRadius: "10px", overflow: "hidden",
-      marginBottom: "8px",
-    }}>
+    <div className="mb-2 overflow-hidden rounded-[10px] border">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          width: "100%", padding: "16px 20px",
-          display: "flex", alignItems: "center",
-          justifyContent: "space-between",
-          background: colors.bgCard, border: "none",
-          cursor: "pointer", textAlign: "left",
-          gap: "12px",
-        }}
+        className="flex w-full items-center justify-between gap-3 border-0 bg-card px-5 py-4 text-left"
       >
-        <span style={{ fontSize: "14px", fontWeight: 500, color: colors.text }}>
-          {question}
-        </span>
+        <span className="text-sm font-medium text-foreground">{question}</span>
         {open
-          ? <ChevronUp size={16} color={colors.textMuted} style={{ flexShrink: 0 }} />
-          : <ChevronDown size={16} color={colors.textMuted} style={{ flexShrink: 0 }} />
+          ? <ChevronUp size={16} className="shrink-0 text-muted-foreground" />
+          : <ChevronDown size={16} className="shrink-0 text-muted-foreground" />
         }
       </button>
       {open && (
-        <div style={{
-          padding: "0 20px 16px",
-          background: colors.bgCard,
-          borderTop: `1px solid ${colors.border}`,
-        }}>
-          <p style={{
-            fontSize: "14px", color: colors.textMuted,
-            lineHeight: 1.7, paddingTop: "12px",
-          }}>
+        <div className="border-t bg-card px-5 pb-4">
+          <p className="pt-3 text-sm leading-[1.7] text-muted-foreground">
             {answer}
           </p>
         </div>
@@ -90,7 +70,6 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export function AgentDetailPage({ slug }: { slug: string }) {
-  const { colors, isDark } = useTheme();
   const { isAr } = useLang();
   const { isAuthenticated } = useAuthStore();
   const [agent, setAgent] = useState<AgentTemplate | null>(null);
@@ -135,32 +114,24 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: colors.bg }}>
+      <div className="min-h-screen bg-background">
         <Navbar />
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          minHeight: "70vh", flexDirection: "column", gap: "16px",
-        }}>
-          <Loader2 size={32} color="#7c3aed"
-            style={{ animation: "spin 1s linear infinite" }} />
-          <p style={{ color: colors.textMuted }}>Loading agent...</p>
+        <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
+          <Loader2 size={32} className="animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading agent...</p>
         </div>
         <Footer />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   if (error || !agent) {
     return (
-      <div style={{ minHeight: "100vh", background: colors.bg }}>
+      <div className="min-h-screen bg-background">
         <Navbar />
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          minHeight: "70vh", flexDirection: "column", gap: "16px",
-        }}>
-          <p style={{ fontSize: "18px", color: colors.text }}>Agent not found</p>
-          <Link href="/agents" style={{ color: "#a78bfa", textDecoration: "none", fontSize: "14px" }}>
+        <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
+          <p className="text-lg text-foreground">Agent not found</p>
+          <Link href="/agents" className="text-sm text-[#a78bfa] no-underline">
             Browse all agents
           </Link>
         </div>
@@ -186,104 +157,73 @@ export function AgentDetailPage({ slug }: { slug: string }) {
     : "";
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.bg }}>
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero */}
-      <section ref={heroRef} style={{
-        padding: "100px 24px 72px",
-        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        position: "relative", overflow: "hidden",
-      }}>
+      <section ref={heroRef} className="relative overflow-hidden border-b px-6 pt-25 pb-18">
         {/* Glow */}
-        <div style={{
-          position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)",
-          width: "600px", height: "400px",
-          background: `${agent.color}07`, borderRadius: "50%",
-          filter: "blur(80px)", pointerEvents: "none",
-        }} />
-        <div style={{ maxWidth: "1100px", margin: "0 auto", position: "relative" }}>
-          <Link href="/agents" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            color: colors.textMuted, textDecoration: "none",
-            fontSize: "13px", marginBottom: "40px", opacity: 0.7,
-          }}>
+        <div
+          className="pointer-events-none absolute top-0 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full blur-[80px]"
+          style={{ background: `${agent.color}07` }}
+        />
+        <div className="relative mx-auto max-w-[1100px]">
+          <Link href="/agents" className="mb-10 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline opacity-70">
             <ArrowLeft size={13} /> {isAr ? "كل الوكلاء" : "All agents"}
           </Link>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "56px", alignItems: "center",
-          }}>
+          <div className="grid items-center gap-14" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
             {/* Left */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                <div style={{
-                  width: "56px", height: "56px", borderRadius: "14px",
-                  background: `${agent.color}12`, border: `1px solid ${agent.color}25`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "26px",
-                }}>
+              <div className="mb-6 flex items-center gap-3">
+                <div
+                  className="flex size-14 items-center justify-center rounded-2xl border text-[26px]"
+                  style={{ background: `${agent.color}12`, borderColor: `${agent.color}25` }}
+                >
                   {agent.icon}
                 </div>
-                <span style={{
-                  fontSize: "11px", fontWeight: 700,
-                  padding: "4px 12px", borderRadius: "9999px",
-                  background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
-                  color: agent.badge === "Live" ? "#22c55e" : agent.color,
-                  border: `1px solid ${agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25"}`,
-                }}>
+                <span
+                  className="rounded-full border px-3 py-1 text-[11px] font-bold"
+                  style={{
+                    background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
+                    color: agent.badge === "Live" ? "#22c55e" : agent.color,
+                    borderColor: agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25",
+                  }}
+                >
                   {agent.badge}
                 </span>
               </div>
 
-              <h1 style={{
-                fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 800,
-                color: colors.text, marginBottom: "14px",
-                letterSpacing: "-0.04em", lineHeight: 1.05,
-              }}>
+              <h1 className="mb-3.5 text-[clamp(32px,5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
                 {(isAr && agent.name_ar) ? agent.name_ar : agent.name}
               </h1>
 
               {((isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline) && (
-                <p style={{ fontSize: "18px", color: agent.color, fontWeight: 500, marginBottom: "18px", lineHeight: 1.4 }}>
+                <p className="mb-4.5 text-lg leading-snug font-medium" style={{ color: agent.color }}>
                   {(isAr && agent.tagline_ar) ? agent.tagline_ar : agent.tagline}
                 </p>
               )}
 
-              <p style={{ fontSize: "16px", color: colors.textMuted, lineHeight: 1.75, marginBottom: "36px" }}>
+              <p className="mb-9 text-base leading-[1.75] text-muted-foreground">
                 {(isAr && agent.description_ar) ? agent.description_ar : agent.description}
               </p>
 
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <Link
-                  href={getStartedHref}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: "8px",
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    color: "white", padding: "14px 30px", borderRadius: "10px",
-                    fontSize: "15px", fontWeight: 600, textDecoration: "none",
-                    boxShadow: "0 4px 24px rgba(124,58,237,0.4), 0 0 0 1px rgba(124,58,237,0.3)",
-                  }}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  nativeButton={false}
+                  render={<Link href={getStartedHref} />}
+                  className="gap-2 rounded-[10px] px-7.5 py-6 text-[15px] shadow-[0_4px_24px_rgba(124,58,237,0.4),0_0_0_1px_rgba(124,58,237,0.3)]"
                 >
                   {isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free")}
                   <ArrowRight size={15} />
-                </Link>
+                </Button>
 
                 {agent.demoVideoUrl && (
                   <a
                     href={agent.demoVideoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "8px",
-                      border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
-                      color: colors.textMuted, padding: "14px 24px",
-                      borderRadius: "10px", fontSize: "15px",
-                      fontWeight: 500, textDecoration: "none",
-                      background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-                    }}
+                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.02] px-6 py-3.5 text-[15px] font-medium text-muted-foreground no-underline"
                   >
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
@@ -293,20 +233,13 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
             {/* Right — hero stats */}
             {agent.heroStats?.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="grid grid-cols-2 gap-2.5">
                 {agent.heroStats.map((stat) => (
-                  <div key={stat.label} style={{
-                    background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-                    border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-                    borderRadius: "14px", padding: "22px", textAlign: "center",
-                  }}>
-                    <p style={{
-                      fontSize: "30px", fontWeight: 800, color: agent.color,
-                      lineHeight: 1, marginBottom: "6px", letterSpacing: "-0.02em",
-                    }}>
+                  <div key={stat.label} className="rounded-2xl border bg-foreground/[0.03] p-5.5 text-center">
+                    <p className="mb-1.5 text-[30px] leading-none font-extrabold tracking-[-0.02em]" style={{ color: agent.color }}>
                       {stat.value}
                     </p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted }}>
+                    <p className="text-xs text-muted-foreground">
                       {stat.label}
                     </p>
                   </div>
@@ -316,165 +249,113 @@ export function AgentDetailPage({ slug }: { slug: string }) {
           </div>
         </div>
       </section>
-          
+
       {agent.slug === "youtube-agent" && !agent.isComingSoon && (
-        <section style={{
-          padding: "48px 24px",
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          background: colors.bgCard,
-        }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "32px" }}>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-                color: "#ef4444", padding: "4px 14px", borderRadius: "9999px",
-                fontSize: "12px", fontWeight: 600, marginBottom: "14px",
-              }}>
+        <section className="border-b bg-card px-6 py-12">
+          <div className="mx-auto max-w-[900px]">
+            <div className="mb-8 text-center">
+              <span className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-[#ef4444]/20 bg-[#ef4444]/[0.08] px-3.5 py-1 text-xs font-semibold text-[#ef4444]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444">
                   <path d="M23.5 6.2s-.2-1.6-.9-2.3c-.9-.9-1.9-.9-2.3-1C17.1 2.7 12 2.7 12 2.7s-5.1 0-8.3.2c-.4.1-1.4.1-2.3 1-.7.7-.9 2.3-.9 2.3S.2 8 .2 9.8v1.7c0 1.8.3 3.6.3 3.6s.2 1.6.9 2.3c.9.9 2 .9 2.6 1 1.9.2 8 .2 8 .2s5.1 0 8.3-.2c.4-.1 1.4-.1 2.3-1 .7-.7.9-2.3.9-2.3s.3-1.8.3-3.6V9.8c0-1.8-.3-3.6-.3-3.6zM9.7 15.5V8.1l6.6 3.7-6.6 3.7z"/>
                 </svg>
                 Live proof — real channel
               </span>
-              <h2 style={{
-                fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+              <h2 className="mb-3 text-[clamp(22px,3vw,36px)] font-bold text-foreground">
                 See it running on a real channel
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted, maxWidth: "560px", margin: "0 auto" }}>
+              <p className="mx-auto max-w-[560px] text-base text-muted-foreground">
                 Knowledge Truth is a YouTube channel running entirely on LogicMate.
                 Every video is AI-generated — no filming, no editing, no manual work.
               </p>
             </div>
 
             {/* Stats row */}
-            <div style={{
-              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: "12px", marginBottom: "28px",
-            }}>
+            <div className="mb-7 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
               {[
                 { label: "Cost per video", value: "~$3-5", color: "#22c55e" },
                 { label: "Videos generated", value: "20+", color: "#7c3aed" },
                 { label: "Shorts per video", value: "3", color: "#3b82f6" },
                 { label: "Manual work", value: "Zero", color: "#f59e0b" },
               ].map((stat) => (
-                <div key={stat.label} style={{
-                  background: colors.bg, border: `1px solid ${colors.border}`,
-                  borderRadius: "12px", padding: "18px", textAlign: "center",
-                }}>
-                  <p style={{ fontSize: "28px", fontWeight: 800, color: stat.color, marginBottom: "4px" }}>
+                <div key={stat.label} className="rounded-xl border bg-background p-4.5 text-center">
+                  <p className="mb-1 text-[28px] font-extrabold" style={{ color: stat.color }}>
                     {stat.value}
                   </p>
-                  <p style={{ fontSize: "12px", color: colors.textMuted }}>{stat.label}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </div>
               ))}
             </div>
 
             {/* Channel link */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              gap: "16px", flexWrap: "wrap",
-            }}>
-              
-                <a href="https://www.youtube.com/@knowledgetruth9287"
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <a
+                href="https://www.youtube.com/@knowledgetruth9287"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: "10px",
-                  padding: "14px 28px", borderRadius: "10px",
-                  background: "#ef4444", color: "white",
-                  textDecoration: "none", fontSize: "15px", fontWeight: 600,
-                  boxShadow: "0 4px 20px rgba(239,68,68,0.3)",
-                }}
+                className="inline-flex items-center gap-2.5 rounded-[10px] bg-[#ef4444] px-7 py-3.5 text-[15px] font-semibold text-white no-underline shadow-[0_4px_20px_rgba(239,68,68,0.3)]"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
                   <path d="M23.5 6.2s-.2-1.6-.9-2.3c-.9-.9-1.9-.9-2.3-1C17.1 2.7 12 2.7 12 2.7s-5.1 0-8.3.2c-.4.1-1.4.1-2.3 1-.7.7-.9 2.3-.9 2.3S.2 8 .2 9.8v1.7c0 1.8.3 3.6.3 3.6s.2 1.6.9 2.3c.9.9 2 .9 2.6 1 1.9.2 8 .2 8 .2s5.1 0 8.3-.2c.4-.1 1.4-.1 2.3-1 .7-.7.9-2.3.9-2.3s.3-1.8.3-3.6V9.8c0-1.8-.3-3.6-.3-3.6zM9.7 15.5V8.1l6.6 3.7-6.6 3.7z"/>
                 </svg>
                 Visit Knowledge Truth →
               </a>
-              <p style={{ fontSize: "13px", color: colors.textMuted }}>
+              <p className="text-[13px] text-muted-foreground">
                 Every video on this channel was generated by LogicMate
               </p>
             </div>
           </div>
         </section>
       )}
+
       {agent.isComingSoon && (
-        <section style={{
-          padding: "32px 24px",
-          background: `${agent.color}08`,
-          borderBottom: `1px solid ${agent.color}20`,
-        }}>
-          <div style={{
-            maxWidth: "1100px", margin: "0 auto",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            flexWrap: "wrap", gap: "16px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <div style={{
-                width: "44px", height: "44px", borderRadius: "12px",
-                background: `${agent.color}15`, border: `1px solid ${agent.color}30`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "20px", flexShrink: 0,
-              }}>
+        <section className="border-b px-6 py-8" style={{ background: `${agent.color}08`, borderColor: `${agent.color}20` }}>
+          <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl border text-xl"
+                style={{ background: `${agent.color}15`, borderColor: `${agent.color}30` }}
+              >
                 🚀
               </div>
               <div>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+                <p className="mb-0.5 text-[15px] font-semibold text-foreground">
                   This agent is coming soon
                 </p>
-                <p style={{ fontSize: "13px", color: colors.textMuted }}>
+                <p className="text-[13px] text-muted-foreground">
                   We're actively building this. Join the waitlist to get notified and receive 40% off at launch.
                 </p>
               </div>
             </div>
-            <Link href="/auth/signup" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: `linear-gradient(135deg, ${agent.color}, ${agent.color}cc)`,
-              color: "white", padding: "11px 24px", borderRadius: "10px",
-              fontSize: "14px", fontWeight: 600, textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}>
+            <Button
+              nativeButton={false}
+              render={<Link href="/auth/signup" />}
+              className="gap-2 whitespace-nowrap"
+              style={{ background: `linear-gradient(135deg, ${agent.color}, ${agent.color}cc)` }}
+            >
               Join waitlist <ArrowRight size={14} />
-            </Link>
+            </Button>
           </div>
         </section>
       )}
 
       {/* Demo video */}
       {agent.demoVideoUrl && embedUrl && (
-        <section style={{
-          padding: "64px 24px",
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          background: colors.bgCard,
-        }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
-            <h2 style={{
-              fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
-              color: colors.text, marginBottom: "12px",
-            }}>
+        <section className="border-b bg-card px-6 py-16">
+          <div className="mx-auto max-w-[800px] text-center">
+            <h2 className="mb-3 text-[clamp(24px,3vw,36px)] font-bold text-foreground">
               See it in action
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "32px" }}>
+            <p className="mb-8 text-base text-muted-foreground">
               A real video generated by this agent — from trend discovery to YouTube upload.
             </p>
 
-            <div style={{
-              position: "relative", paddingBottom: "56.25%",
-              borderRadius: "14px", overflow: "hidden",
-              border: `1px solid ${colors.border}`,
-              boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
-            }}>
+            <div className="relative overflow-hidden rounded-2xl border pb-[56.25%] shadow-[0_24px_48px_rgba(0,0,0,0.3)]">
               <iframe
                 src={embedUrl}
                 title={`${agent.name} demo`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                style={{
-                  position: "absolute", top: 0, left: 0,
-                  width: "100%", height: "100%", border: "none",
-                }}
+                className="absolute inset-0 size-full border-0"
               />
             </div>
 
@@ -482,11 +363,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
               href={agent.demoVideoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                marginTop: "16px", color: colors.textMuted,
-                fontSize: "13px", textDecoration: "none",
-              }}
+              className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline"
             >
               <ExternalLink size={13} /> Watch on YouTube
             </a>
@@ -495,36 +372,21 @@ export function AgentDetailPage({ slug }: { slug: string }) {
       )}
 
       {agent.capabilities?.length > 0 && (
-        <section style={{ padding: "64px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "40px" }}>
-              <h2 style={{
-                fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 700,
-                color: colors.text, marginBottom: "8px",
-              }}>
+        <section className="border-b px-6 py-16">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-10 text-center">
+              <h2 className="mb-2 text-[clamp(22px,3vw,36px)] font-bold text-foreground">
                 {isAr ? `ما يفعله ${(isAr && agent.name_ar) ? agent.name_ar : agent.name}` : `What ${agent.name} does`}
               </h2>
-              <p style={{ fontSize: "15px", color: colors.textMuted }}>
+              <p className="text-[15px] text-muted-foreground">
                 {isAr ? "يتم التعامل مع كل شيء تلقائياً — لا يلزم أي عمل يدوي." : "Everything handled automatically — no manual work required."}
               </p>
             </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: "12px",
-            }}>
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
               {((isAr && agent.capabilities_ar?.length) ? agent.capabilities_ar : agent.capabilities).map((cap) => (
-                <div key={cap} style={{
-                  display: "flex", alignItems: "center", gap: "10px",
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "10px", padding: "14px 16px",
-                }}>
-                  <div style={{
-                    width: "8px", height: "8px", borderRadius: "50%",
-                    background: agent.color, flexShrink: 0,
-                  }} />
-                  <span style={{ fontSize: "13px", color: colors.text, fontWeight: 500 }}>
+                <div key={cap} className="flex items-center gap-2.5 rounded-[10px] border bg-foreground/[0.015] px-4 py-3.5">
+                  <div className="size-2 shrink-0 rounded-full" style={{ background: agent.color }} />
+                  <span className="text-[13px] font-medium text-foreground">
                     {cap}
                   </span>
                 </div>
@@ -536,38 +398,27 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
       {/* Features */}
       {agent.features?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "كل شيء مشمول" : "Everything included"}
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted }}>
+              <p className="text-base text-muted-foreground">
                 {isAr ? "لا حاجة لأدوات إضافية. كل شيء يعمل داخل الوكيل." : "No extra tools needed. Everything runs inside the agent."}
               </p>
             </div>
 
-            <div ref={featuresRef} style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "16px",
-            }}>
+            <div ref={featuresRef} className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
               {agent.features.map((feature) => (
-                <div key={feature.title} style={{
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "12px", padding: "22px",
-                }}>
-                  <div style={{ fontSize: "24px", marginBottom: "12px" }}>
+                <div key={feature.title} className="rounded-xl border bg-foreground/[0.015] p-5.5">
+                  <div className="mb-3 text-2xl">
                     {feature.icon}
                   </div>
-                  <h3 style={{ fontSize: "15px", fontWeight: 600, color: colors.text, marginBottom: "8px" }}>
+                  <h3 className="mb-2 text-[15px] font-semibold text-foreground">
                     {feature.title}
                   </h3>
-                  <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.7 }}>
+                  <p className="text-[13px] leading-[1.7] text-muted-foreground">
                     {feature.description}
                   </p>
                 </div>
@@ -579,54 +430,39 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
       {/* How it works */}
       {agent.howItWorks?.length > 0 && (
-        <section style={{
-          padding: "80px 24px",
-          background: colors.bgCard,
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b bg-card px-6 py-20">
+          <div className="mx-auto max-w-[800px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "كيف يعمل" : "How it works"}
               </h2>
-              <p style={{ fontSize: "16px", color: colors.textMuted }}>
+              <p className="text-base text-muted-foreground">
                 {isAr ? "من الإعداد إلى الأتمتة الكاملة في أقل من 10 دقائق." : "From setup to fully automated in under 10 minutes."}
               </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div className="flex flex-col">
               {agent.howItWorks.map((step, i) => (
-                <div key={step.step} style={{
-                  display: "flex", gap: "20px",
-                  paddingBottom: i < agent.howItWorks.length - 1 ? "32px" : 0,
-                  position: "relative",
-                }}>
+                <div key={step.step} className={cn("relative flex gap-5", i < agent.howItWorks.length - 1 && "pb-8")}>
                   {i < agent.howItWorks.length - 1 && (
-                    <div style={{
-                      position: "absolute", left: "19px", top: "44px",
-                      width: "2px", bottom: 0,
-                      background: `${agent.color}30`,
-                    }} />
+                    <div
+                      className="absolute top-11 bottom-0 left-4.75 w-0.5"
+                      style={{ background: `${agent.color}30` }}
+                    />
                   )}
-                  <div style={{
-                    width: "40px", height: "40px", borderRadius: "50%",
-                    background: `${agent.color}15`,
-                    border: `2px solid ${agent.color}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, zIndex: 1,
-                  }}>
-                    <span style={{ fontSize: "12px", fontWeight: 700, color: agent.color, fontFamily: "monospace" }}>
+                  <div
+                    className="z-1 flex size-10 shrink-0 items-center justify-center rounded-full border-2"
+                    style={{ background: `${agent.color}15`, borderColor: `${agent.color}40` }}
+                  >
+                    <span className="font-mono text-xs font-bold" style={{ color: agent.color }}>
                       {step.step}
                     </span>
                   </div>
-                  <div style={{ paddingTop: "6px" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: colors.text, marginBottom: "6px" }}>
+                  <div className="pt-1.5">
+                    <h3 className="mb-1.5 text-base font-semibold text-foreground">
                       {step.title}
                     </h3>
-                    <p style={{ fontSize: "14px", color: colors.textMuted, lineHeight: 1.7 }}>
+                    <p className="text-sm leading-[1.7] text-muted-foreground">
                       {step.description}
                     </p>
                   </div>
@@ -639,50 +475,36 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
       {/* Testimonials */}
       {agent.testimonials?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "48px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-12 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "ماذا يقول المستخدمون" : "What creators say"}
               </h2>
             </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "16px",
-            }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
               {agent.testimonials.map((t) => (
-                <div key={t.name} style={{
-                  background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-                  borderRadius: "12px", padding: "22px",
-                }}>
-                  <div style={{ display: "flex", gap: "3px", marginBottom: "14px" }}>
+                <div key={t.name} className="rounded-xl border bg-foreground/[0.015] p-5.5">
+                  <div className="mb-3.5 flex gap-0.75">
                     {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} size={13} color="#f59e0b" fill="#f59e0b" />
+                      <Star key={i} size={13} className="fill-[#f59e0b] text-[#f59e0b]" />
                     ))}
                   </div>
-                  <p style={{ fontSize: "14px", color: colors.textMuted, lineHeight: 1.7, marginBottom: "16px" }}>
+                  <p className="mb-4 text-sm leading-[1.7] text-muted-foreground">
                     &ldquo;{t.text}&rdquo;
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{
-                      width: "36px", height: "36px", borderRadius: "50%",
-                      background: `${agent.color}20`,
-                      border: `1px solid ${agent.color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "12px", fontWeight: 700, color: agent.color,
-                    }}>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex size-9 items-center justify-center rounded-full border text-xs font-bold"
+                      style={{ background: `${agent.color}20`, borderColor: `${agent.color}30`, color: agent.color }}
+                    >
                       {t.avatar}
                     </div>
                     <div>
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>
+                      <p className="text-[13px] font-semibold text-foreground">
                         {t.name}
                       </p>
-                      <p style={{ fontSize: "12px", color: colors.textMuted }}>
+                      <p className="text-xs text-muted-foreground">
                         {t.role}
                       </p>
                     </div>
@@ -696,138 +518,91 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
       {/* Pricing */}
       {agent.pricing && (
-        <section style={{
-          padding: "80px 24px",
-          background: colors.bgCard,
-          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        }}>
-          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
-            <h2 style={{
-              fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-              color: colors.text, marginBottom: "12px",
-            }}>
+        <section className="border-b bg-card px-6 py-20">
+          <div className="mx-auto max-w-[900px] text-center">
+            <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
               {isAr ? "تسعير بسيط" : "Simple pricing"}
             </h2>
-            <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "48px" }}>
+            <p className="mb-12 text-base text-muted-foreground">
               {isAr ? "خطة واحدة. كل شيء مشمول. إلغاء في أي وقت." : "One plan. Everything included. Cancel anytime."}
             </p>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: agent.pricing?.hasCustomPlan ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
-              gap: "16px",
-              maxWidth: agent.pricing?.hasCustomPlan ? "900px" : "640px",
-              margin: "0 auto",
-            }}>
-
+            <div
+              className={cn("mx-auto grid grid-cols-1 gap-4", agent.pricing?.hasCustomPlan ? "sm:grid-cols-3" : "sm:grid-cols-2")}
+              style={{ maxWidth: agent.pricing?.hasCustomPlan ? "900px" : "640px" }}
+            >
               {/* Monthly */}
-              <div style={{
-                background: colors.bg, border: `1px solid ${colors.border}`,
-                borderRadius: "16px", padding: "28px",
-                textAlign: "left", display: "flex", flexDirection: "column",
-              }}>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "شهري" : "Monthly"}</p>
-                <div style={{ marginBottom: "20px" }}>
-                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${agent.pricing.monthly}</span>
-                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+              <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
+                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "شهري" : "Monthly"}</p>
+                <div className="mb-5">
+                  <span className="text-4xl font-extrabold text-foreground">${agent.pricing.monthly}</span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
-                <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px" }}>{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
-                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
+                <ul className="mb-6 flex-1 list-none p-0">
                   {agent.pricing.features.slice(0, 5).map((feature) => (
-                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
-                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
+                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Link href={getStartedHref} style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  border: `1px solid ${colors.border}`, background: colors.bgCard,
-                  color: colors.text, padding: "12px", borderRadius: "10px",
-                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                }}>
+                <Button nativeButton={false} variant="outline" render={<Link href={getStartedHref} />} className="w-full">
                   {agent.badge === "Live" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
-                </Link>
+                </Button>
               </div>
 
               {/* Annual */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
-                border: "2px solid rgba(124,58,237,0.4)",
-                borderRadius: "16px", padding: "28px",
-                textAlign: "left", display: "flex", flexDirection: "column",
-                position: "relative", boxShadow: "0 0 40px rgba(124,58,237,0.1)",
-              }}>
-                <div style={{
-                  position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "4px 16px", borderRadius: "9999px",
-                  fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap",
-                }}>
+              <div className="relative flex flex-col rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/8 to-[#6d28d9]/4 p-7 text-left shadow-[0_0_40px_rgba(124,58,237,0.1)]">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-primary to-[#6d28d9] px-4 py-1 text-[11px] font-bold whitespace-nowrap text-white">
                   ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
                 </div>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "#a78bfa", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "سنوي" : "Annual"}</p>
-                <div style={{ marginBottom: "4px" }}>
-                  <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>${agent.pricing.annual}</span>
-                  <span style={{ fontSize: "14px", color: colors.textMuted }}>/mo</span>
+                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-[#a78bfa] uppercase">{isAr ? "سنوي" : "Annual"}</p>
+                <div className="mb-1">
+                  <span className="text-4xl font-extrabold text-foreground">${agent.pricing.annual}</span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
-                <p style={{ fontSize: "12px", color: "#22c55e", marginBottom: "20px", fontWeight: 600 }}>
+                <p className="mb-5 text-xs font-semibold text-[#22c55e]">
                   Save ${(agent.pricing.monthly - agent.pricing.annual) * 12}/year — billed annually
                 </p>
-                <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                <ul className="mb-6 flex-1 list-none p-0">
                   {agent.pricing.features.map((feature) => (
-                    <li key={feature} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.text }}>
-                      <CheckCircle2 size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-foreground">
+                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Link href={getStartedHref} style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", padding: "12px", borderRadius: "10px",
-                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-                }}>
+                <Button nativeButton={false} render={<Link href={getStartedHref} />} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
                   {agent.badge === "Live" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                   <ArrowRight size={14} />
-                </Link>
-                <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "10px", textAlign: "center" }}>{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
+                </Button>
+                <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
               </div>
 
               {/* Enterprise */}
               {agent.pricing?.hasCustomPlan && (
-                <div style={{
-                  background: colors.bg, border: `1px solid ${colors.border}`,
-                  borderRadius: "16px", padding: "28px",
-                  textAlign: "left", display: "flex", flexDirection: "column",
-                }}>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: colors.textMuted, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isAr ? "مؤسسي" : "Enterprise"}</p>
-                  <div style={{ marginBottom: "20px" }}>
-                    <span style={{ fontSize: "40px", fontWeight: 800, color: colors.text }}>Custom</span>
+                <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
+                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "مؤسسي" : "Enterprise"}</p>
+                  <div className="mb-5">
+                    <span className="text-4xl font-extrabold text-foreground">Custom</span>
                   </div>
-                  <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
+                  <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
                     {agent.pricing.customLabel || "Need a tailored solution for your team or business?"}
                   </p>
-                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "24px", flex: 1 }}>
+                  <ul className="mb-6 flex-1 list-none p-0">
                     {["Custom pipeline configuration", "Dedicated support", "SLA guarantee", "Custom integrations", "Team management"].map((f) => (
-                      <li key={f} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", fontSize: "13px", color: colors.textMuted }}>
-                        <CheckCircle2 size={13} color="#7c3aed" style={{ flexShrink: 0 }} />
+                      <li key={f} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
+                        <CheckCircle2 size={13} className="shrink-0 text-primary" />
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <a href="mailto:hello@logicmate.io" style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                    border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.06)",
-                    color: "#a78bfa", padding: "12px", borderRadius: "10px",
-                    fontSize: "14px", fontWeight: 600, textDecoration: "none",
-                  }}>
+                  <a href="mailto:hello@logicmate.io" className="flex items-center justify-center gap-1.5 rounded-[10px] border border-primary/30 bg-primary/6 p-3 text-sm font-semibold text-[#a78bfa] no-underline">
                     Contact us →
                   </a>
                 </div>
               )}
-
             </div>
           </div>
         </section>
@@ -835,13 +610,10 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
       {/* FAQ */}
       {agent.faq?.length > 0 && (
-        <section style={{ padding: "80px 24px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
-          <div style={{ maxWidth: "680px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "40px" }}>
-              <h2 style={{
-                fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700,
-                color: colors.text, marginBottom: "12px",
-              }}>
+        <section className="border-b px-6 py-20">
+          <div className="mx-auto max-w-[680px]">
+            <div className="mb-10 text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
                 {isAr ? "الأسئلة الشائعة" : "Frequently asked questions"}
               </h2>
             </div>
@@ -853,46 +625,30 @@ export function AgentDetailPage({ slug }: { slug: string }) {
       )}
 
       {/* Final CTA */}
-      <section style={{ padding: "80px 24px" }}>
-        <div style={{
-          maxWidth: "600px", margin: "0 auto", textAlign: "center",
-          background: `${agent.color}08`,
-          border: `1px solid ${agent.color}20`,
-          borderRadius: "20px", padding: "56px 40px",
-        }}>
-          <div style={{ fontSize: "40px", marginBottom: "16px" }}>{agent.icon}</div>
-          <h2 style={{
-            fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700,
-            color: colors.text, marginBottom: "12px",
-          }}>
+      <section className="px-6 py-20">
+        <div
+          className="mx-auto max-w-[600px] rounded-[20px] border p-14 text-center"
+          style={{ background: `${agent.color}08`, borderColor: `${agent.color}20` }}
+        >
+          <div className="mb-4 text-4xl">{agent.icon}</div>
+          <h2 className="mb-3 text-[clamp(24px,3vw,36px)] font-bold text-foreground">
             {isAr ? `هل أنت مستعد لنشر ${(isAr && agent.name_ar) ? agent.name_ar : agent.name}؟` : `Ready To Deploy ${agent.name}?`}
           </h2>
-          <p style={{ fontSize: "16px", color: colors.textMuted, marginBottom: "28px", lineHeight: 1.7 }}>
+          <p className="mb-7 text-base leading-[1.7] text-muted-foreground">
             {agent.badge === "Live"
               ? (isAr ? "ابدأ في دقائق. لا يلزم إعداد تقني." : "Get started in minutes. No technical setup required.")
               : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
-          <Link
-            href={getStartedHref}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-              color: "white", padding: "14px 32px", borderRadius: "10px",
-              fontSize: "15px", fontWeight: 600, textDecoration: "none",
-              boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-            }}
-          >
+          <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
             {agent.badge === "Live"
               ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to my dashboard") : (isAr ? "ابدأ مجاناً" : "Start free"))
               : (isAr ? "انضم للقائمة" : "Join waitlist")
             }
             <ArrowRight size={15} />
-          </Link>
+          </Button>
         </div>
       </section>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
