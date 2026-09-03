@@ -10,7 +10,7 @@ import {
   Bot, Zap, Users, Package, TrendingUp,
   Eye, Trash2, FileText,
   ChevronLeft, ChevronRight,
-  CreditCard, Activity, Video, DollarSign,
+  CreditCard, Activity, Video, DollarSign, Key, Building2, MessageCircle,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { TrialBanner } from "./trial-banner";
@@ -60,19 +60,24 @@ function StatusBadge({ status }: { status: string }) {
     active:           { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Active" },
     complete:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },
     completed:        { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Complete" },
+    paid:             { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Paid" },
     uploaded:         { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Uploaded" },
     running:          { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Running" },
     generating_clips: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Generating" },
+    trial:            { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Trial" },
+    draft:            { color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  label: "Draft" },
     pending:          { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  label: "Pending" },
     paused:           { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  label: "Paused" },
+    inactive:         { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  label: "Inactive" },
     failed:           { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   label: "Failed" },
     cancelled:        { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: "Cancelled" },
+    expired:          { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: "Expired" },
   };
   const s = map[status] || { color: "#6b7280", bg: "rgba(107,114,128,0.1)", label: status };
   return (
     <span style={{
       fontSize: "11px", fontWeight: 600, padding: "3px 8px",
-      borderRadius: "9999px", background: s.bg, color: s.color,
+      borderRadius: "9999px", background: s.bg, color: s.color, whiteSpace: "nowrap",
     }}>{s.label}</span>
   );
 }
@@ -165,12 +170,18 @@ function BarChart({ data, color, label }: {
   );
 }
 
+interface SubscribedItem {
+  key: string; name: string; type: "industry" | "agent" | "automation" | "chatbot";
+  status: string; href: string;
+}
+
 // ── Main Component ────────────────────────────────────────────
 export function DashboardOverview() {
   const { colors } = useTheme();
   const { user } = useAuthStore();
   const router = useRouter();
   const isAdmin = user?.role === "admin";
+  const isVerified = !!user?.isEmailVerified;
 
   const [loading, setLoading] = useState(true);
 
@@ -188,10 +199,11 @@ export function DashboardOverview() {
   }>({ videosByDay: [], usersByDay: [] });
 
   const [userStats, setUserStats] = useState({
-    totalSubscribed: 0, totalAgents: 0, totalAutomations: 0,
-    totalBilled: 0, totalRuns: 0,
-    billingByModule: [] as { name: string; amount: number }[],
+    totalAgents: 0, totalAutomations: 0, totalChatbots: 0, totalIndustries: 0,
+    totalApiKeys: 0, totalBilled: 0, totalRuns: 0,
   });
+  const [subscribedItems, setSubscribedItems] = useState<SubscribedItem[]>([]);
+  const [recentBilling, setRecentBilling] = useState<any[]>([]);
 
   const [tableData, setTableData] = useState<any[]>([]);
   const [tableTotal, setTableTotal] = useState(0);
@@ -208,7 +220,6 @@ export function DashboardOverview() {
     setLoading(true);
     try {
       if (isAdmin) {
-        // ── Single call to /admin/overview ────────────────────
         const res = await api.get("/admin/overview").catch(() => ({ data: null }));
         const overview = res.data;
         if (overview?.stats) {
@@ -230,36 +241,58 @@ export function DashboardOverview() {
             videosByDay: overview.charts?.videosByDay || [],
             usersByDay: overview.charts?.usersByDay || [],
           });
-          setChartData({
-            agents: overview.stats.totalAgents || 0,
-            automations: 0,
-          });
+          setChartData({ agents: overview.stats.totalAgents || 0, automations: 0 });
         }
       } else {
-        // ── User: fetch own modules + billing summary ─────────
-        const [agentsRes, automationsRes, billRes, runsRes] = await Promise.all([
+        const [agentsRes, automationsRes, chatbotsRes, apiKeysRes, industriesRes, billRes, runsRes, recentBillRes] = await Promise.all([
           api.get("/usermodules/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
+          api.get("/chatbots").catch(() => ({ data: [] })),
+          api.get("/api-keys").catch(() => ({ data: [] })),
+          api.get("/industry-subscriptions").catch(() => ({ data: [] })),
           api.get("/usermodules/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
           api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),
+          api.get("/billing?limit=5").catch(() => ({ data: { data: [] } })),
         ]);
 
         const agents = agentsRes.data?.data || [];
         const automations = automationsRes.data?.data || [];
+        const chatbots = Array.isArray(chatbotsRes.data) ? chatbotsRes.data : [];
+        const apiKeys = Array.isArray(apiKeysRes.data) ? apiKeysRes.data : [];
+        const industries = Array.isArray(industriesRes.data) ? industriesRes.data : [];
         const billing = billRes.data || {};
 
         setUserStats({
-          totalSubscribed: agents.length + automations.length,
           totalAgents: agents.length,
           totalAutomations: automations.length,
+          totalChatbots: chatbots.length,
+          totalIndustries: industries.length,
+          totalApiKeys: apiKeys.length,
           totalBilled: billing.total || 0,
-          billingByModule: (billing.byModule || []).map((m: any) => ({
-            name: m.name || m.moduleName,
-            amount: m.amount || m.billingAmount || 0,
-          })),
           totalRuns: runsRes.data?.total || 0,
         });
         setChartData({ agents: agents.length, automations: automations.length });
+        setRecentBilling(recentBillRes.data?.data || []);
+
+        const items: SubscribedItem[] = [
+          ...industries.map((i: any) => ({
+            key: `industry-${i._id}`, name: i.industryName || i.industrySlug || "Industry",
+            type: "industry" as const, status: i.status || "active", href: "/dashboard/industries",
+          })),
+          ...agents.map((a: any) => ({
+            key: `agent-${a._id}`, name: a.name || a.moduleName, type: "agent" as const,
+            status: a.status || "active", href: "/dashboard/modules",
+          })),
+          ...automations.map((a: any) => ({
+            key: `auto-${a._id}`, name: a.name || a.moduleName, type: "automation" as const,
+            status: a.status || "active", href: "/dashboard/modules",
+          })),
+          ...chatbots.map((c: any) => ({
+            key: `bot-${c._id}`, name: c.name, type: "chatbot" as const,
+            status: c.status || "draft", href: `/dashboard/chatbots/${c._id}`,
+          })),
+        ];
+        setSubscribedItems(items);
       }
     } catch {}
     setLoading(false);
@@ -289,7 +322,9 @@ export function DashboardOverview() {
 
   const totalTablePages = Math.ceil(tableTotal / tableLimit);
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const daypart = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = user?.name?.split(" ")[0] || "there";
+  const totalSubscribed = userStats.totalIndustries + userStats.totalAgents + userStats.totalAutomations + userStats.totalChatbots;
 
   const inputStyle = {
     padding: "7px 12px", borderRadius: "8px", fontSize: "13px",
@@ -297,12 +332,19 @@ export function DashboardOverview() {
     color: colors.text, outline: "none",
   };
 
+  const TYPE_META: Record<SubscribedItem["type"], { label: string; color: string; icon: any }> = {
+    industry: { label: "Industry", color: "#3b82f6", icon: Building2 },
+    agent: { label: "Agent", color: "#7c3aed", icon: Bot },
+    automation: { label: "Automation", color: "#22c55e", icon: Zap },
+    chatbot: { label: "Chatbot", color: "#ec4899", icon: MessageCircle },
+  };
+
   return (
     <div>
       <TrialBanner />
 
-      {/* ── ONBOARDING BANNER — shows only for new users with 0 modules ── */}
-      {!isAdmin && !loading && userStats.totalSubscribed === 0 && (
+      {/* ── ONBOARDING / WELCOME CARD — shown until email is verified ── */}
+      {!isAdmin && !loading && !isVerified && (
         <div style={{
           background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
           border: "1px solid rgba(124,58,237,0.2)",
@@ -314,38 +356,18 @@ export function DashboardOverview() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
                 <span style={{ fontSize: "28px" }}>🚀</span>
                 <h2 style={{ fontSize: "18px", fontWeight: 700, color: colors.text }}>
-                  Welcome to LogicMate!
+                  {daypart}, {firstName}. Welcome to LogicMate!
                 </h2>
               </div>
               <p style={{ fontSize: "14px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
-                You're on a <strong style={{ color: "#f59e0b" }}>30-day free trial</strong>. Get your first AI video live tonight by following these 3 steps:
+                Here&apos;s what you can do on LogicMate — AI agents, automations and chatbots, all running on
+                your own API keys. Get your first module live in three steps:
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[
-                  {
-                    step: "1",
-                    title: "Add your API keys",
-                    desc: "OpenAI and Atlas Cloud keys are required to run any pipeline",
-                    href: "/dashboard/api-keys",
-                    cta: "Add keys →",
-                    color: "#f59e0b",
-                  },
-                  {
-                    step: "2",
-                    title: "Choose an AI agent or automation",
-                    desc: "Browse our marketplace — YouTube, Instagram, Podcast and more",
-                    href: "/dashboard/modules",
-                    cta: "Browse marketplace →",
-                    color: "#7c3aed",
-                  },
-                  {
-                    step: "3",
-                    title: "Run your first pipeline",
-                    desc: "Click 'Configure & Run' — results delivered automatically",
-                    href: "/dashboard/modules",
-                    cta: "Get started →",
-                    color: "#22c55e",
-                  },
+                  { step: "1", title: "Add your API keys", desc: "OpenAI and Atlas Cloud keys are required to run any pipeline", href: "/dashboard/api-keys", cta: "Add keys →", color: "#f59e0b" },
+                  { step: "2", title: "Choose an AI agent, automation or chatbot", desc: "Browse our marketplace — YouTube, Instagram, chatbots and more", href: "/dashboard/modules", cta: "Browse marketplace →", color: "#7c3aed" },
+                  { step: "3", title: "Run your first pipeline", desc: "Click 'Configure & Run' — results delivered automatically", href: "/dashboard/modules", cta: "Get started →", color: "#22c55e" },
                 ].map((item) => (
                   <div key={item.step} style={{
                     display: "flex", alignItems: "center", gap: "14px",
@@ -380,27 +402,22 @@ export function DashboardOverview() {
               </div>
             </div>
 
-            {/* Right side — cost info */}
             <div style={{
               background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: "12px", padding: "20px", minWidth: "200px",
-              flexShrink: 0,
+              borderRadius: "12px", padding: "20px", minWidth: "200px", flexShrink: 0,
             }}>
               <p style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 What you get
               </p>
               {[
                 { emoji: "🤖", text: "AI agents & automations" },
+                { emoji: "💬", text: "Ready-made chatbots" },
                 { emoji: "🔄", text: "Runs on your schedule" },
                 { emoji: "💰", text: "Bring your own API keys" },
                 { emoji: "📧", text: "Email notifications" },
-                { emoji: "⚡", text: "100% automated" },
                 { emoji: "🆓", text: "30-day free trial" },
               ].map((item) => (
-                <div key={item.text} style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "5px 0",
-                }}>
+                <div key={item.text} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "5px 0" }}>
                   <span style={{ fontSize: "14px" }}>{item.emoji}</span>
                   <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.text}</span>
                 </div>
@@ -410,20 +427,36 @@ export function DashboardOverview() {
         </div>
       )}
 
-      {/* Greeting */}
+      {/* ── GREETING ── */}
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
-          {greeting}, {user?.name?.split(" ")[0] || "there"} 👋
-        </h1>
-        <p style={{ fontSize: "14px", color: colors.textMuted }}>
-          {isAdmin ? "Platform overview — all users, agents and pipelines." : "Here's your account overview."}
-        </p>
+        {isAdmin ? (
+          <>
+            <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
+              {daypart}, {firstName} 👋
+            </h1>
+            <p style={{ fontSize: "14px", color: colors.textMuted }}>
+              Platform overview — all users, agents and pipelines.
+            </p>
+          </>
+        ) : isVerified ? (
+          <>
+            <h1 style={{ fontSize: "21px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>
+              {daypart}, {firstName}. Welcome back!
+            </h1>
+            <p style={{ fontSize: "14px", color: colors.textMuted }}>
+              Here&apos;s your account overview.
+            </p>
+          </>
+        ) : (
+          <p style={{ fontSize: "14px", color: colors.textMuted }}>
+            Your stats below update as soon as you add a module.
+          </p>
+        )}
       </div>
 
       {/* ── ADMIN STATS ── */}
       {isAdmin && (
         <>
-          {/* Stats grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "14px", marginBottom: "16px" }}>
             <StatCard label="Total Users" value={loading ? "—" : adminStats.totalUsers}
               sub={`+${adminStats.newUsersThisMonth} this month`}
@@ -452,19 +485,10 @@ export function DashboardOverview() {
               icon={DollarSign} color="#f59e0b" loading={loading} />
           </div>
 
-          {/* Charts */}
           {!loading && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-              <BarChart
-                data={adminCharts.videosByDay}
-                color="#7c3aed"
-                label="Videos uploaded (last 30 days)"
-              />
-              <BarChart
-                data={adminCharts.usersByDay}
-                color="#22c55e"
-                label="New signups (last 30 days)"
-              />
+              <BarChart data={adminCharts.videosByDay} color="#7c3aed" label="Videos uploaded (last 30 days)" />
+              <BarChart data={adminCharts.usersByDay} color="#22c55e" label="New signups (last 30 days)" />
             </div>
           )}
         </>
@@ -472,34 +496,36 @@ export function DashboardOverview() {
 
       {/* ── USER STATS ── */}
       {!isAdmin && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "24px" }}>
-          <StatCard
-            label="Subscribed Modules"
-            value={loading ? "—" : userStats.totalSubscribed}
-            sub={`${userStats.totalAgents} agents · ${userStats.totalAutomations} automations`}
-            icon={Package} color="#7c3aed" loading={loading}
-            onClick={() => router.push("/dashboard/modules")} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "14px", marginBottom: "24px" }}>
           <StatCard
             label="Total Billed"
             value={loading ? "—" : `$${userStats.totalBilled.toFixed(2)}`}
             sub="Across all services"
-            icon={CreditCard} color="#f59e0b" loading={loading}
-            onClick={() => router.push("/dashboard/payment-instructions")} />
+            icon={DollarSign} color="#f59e0b" loading={loading}
+            onClick={() => router.push("/dashboard/billing")} />
           <StatCard
-            label="Agents"
-            value={loading ? "—" : userStats.totalAgents}
-            sub="Active agent modules"
-            icon={Bot} color="#3b82f6" loading={loading} />
+            label="Subscribed Modules"
+            value={loading ? "—" : totalSubscribed}
+            sub={loading ? undefined : `Industries: ${userStats.totalIndustries} · Agents: ${userStats.totalAgents} · Automations: ${userStats.totalAutomations} · Chatbots: ${userStats.totalChatbots}`}
+            icon={Package} color="#7c3aed" loading={loading}
+            onClick={() => router.push("/dashboard/modules")} />
           <StatCard
-            label="Automations"
-            value={loading ? "—" : userStats.totalAutomations}
-            sub="Active automations"
-            icon={Zap} color="#22c55e" loading={loading} />
+            label="API Keys"
+            value={loading ? "—" : userStats.totalApiKeys}
+            sub="Connected providers"
+            icon={Key} color="#3b82f6" loading={loading}
+            onClick={() => router.push("/dashboard/api-keys")} />
+          <StatCard
+            label="Chatbots"
+            value={loading ? "—" : userStats.totalChatbots}
+            sub="Live & draft bots"
+            icon={MessageCircle} color="#ec4899" loading={loading}
+            onClick={() => router.push("/dashboard/chatbots")} />
           <StatCard
             label="Pipeline Runs"
             value={loading ? "—" : userStats.totalRuns}
             sub="Total runs"
-            icon={TrendingUp} color="#a78bfa" loading={loading}
+            icon={TrendingUp} color="#22c55e" loading={loading}
             onClick={() => router.push("/dashboard/pipeline-logs")} />
         </div>
       )}
@@ -530,7 +556,6 @@ export function DashboardOverview() {
             </div>
           </div>
 
-          {/* Table header */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 90px 80px",
             gap: "10px", padding: "10px 18px",
@@ -541,21 +566,18 @@ export function DashboardOverview() {
             ))}
           </div>
 
-          {/* Table rows */}
           {tableData.length === 0 ? (
             <div style={{ padding: "40px", textAlign: "center" }}>
               <FileText size={28} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
               <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "6px" }}>
-                {!isAdmin && userStats.totalSubscribed === 0
-                  ? "No modules added yet"
-                  : "No pipeline runs yet"}
+                {!isAdmin && totalSubscribed === 0 ? "No modules added yet" : "No pipeline runs yet"}
               </p>
               <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "16px" }}>
-                {!isAdmin && userStats.totalSubscribed === 0
+                {!isAdmin && totalSubscribed === 0
                   ? "Add a module and run your first pipeline to see results here"
                   : "Your first video will appear here after the pipeline runs"}
               </p>
-              {!isAdmin && userStats.totalSubscribed === 0 && (
+              {!isAdmin && totalSubscribed === 0 && (
                 <Link href="/dashboard/modules" style={{
                   display: "inline-flex", alignItems: "center", gap: "6px",
                   padding: "9px 18px", borderRadius: "8px",
@@ -565,7 +587,7 @@ export function DashboardOverview() {
                   Browse marketplace →
                 </Link>
               )}
-              {!isAdmin && userStats.totalSubscribed > 0 && (
+              {!isAdmin && totalSubscribed > 0 && (
                 <Link href="/dashboard/modules" style={{
                   display: "inline-flex", alignItems: "center", gap: "6px",
                   padding: "9px 18px", borderRadius: "8px",
@@ -662,65 +684,133 @@ export function DashboardOverview() {
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-          {/* Donut chart */}
-          <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-            <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-              <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>
-                {isAdmin ? "Modules Breakdown" : "My Modules Breakdown"}
-              </h2>
-            </div>
-            <DonutChart agents={chartData.agents} automations={chartData.automations} colors={colors} />
-          </div>
-
-          {/* Admin — revenue summary */}
-          {isAdmin && (
-            <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-                <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Cost Summary</h2>
+          {isAdmin ? (
+            <>
+              <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Modules Breakdown</h2>
+                </div>
+                <DonutChart agents={chartData.agents} automations={chartData.automations} colors={colors} />
               </div>
-              <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                {[
-                  { label: "Total API Cost", value: `$${adminStats.totalApiCost?.toFixed(2)}`, color: "#f59e0b" },
-                  { label: "Success Rate", value: `${adminStats.successRate}%`, color: "#22c55e" },
-                  { label: "Failed Pipelines", value: adminStats.failedPipelines, color: "#ef4444" },
-                  { label: "Videos Generated", value: adminStats.uploadedVideos, color: "#7c3aed" },
-                ].map((item) => (
-                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.label}</span>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: item.color }}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* User — billing breakdown */}
-          {!isAdmin && userStats.billingByModule.length > 0 && (
-            <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-                <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Billing Breakdown</h2>
-              </div>
-              <div style={{ padding: "0 16px 16px" }}>
-                {userStats.billingByModule.map((b, i) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "8px 0", borderBottom: i < userStats.billingByModule.length - 1 ? `1px solid ${colors.border}` : "none",
-                  }}>
-                    <span style={{ fontSize: "12px", color: colors.textMuted }}>{b.name}</span>
-                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b" }}>${b.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${colors.border}`,
-                }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Total</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#f59e0b" }}>
-                    ${userStats.totalBilled.toFixed(2)}
-                  </span>
+              <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Cost Summary</h2>
+                </div>
+                <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[
+                    { label: "Total API Cost", value: `$${adminStats.totalApiCost?.toFixed(2)}`, color: "#f59e0b" },
+                    { label: "Success Rate", value: `${adminStats.successRate}%`, color: "#22c55e" },
+                    { label: "Failed Pipelines", value: adminStats.failedPipelines, color: "#ef4444" },
+                    { label: "Videos Generated", value: adminStats.uploadedVideos, color: "#7c3aed" },
+                  ].map((item) => (
+                    <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.label}</span>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: item.color }}>{item.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {/* Recent Billing */}
+              <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Recent Billing</h2>
+                  <Link href="/dashboard/billing" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none" }}>
+                    View all →
+                  </Link>
+                </div>
+                {recentBilling.length === 0 ? (
+                  <div style={{ padding: "32px 18px", textAlign: "center" }}>
+                    <CreditCard size={22} color={colors.textMuted} style={{ margin: "0 auto 8px" }} />
+                    <p style={{ fontSize: "13px", color: colors.textMuted }}>No billing activity yet</p>
+                  </div>
+                ) : (
+                  <div>
+                    {recentBilling.map((b, i) => (
+                      <div key={b._id} style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
+                        padding: "12px 18px",
+                        borderBottom: i < recentBilling.length - 1 ? `1px solid ${colors.border}` : "none",
+                      }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {b.moduleName || b.description || "Charge"}
+                          </p>
+                          <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                            {new Date(b.billingDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                          <span style={{ fontSize: "13px", fontWeight: 700, color: colors.text }}>${(b.amount || 0).toFixed(2)}</span>
+                          <StatusBadge status={b.status} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Subscribed Modules */}
+              <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Subscribed Modules</h2>
+                  <Link href="/dashboard/modules" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none" }}>
+                    View all →
+                  </Link>
+                </div>
+                {subscribedItems.length === 0 ? (
+                  <div style={{ padding: "32px 18px", textAlign: "center" }}>
+                    <Package size={22} color={colors.textMuted} style={{ margin: "0 auto 8px" }} />
+                    <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "12px" }}>Nothing subscribed yet</p>
+                    <Link href="/dashboard/modules" style={{
+                      display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px",
+                      borderRadius: "7px", background: "#7c3aed", color: "white",
+                      textDecoration: "none", fontSize: "12px", fontWeight: 600,
+                    }}>
+                      Browse marketplace →
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
+                    {subscribedItems.slice(0, 8).map((item, i, arr) => {
+                      const meta = TYPE_META[item.type];
+                      const Icon = meta.icon;
+                      return (
+                        <Link key={item.key} href={item.href} style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          padding: "11px 18px", textDecoration: "none",
+                          borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : "none",
+                        }}>
+                          <div style={{
+                            width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0,
+                            background: `${meta.color}15`, border: `1px solid ${meta.color}25`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Icon size={14} color={meta.color} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {item.name}
+                            </p>
+                            <p style={{ fontSize: "11px", color: meta.color }}>{meta.label}</p>
+                          </div>
+                          <StatusBadge status={item.status} />
+                        </Link>
+                      );
+                    })}
+                    {subscribedItems.length > 8 && (
+                      <div style={{ padding: "10px 18px", textAlign: "center", borderTop: `1px solid ${colors.border}` }}>
+                        <Link href="/dashboard/modules" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none" }}>
+                          +{subscribedItems.length - 8} more →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

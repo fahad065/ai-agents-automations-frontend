@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SettingsPage } from "@/components/dashboard/settings-page";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function SettingsRoute() {
-  return <SettingsPage />;
+  return (
+    <Suspense>
+      <SettingsPage />
+    </Suspense>
+  );
 }

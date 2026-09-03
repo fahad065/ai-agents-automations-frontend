@@ -1,86 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import dynamic from "next/dynamic";
 import {
-  User, Bell, Shield, Moon, Sun, Save,
-  Loader2, CheckCircle2, AlertCircle, Lock, AlertTriangle,
+  Bell, Shield, Save,
+  Loader2, AlertCircle, Lock, AlertTriangle,
   Mail, Bold, Italic, Underline, List, ListOrdered, Link, Eye, EyeOff, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const ReactSelect = dynamic(() => import("react-select"), { ssr: false });
-
-const TIMEZONES = [
-  { value: "Pacific/Honolulu", label: "Pacific/Honolulu (UTC-10)" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles (UTC-8)" },
-  { value: "America/Denver", label: "America/Denver (UTC-7)" },
-  { value: "America/Chicago", label: "America/Chicago (UTC-6)" },
-  { value: "America/New_York", label: "America/New_York (UTC-5)" },
-  { value: "America/Sao_Paulo", label: "America/Sao_Paulo (UTC-3)" },
-  { value: "Europe/London", label: "Europe/London (UTC+0)" },
-  { value: "Europe/Paris", label: "Europe/Paris (UTC+1)" },
-  { value: "Europe/Berlin", label: "Europe/Berlin (UTC+1)" },
-  { value: "Europe/Moscow", label: "Europe/Moscow (UTC+3)" },
-  { value: "Asia/Dubai", label: "Asia/Dubai (UTC+4)" },
-  { value: "Asia/Karachi", label: "Asia/Karachi (UTC+5)" },
-  { value: "Asia/Kolkata", label: "Asia/Kolkata (UTC+5:30)" },
-  { value: "Asia/Dhaka", label: "Asia/Dhaka (UTC+6)" },
-  { value: "Asia/Bangkok", label: "Asia/Bangkok (UTC+7)" },
-  { value: "Asia/Singapore", label: "Asia/Singapore (UTC+8)" },
-  { value: "Asia/Shanghai", label: "Asia/Shanghai (UTC+8)" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo (UTC+9)" },
-  { value: "Asia/Seoul", label: "Asia/Seoul (UTC+9)" },
-  { value: "Australia/Sydney", label: "Australia/Sydney (UTC+10)" },
-  { value: "Pacific/Auckland", label: "Pacific/Auckland (UTC+12)" },
-];
-
-// ── Country list ──────────────────────────────────────────────
-const COUNTRIES = [
-  "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia",
-  "Austria","Azerbaijan","Bahrain","Bangladesh","Belarus","Belgium","Bolivia","Bosnia",
-  "Brazil","Bulgaria","Cambodia","Canada","Chile","China","Colombia","Croatia","Cuba",
-  "Cyprus","Czech Republic","Denmark","Ecuador","Egypt","Estonia","Ethiopia","Finland",
-  "France","Georgia","Germany","Ghana","Greece","Guatemala","Honduras","Hungary",
-  "Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica",
-  "Japan","Jordan","Kazakhstan","Kenya","Kuwait","Latvia","Lebanon","Libya","Lithuania",
-  "Luxembourg","Malaysia","Maldives","Malta","Mexico","Moldova","Monaco","Mongolia",
-  "Montenegro","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nigeria","Norway",
-  "Oman","Pakistan","Palestine","Panama","Paraguay","Peru","Philippines","Poland",
-  "Portugal","Qatar","Romania","Russia","Saudi Arabia","Senegal","Serbia","Singapore",
-  "Slovakia","Slovenia","Somalia","South Africa","South Korea","Spain","Sri Lanka",
-  "Sudan","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia",
-  "Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States",
-  "Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe",
-].map(c => ({ value: c, label: c }));
-
-const NICHES = [
-  "Dark Psychology & Human Behavior", "Finance & Investing", "Health & Fitness",
-  "Business & Entrepreneurship", "Technology & AI", "Self Improvement",
-  "True Crime", "History", "Science & Nature", "Travel & Lifestyle",
-  "Food & Cooking", "Gaming", "Music", "Sports", "Comedy", "Other",
-].map(n => ({ value: n, label: n }));
-
-const ROLES = [
-  "Solo Creator", "Agency Owner", "Business Owner", "Freelancer", "Enterprise", "Other",
-].map(r => ({ value: r, label: r }));
-
-const GOALS = [
-  "Grow YouTube channel", "Generate leads", "Build brand",
-  "Passive income", "Client work", "Other",
-].map(g => ({ value: g, label: g }));
-
-const EXPERIENCE = [
-  "Beginner", "Intermediate", "Advanced", "Expert",
-].map(e => ({ value: e, label: e }));
-
-const HEARD_ABOUT = [
-  "Google Search", "YouTube", "Instagram", "Twitter/X",
-  "Friend / Referral", "Reddit", "Other",
-].map(s => ({ value: s, label: s }));
 
 // ── Section ───────────────────────────────────────────────────
 function Section({ title, icon: Icon, children, colors }: {
@@ -105,18 +38,14 @@ function Section({ title, icon: Icon, children, colors }: {
 
 // ── Main ──────────────────────────────────────────────────────
 export function SettingsPage() {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as "notifications" | "security" | "email" | null) || "notifications";
 
-  const [tab, setTab] = useState<"profile" | "notifications" | "security" | "email">("profile");
+  const [tab, setTab] = useState<"notifications" | "security" | "email">(initialTab);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const [profile, setProfile] = useState({
-    name: "", email: "", phoneNumber: "", country: "",
-    timezone: "", company: "", niche: "", role: "",
-    primaryGoal: "", experienceLevel: "", heardAboutUs: "",
-  });
 
   const [notifs, setNotifs] = useState({
     notifyOnComplete: true, notifyOnFail: true,
@@ -170,26 +99,13 @@ export function SettingsPage() {
     dropdownIndicator: (base: any) => ({ ...base, color: colors.textMuted }),
   };
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => { fetchNotifPrefs(); }, []);
 
-  const fetchProfile = async () => {
+  const fetchNotifPrefs = async () => {
     setLoading(true);
     try {
       const res = await api.get("/users/profile");
       const u = res.data?.user || res.data;
-      setProfile({
-        name: u.name || "",
-        email: u.email || "",
-        phoneNumber: u.phoneNumber || "",
-        country: u.country || "",
-        timezone: u.timezone || "",
-        company: u.company || "",
-        niche: u.onboarding?.contentNiche || "",
-        role: u.onboarding?.role || "",
-        primaryGoal: u.onboarding?.primaryGoal || "",
-        experienceLevel: u.onboarding?.experienceLevel || "",
-        heardAboutUs: u.onboarding?.heardAboutUs || "",
-      });
       setNotifs({
         notifyOnComplete: u.notifyOnComplete ?? true,
         notifyOnFail: u.notifyOnFail ?? true,
@@ -199,30 +115,6 @@ export function SettingsPage() {
       });
     } catch {}
     setLoading(false);
-  };
-
-  const saveProfile = async () => {
-    setSaving(true);
-    try {
-      await api.patch("/users/profile", {
-        name: profile.name,
-        phoneNumber: profile.phoneNumber,
-        country: profile.country,
-        timezone: profile.timezone,
-        company: profile.company,
-        onboarding: {
-          contentNiche: profile.niche,
-          role: profile.role,
-          primaryGoal: profile.primaryGoal,
-          experienceLevel: profile.experienceLevel,
-          heardAboutUs: profile.heardAboutUs,
-        },
-      });
-      toast.success("Profile updated successfully");
-    } catch {
-      toast.error("Failed to update profile");
-    }
-    setSaving(false);
   };
 
   const saveNotifications = async () => {
@@ -311,7 +203,6 @@ export function SettingsPage() {
         borderRadius: "10px", padding: "4px", width: "fit-content",
       }}>
         {([
-          { key: "profile",       label: "Profile",       icon: User,   adminOnly: false },
           { key: "notifications", label: "Notifications", icon: Bell,   adminOnly: false },
           { key: "security",      label: "Security",      icon: Shield, adminOnly: false },
           { key: "email",         label: "Email Sender",  icon: Mail,   adminOnly: true  },
@@ -335,152 +226,11 @@ export function SettingsPage() {
         </div>
       ) : (
         <>
-          {/* ── PROFILE ── */}
-          {tab === "profile" && (
-            <>
-              <Section title="Personal Information" icon={User} colors={colors}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 20px" }}>
-                  <div>
-                    {lbl("Full Name")}
-                    <input value={profile.name}
-                      onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))}
-                      style={inp} placeholder="Your full name" />
-                  </div>
-                  <div>
-                    {lbl("Email Address")}
-                    <input value={profile.email} disabled
-                      style={{ ...inp, opacity: 0.6, cursor: "not-allowed" }} />
-                  </div>
-                  <div>
-                    {lbl("Phone Number")}
-                    <input value={profile.phoneNumber}
-                      onChange={(e) => setProfile(p => ({ ...p, phoneNumber: e.target.value }))}
-                      style={inp} placeholder="+971 50 123 4567" />
-                  </div>
-                  <div>
-                    {lbl("Company / Business")}
-                    <input value={profile.company}
-                      onChange={(e) => setProfile(p => ({ ...p, company: e.target.value }))}
-                      style={inp} placeholder="My Company LLC" />
-                  </div>
-                  <div>
-                    {lbl("Country")}
-                    <ReactSelect
-                      options={COUNTRIES}
-                      value={profile.country ? { value: profile.country, label: profile.country } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, country: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select country..."
-                      isSearchable
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                  <div>
-                    {lbl("Timezone")}
-                    <ReactSelect
-                      options={TIMEZONES}
-                      value={profile.timezone ? TIMEZONES.find(t => t.value === profile.timezone) || null : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, timezone: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select timezone..."
-                      isSearchable
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                </div>
-                <SaveBtn onClick={saveProfile} />
-              </Section>
-
-              <Section title="Content Preferences" icon={User} colors={colors}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 20px" }}>
-                  <div>
-                    {lbl("Content Niche")}
-                    <ReactSelect
-                      options={NICHES}
-                      value={profile.niche ? { value: profile.niche, label: profile.niche } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, niche: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select niche..."
-                      isSearchable
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                  <div>
-                    {lbl("Your Role")}
-                    <ReactSelect
-                      options={ROLES}
-                      value={profile.role ? { value: profile.role, label: profile.role } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, role: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select role..."
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                  <div>
-                    {lbl("Primary Goal")}
-                    <ReactSelect
-                      options={GOALS}
-                      value={profile.primaryGoal ? { value: profile.primaryGoal, label: profile.primaryGoal } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, primaryGoal: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select goal..."
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                  <div>
-                    {lbl("Experience Level")}
-                    <ReactSelect
-                      options={EXPERIENCE}
-                      value={profile.experienceLevel ? { value: profile.experienceLevel, label: profile.experienceLevel } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, experienceLevel: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select level..."
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                  <div>
-                    {lbl("How did you hear about us?")}
-                    <ReactSelect
-                      options={HEARD_ABOUT}
-                      value={profile.heardAboutUs ? { value: profile.heardAboutUs, label: profile.heardAboutUs } : null}
-                      onChange={(opt: any) => setProfile(p => ({ ...p, heardAboutUs: opt?.value || "" }))}
-                      styles={selectStyles}
-                      placeholder="Select source..."
-                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-                      menuPosition="fixed"
-                    />
-                  </div>
-                </div>
-                <SaveBtn onClick={saveProfile} />
-              </Section>
-
-              <Section title="Appearance" icon={isDark ? Moon : Sun} colors={colors}>
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "12px 14px", background: colors.bg,
-                  border: `1px solid ${colors.border}`, borderRadius: "9px",
-                }}>
-                  <div>
-                    <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text }}>Dark Mode</p>
-                    <p style={{ fontSize: "11px", color: colors.textMuted }}>Switch between light and dark theme</p>
-                  </div>
-                  <Toggle value={isDark} onChange={toggleTheme} />
-                </div>
-              </Section>
-            </>
-          )}
-
           {/* ── NOTIFICATIONS ── */}
           {tab === "notifications" && (
             <Section title="Notification Preferences" icon={Bell} colors={colors}>
               <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "18px" }}>
-                Email notifications sent to <strong style={{ color: colors.text }}>{profile.email}</strong>
+                Email notifications sent to <strong style={{ color: colors.text }}>{user?.email}</strong>
               </p>
               {[
                 { key: "notifyOnComplete", label: "Pipeline Completed",  desc: "When a video or content is successfully uploaded" },

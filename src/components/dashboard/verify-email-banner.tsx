@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
-import { AlertTriangle, X } from "lucide-react";
-import { useTheme } from "@/hooks/use-theme";
+import { MailWarning, X } from "lucide-react";
 import { authApi } from "@/lib/auth";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 // Registration no longer waits on a "check your inbox" page — the user is
 // dropped straight into the dashboard (or their intended setup flow) with
@@ -18,7 +19,6 @@ import { toast } from "sonner";
 // is actually required (going live), which is intentionally more targeted
 // than a full account lock.
 export function VerifyEmailBanner() {
-  const { colors } = useTheme();
   const { user } = useAuthStore();
   const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
@@ -48,31 +48,26 @@ export function VerifyEmailBanner() {
   };
 
   return (
-    <div style={{
-      background: "rgba(245,158,11,0.08)",
-      borderBottom: "1px solid rgba(245,158,11,0.25)",
-      padding: "10px 24px",
-      display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap",
-    }}>
-      <AlertTriangle size={14} color="#f59e0b" style={{ flexShrink: 0 }} />
-      <p style={{ fontSize: "13px", color: colors.text, flex: 1, minWidth: "200px" }}>
-        <strong>Verify your email</strong> — we sent a link to {user.email}. You can keep exploring, but you'll need to verify before taking a chatbot or module live.
-      </p>
-      <button onClick={handleResend} disabled={resending || resent} style={{
-        display: "flex", alignItems: "center", gap: "4px",
-        padding: "5px 12px", borderRadius: "6px", cursor: resending || resent ? "default" : "pointer",
-        background: "#f59e0b", color: "#1a1200", border: "none",
-        fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap",
-        opacity: resending ? 0.7 : 1,
-      }}>
-        {resending ? "Sending..." : resent ? "Sent ✓" : "Resend email"}
-      </button>
-      <button onClick={handleDismiss} style={{
-        background: "none", border: "none", cursor: "pointer",
-        color: colors.textMuted, padding: "2px", flexShrink: 0,
-      }}>
-        <X size={14} />
-      </button>
-    </div>
+    <Alert className="mx-4 mt-4 border-amber-500/30 bg-amber-500/[0.07] pr-3 [&>svg]:text-amber-500">
+      <MailWarning />
+      <AlertTitle>Verify your email</AlertTitle>
+      <AlertDescription className="text-foreground/70">
+        We sent a link to <strong className="text-foreground">{user.email}</strong>. You can keep exploring, but
+        you&apos;ll need to verify before taking a chatbot or module live.
+      </AlertDescription>
+      <div className="col-start-2 mt-2 flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={resending || resent}
+          onClick={handleResend}
+          className="bg-amber-500 text-amber-950 hover:bg-amber-500/85"
+        >
+          {resending ? "Sending…" : resent ? "Sent ✓" : "Resend email"}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={handleDismiss} aria-label="Dismiss">
+          <X className="size-3.5" />
+        </Button>
+      </div>
+    </Alert>
   );
 }
