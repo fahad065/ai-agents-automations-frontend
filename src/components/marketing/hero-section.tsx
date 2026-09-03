@@ -7,6 +7,8 @@ import { ArrowRight, Sparkles, Play } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { industryName } from "@/lib/translations";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [
   { label: "Content & Social", icon: "🎬", color: "#7c3aed", slug: "content_social" },
@@ -33,7 +35,7 @@ const RUNNING_AGENTS = [
 ];
 
 export function HeroSection() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { lang, isAr } = useLang();
   const containerRef = useRef<HTMLDivElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
@@ -67,82 +69,71 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section ref={containerRef} dir={isAr ? "rtl" : "ltr"} style={{
-      position: "relative", minHeight: "100vh",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      overflow: "hidden", background: colors.bg, paddingTop: "80px",
-    }}>
-
+    <section
+      ref={containerRef}
+      dir={isAr ? "rtl" : "ltr"}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background pt-20"
+    >
       {/* Noise grain overlay */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none", opacity: isDark ? 0.4 : 0.15,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
-        backgroundRepeat: "repeat", backgroundSize: "128px",
-      }} />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-15 dark:opacity-40"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "repeat", backgroundSize: "128px",
+        }}
+      />
 
       {/* Grid pattern */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        backgroundImage: `linear-gradient(${isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)"} 1px, transparent 1px),
-                          linear-gradient(90deg, ${isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)"} 1px, transparent 1px)`,
-        backgroundSize: "64px 64px",
-        maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
-      }} />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `linear-gradient(${isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)"} 1px, transparent 1px),
+                            linear-gradient(90deg, ${isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)"} 1px, transparent 1px)`,
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
+        }}
+      />
 
       {/* Background orbs */}
-      <div ref={orb1} style={{
-        position: "absolute", top: "8%", left: "5%",
-        width: "700px", height: "700px",
-        background: isDark ? "rgba(124,58,237,0.09)" : "rgba(124,58,237,0.06)",
-        borderRadius: "50%", filter: "blur(120px)", pointerEvents: "none",
-      }} />
-      <div ref={orb2} style={{
-        position: "absolute", bottom: "5%", right: "5%",
-        width: "600px", height: "600px",
-        background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)",
-        borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
-      }} />
-      <div ref={orb3} style={{
-        position: "absolute", top: "40%", right: "20%",
-        width: "400px", height: "400px",
-        background: isDark ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.03)",
-        borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
-      }} />
+      <div
+        ref={orb1}
+        className="pointer-events-none absolute top-[8%] left-[5%] size-[700px] rounded-full blur-[120px]"
+        style={{ background: isDark ? "rgba(124,58,237,0.09)" : "rgba(124,58,237,0.06)" }}
+      />
+      <div
+        ref={orb2}
+        className="pointer-events-none absolute right-[5%] bottom-[5%] size-[600px] rounded-full blur-[100px]"
+        style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)" }}
+      />
+      <div
+        ref={orb3}
+        className="pointer-events-none absolute top-[40%] right-[20%] size-[400px] rounded-full blur-[80px]"
+        style={{ background: isDark ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.03)" }}
+      />
 
-      <div style={{
-        position: "relative", zIndex: 10,
-        maxWidth: "1040px", margin: "0 auto",
-        padding: "48px 24px 80px", textAlign: "center",
-      }}>
-
+      <div className="relative z-10 mx-auto max-w-[1040px] px-6 pt-12 pb-20 text-center">
         {/* Headline — clamp's upper bound and the container width are tuned
             together so "Your business never sleeps." holds one line instead
             of breaking mid-sentence on wide screens; "Neither does your AI."
             stays on its own (intentional) line via the <br/>. */}
-        <h1 ref={h1Ref} style={{
-          fontSize: "clamp(38px, 6.4vw, 72px)",
-          fontWeight: 800, lineHeight: 1.08,
-          letterSpacing: "-0.03em",
-          color: colors.text, marginBottom: "28px",
-        }}>
+        <h1
+          ref={h1Ref}
+          className="mb-7 font-extrabold tracking-[-0.03em] text-foreground"
+          style={{ fontSize: "clamp(38px, 6.4vw, 72px)", lineHeight: 1.08 }}
+        >
           {isAr ? "عملك لا ينام." : "Your business never sleeps."}
           <br />
-          <span style={{
-            background: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #7c3aed 80%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}>
+          <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #7c3aed 80%)" }}>
             {isAr ? "وكذلك ذكاؤك الاصطناعي." : "Neither does your AI."}
           </span>
         </h1>
 
         {/* Subtitle */}
-        <p ref={subRef} style={{
-          fontSize: "clamp(16px, 2.5vw, 20px)", lineHeight: 1.65,
-          color: colors.textMuted,
-          maxWidth: "620px", margin: "0 auto 44px",
-        }}>
+        <p
+          ref={subRef}
+          className="mx-auto mb-11 max-w-[620px] text-muted-foreground"
+          style={{ fontSize: "clamp(16px, 2.5vw, 20px)", lineHeight: 1.65 }}
+        >
           {isAr
             ? "وكلاء ذكاء اصطناعي وأتمتة وشات بوتات جاهزة لكل قطاع — المحتوى، العقارات، الرعاية الصحية والمزيد. اشترك، فعّلها، ودعها تعمل على مدار الساعة."
             : "Pre-built AI agents, automations, and chatbots for every industry — content, real estate, healthcare and more. Subscribe, deploy, and let them work around the clock."
@@ -150,70 +141,61 @@ export function HeroSection() {
         </p>
 
         {/* CTAs */}
-        <div ref={ctaRef} style={{
-          display: "flex", flexWrap: "wrap",
-          gap: "12px", justifyContent: "center", marginBottom: "20px",
-        }}>
-          <Link href="/auth/signup" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-            color: "white", padding: "15px 36px", borderRadius: "10px",
-            fontSize: "15px", fontWeight: 600, textDecoration: "none",
-            boxShadow: "0 4px 32px rgba(124,58,237,0.4), 0 0 0 1px rgba(124,58,237,0.3)",
-          }}>
+        <div ref={ctaRef} className="mb-5 flex flex-wrap justify-center gap-3">
+          <Button
+            nativeButton={false}
+            render={<Link href="/auth/signup" />}
+            className="gap-2 rounded-[10px] px-9 py-6 text-[15px] shadow-[0_4px_32px_rgba(124,58,237,0.4),0_0_0_1px_rgba(124,58,237,0.3)]"
+          >
             {isAr ? "ابدأ مجاناً" : "Start for free"} <ArrowRight size={16} />
-          </Link>
-          <Link href="/industries" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"}`,
-            color: colors.textMuted, padding: "15px 28px", borderRadius: "10px",
-            fontSize: "15px", fontWeight: 500, textDecoration: "none",
-            background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-            backdropFilter: "blur(8px)",
-          }}>
+          </Button>
+          <Button
+            nativeButton={false}
+            variant="outline"
+            render={<Link href="/industries" />}
+            className="gap-2 rounded-[10px] px-7 py-6 text-[15px] font-medium backdrop-blur-sm"
+          >
             <Play size={14} /> {isAr ? "استكشف القطاعات" : "Explore industries"}
-          </Link>
+          </Button>
         </div>
 
         {/* Trust line */}
-        <p style={{ fontSize: "13px", color: colors.textSubtle ?? colors.textMuted, marginBottom: "48px", opacity: 0.7 }}>
+        <p className="mb-12 text-[13px] text-muted-foreground opacity-70">
           {isAr ? "لا بطاقة ائتمانية · تجربة 30 يوم مجاناً · إلغاء في أي وقت" : "No credit card required · 30-day free trial · Cancel anytime"}
         </p>
 
         {/* Three service pillars */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center", marginBottom: "28px" }}>
+        <div className="mb-7 flex flex-wrap justify-center gap-2.5">
           {[
             { icon: "🤖", label: isAr ? "وكلاء ذكاء اصطناعي" : "AI Agents", color: "#7c3aed" },
             { icon: "⚡", label: isAr ? "أتمتة" : "Automations", color: "#22c55e" },
             { icon: "💬", label: isAr ? "شات بوتات" : "Chatbots", color: "#3b82f6" },
           ].map((p) => (
-            <span key={p.label} style={{
-              display: "inline-flex", alignItems: "center", gap: "7px",
-              padding: "7px 16px", borderRadius: "9999px",
-              background: `${p.color}0f`, border: `1px solid ${p.color}30`,
-              color: p.color, fontSize: "13px", fontWeight: 700,
-            }}>
-              <span style={{ fontSize: "14px" }}>{p.icon}</span>{p.label}
+            <span
+              key={p.label}
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-bold"
+              style={{ background: `${p.color}0f`, border: `1px solid ${p.color}30`, color: p.color }}
+            >
+              <span className="text-sm">{p.icon}</span>{p.label}
             </span>
           ))}
         </div>
 
         {/* Niche pills */}
-        <div ref={nichesRef} style={{ marginBottom: "64px" }}>
-          <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "14px", opacity: 0.6, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <div ref={nichesRef} className="mb-16">
+          <p className="mb-3.5 text-xs tracking-[0.06em] text-muted-foreground uppercase opacity-60">
             {isAr ? "مصمم لـ 12 قطاع" : "Built for 12 industries"}
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center" }}>
+          <div className="flex flex-wrap justify-center gap-2">
             {INDUSTRIES.map((n, i) => (
-              <Link key={n.label} href={`/industries/${n.slug}`} style={{
-                display: "inline-flex", alignItems: "center", gap: "5px",
-                padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500,
-                background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-                color: colors.textMuted, textDecoration: "none",
-                transition: "all 0.15s",
-                animation: `fadeInPill 0.3s ease ${i * 0.04}s both`,
-              }}
+              <Link
+                key={n.label}
+                href={`/industries/${n.slug}`}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground no-underline transition-all",
+                  isDark ? "border-white/8 bg-white/4" : "border-black/8 bg-black/3"
+                )}
+                style={{ animation: `fadeInPill 0.3s ease ${i * 0.04}s both` }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget as HTMLAnchorElement;
                   el.style.borderColor = `${n.color}40`;
@@ -222,12 +204,12 @@ export function HeroSection() {
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-                  el.style.color = colors.textMuted;
-                  el.style.background = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+                  el.style.borderColor = "";
+                  el.style.color = "";
+                  el.style.background = "";
                 }}
               >
-                <span style={{ fontSize: "11px" }}>{n.icon}</span>
+                <span className="text-[11px]">{n.icon}</span>
                 {industryName(n.slug, lang)}
               </Link>
             ))}
@@ -235,116 +217,94 @@ export function HeroSection() {
         </div>
 
         {/* Dashboard mockup */}
-        <div ref={mockupRef} style={{
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-          borderRadius: "18px",
-          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.8)",
-          padding: "6px",
-          boxShadow: isDark
-            ? "0 0 0 1px rgba(255,255,255,0.04), 0 0 120px rgba(124,58,237,0.15), 0 48px 80px rgba(0,0,0,0.5)"
-            : "0 0 0 1px rgba(0,0,0,0.04), 0 0 80px rgba(124,58,237,0.08), 0 32px 64px rgba(0,0,0,0.08)",
-          backdropFilter: "blur(24px)",
-        }}>
+        <div
+          ref={mockupRef}
+          className={cn(
+            "rounded-[18px] border p-1.5 backdrop-blur-2xl",
+            isDark ? "border-white/8 bg-white/2" : "border-black/8 bg-white/80"
+          )}
+          style={{
+            boxShadow: isDark
+              ? "0 0 0 1px rgba(255,255,255,0.04), 0 0 120px rgba(124,58,237,0.15), 0 48px 80px rgba(0,0,0,0.5)"
+              : "0 0 0 1px rgba(0,0,0,0.04), 0 0 80px rgba(124,58,237,0.08), 0 32px 64px rgba(0,0,0,0.08)",
+          }}
+        >
           {/* Browser chrome */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "10px 16px",
-            borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-          }}>
-            <div style={{ display: "flex", gap: "5px" }}>
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ff5f57" }} />
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#febc2e" }} />
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28c840" }} />
+          <div className={cn("flex items-center gap-2 border-b px-4 py-2.5", isDark ? "border-white/6" : "border-black/6")}>
+            <div className="flex gap-1.5">
+              <div className="size-2.5 rounded-full bg-[#ff5f57]" />
+              <div className="size-2.5 rounded-full bg-[#febc2e]" />
+              <div className="size-2.5 rounded-full bg-[#28c840]" />
             </div>
-            <div style={{
-              flex: 1, height: "22px", borderRadius: "5px",
-              background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-              margin: "0 8px",
-              display: "flex", alignItems: "center", paddingLeft: "10px",
-            }}>
-              <span style={{ fontSize: "11px", color: colors.textMuted, opacity: 0.6 }}>
+            <div className={cn("mx-2 flex h-[22px] flex-1 items-center rounded-[5px] pl-2.5", isDark ? "bg-white/4" : "bg-black/4")}>
+              <span className="text-[11px] text-muted-foreground opacity-60">
                 app.logicmate.ai/dashboard/modules
               </span>
             </div>
           </div>
 
           {/* Dashboard content */}
-          <div style={{
-            padding: "20px",
-            background: isDark ? "#0a0a0a" : "#f4f4f5",
-            borderRadius: "12px", minHeight: "320px",
-          }}>
+          <div className={cn("min-h-[320px] rounded-xl p-5", isDark ? "bg-[#0a0a0a]" : "bg-[#f4f4f5]")}>
             {/* Header row */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text }}>My Modules</p>
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", animation: "pulse-dot 2s infinite" }} />
-                <span style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>4 active</span>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-bold text-foreground">My Modules</p>
+              <div className="flex items-center gap-1.5">
+                <div className="size-1.5 animate-[pulse-dot_2s_infinite] rounded-full bg-[#22c55e]" />
+                <span className="text-[11px] font-semibold text-[#22c55e]">4 active</span>
               </div>
             </div>
 
             {/* Stats row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "16px" }}>
+            <div className="mb-4 grid grid-cols-4 gap-2.5">
               {[
                 { label: "Modules", value: "4", color: "#7c3aed" },
                 { label: "Runs today", value: "12", color: "#22c55e" },
                 { label: "Success rate", value: "98%", color: "#3b82f6" },
                 { label: "Trial days", value: "28", color: "#f59e0b" },
               ].map(s => (
-                <div key={s.label} style={{
-                  background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.8)",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-                  borderRadius: "9px", padding: "12px",
-                }}>
-                  <p style={{ fontSize: "11px", color: colors.textMuted, marginBottom: "4px" }}>{s.label}</p>
-                  <p style={{ fontSize: "20px", fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
+                <div key={s.label} className={cn("rounded-[9px] border p-3", isDark ? "border-white/6 bg-white/3" : "border-black/6 bg-white/80")}>
+                  <p className="mb-1 text-[11px] text-muted-foreground">{s.label}</p>
+                  <p className="text-xl leading-none font-extrabold" style={{ color: s.color }}>{s.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Agent list */}
-            <div style={{
-              background: isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.9)",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-              borderRadius: "10px", overflow: "hidden",
-            }}>
+            <div className={cn("overflow-hidden rounded-[10px] border", isDark ? "border-white/6 bg-white/2" : "border-black/6 bg-white/90")}>
               {RUNNING_AGENTS.map((agent, i) => (
-                <div key={agent.name} style={{
-                  display: "flex", alignItems: "center", gap: "12px",
-                  padding: "11px 14px",
-                  borderBottom: i < RUNNING_AGENTS.length - 1 ? `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"}` : "none",
-                }}>
-                  <div style={{
-                    width: "30px", height: "30px", borderRadius: "7px",
-                    background: `${agent.color}18`, border: `1px solid ${agent.color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "13px", flexShrink: 0,
-                  }}>
+                <div
+                  key={agent.name}
+                  className={cn(
+                    "flex items-center gap-3 px-3.5 py-2.5",
+                    i < RUNNING_AGENTS.length - 1 && (isDark ? "border-b border-white/4" : "border-b border-black/5")
+                  )}
+                >
+                  <div
+                    className="flex size-[30px] shrink-0 items-center justify-center rounded-[7px] border text-[13px]"
+                    style={{ background: `${agent.color}18`, borderColor: `${agent.color}30` }}
+                  >
                     {agent.icon}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", alignItems: "center" }}>
-                      <span style={{ fontSize: "12px", fontWeight: 600, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="overflow-hidden text-xs font-semibold text-ellipsis whitespace-nowrap text-foreground">
                         {agent.name}
                       </span>
-                      <span style={{
-                        fontSize: "10px", fontWeight: 600, flexShrink: 0, marginLeft: "8px",
-                        padding: "2px 7px", borderRadius: "4px",
-                        background: agent.status === "Running" ? "rgba(34,197,94,0.12)" : agent.status === "Completed" ? "rgba(59,130,246,0.12)" : "rgba(245,158,11,0.12)",
-                        color: agent.status === "Running" ? "#22c55e" : agent.status === "Completed" ? "#3b82f6" : "#f59e0b",
-                      }}>
+                      <span
+                        className="ml-2 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                        style={{
+                          background: agent.status === "Running" ? "rgba(34,197,94,0.12)" : agent.status === "Completed" ? "rgba(59,130,246,0.12)" : "rgba(245,158,11,0.12)",
+                          color: agent.status === "Running" ? "#22c55e" : agent.status === "Completed" ? "#3b82f6" : "#f59e0b",
+                        }}
+                      >
                         {agent.status}
                       </span>
                     </div>
-                    <div style={{
-                      height: "3px", borderRadius: "2px",
-                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)", overflow: "hidden",
-                    }}>
-                      <div style={{
-                        height: "100%", width: `${agent.progress}%`,
-                        background: `linear-gradient(90deg, ${agent.color}, ${agent.color}cc)`,
-                        borderRadius: "2px",
-                      }} />
+                    <div className={cn("h-[3px] overflow-hidden rounded-sm", isDark ? "bg-white/6" : "bg-black/8")}>
+                      <div
+                        className="h-full rounded-sm"
+                        style={{ width: `${agent.progress}%`, background: `linear-gradient(90deg, ${agent.color}, ${agent.color}cc)` }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -355,22 +315,7 @@ export function HeroSection() {
       </div>
 
       {/* Bottom fade */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: "200px",
-        background: `linear-gradient(to top, ${colors.bg}, transparent)`,
-        pointerEvents: "none",
-      }} />
-
-      <style>{`
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.5); }
-        }
-        @keyframes fadeInPill {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[200px] bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 }

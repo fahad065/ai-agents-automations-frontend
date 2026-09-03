@@ -7,11 +7,12 @@ import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
 import { ShoppingBag, Settings2, Rocket, BarChart3, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function FeaturesSection() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { lang, isAr } = useLang();
 
   const STEPS = [
@@ -79,159 +80,123 @@ export function FeaturesSection() {
   const step = STEPS[active];
 
   return (
-    <section ref={sectionRef} style={{
-      padding: "100px 24px",
-      background: colors.bg,
-      borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-    }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-
-        <div ref={titleRef} style={{ textAlign: "center", marginBottom: "72px" }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            border: "1px solid rgba(124,58,237,0.3)",
-            background: "rgba(124,58,237,0.08)",
-            color: "#a78bfa", padding: "5px 14px",
-            borderRadius: "9999px", fontSize: "12px",
-            fontWeight: 500, marginBottom: "20px",
-          }}>
+    <section ref={sectionRef} className={cn("border-t bg-background px-6 py-25", isDark ? "border-white/6" : "border-black/6")}>
+      <div className="mx-auto max-w-[1200px]">
+        <div ref={titleRef} className="mb-18 text-center">
+          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1.5 text-xs font-medium text-primary">
             {tr("howItWorks", lang)}
           </span>
-          <h2 style={{
-            fontSize: "clamp(30px, 4.5vw, 48px)", fontWeight: 800,
-            color: colors.text, marginBottom: "14px",
-            letterSpacing: "-0.03em", lineHeight: 1.1,
-          }}>
+          <h2 className="mb-3.5 text-[clamp(30px,4.5vw,48px)] leading-[1.1] font-extrabold tracking-[-0.03em] text-foreground">
             {isAr ? "من الصفر إلى الأتمتة" : "From zero to automated"}<br />{isAr ? "في 4 خطوات" : "in 4 steps"}
           </h2>
-          <p style={{
-            color: colors.textMuted, fontSize: "clamp(15px, 2vw, 17px)",
-            maxWidth: "500px", margin: "0 auto", lineHeight: 1.65,
-          }}>
+          <p className="mx-auto max-w-[500px] text-[clamp(15px,2vw,17px)] leading-relaxed text-muted-foreground">
             {tr("featuresSubtitle", lang)}
           </p>
         </div>
 
-        <div style={{
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          borderRadius: "20px",
-          padding: "24px",
-          background: isDark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.008)",
-        }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "32px",
-          alignItems: "start",
-        }}>
-          {/* Step list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            {STEPS.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = i === active;
-              return (
-                <button key={s.n} onClick={() => setActive(i)} style={{
-                  display: "flex", alignItems: "flex-start", gap: "14px",
-                  padding: "16px 18px", borderRadius: "12px", width: "100%",
-                  background: isActive ? `${s.color}0c` : "transparent",
-                  border: `1px solid ${isActive ? s.color + "30" : "transparent"}`,
-                  cursor: "pointer", textAlign: "left",
-                  transition: "all 0.25s",
-                }}>
-                  <div style={{
-                    width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
-                    background: isActive ? `${s.color}18` : (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"),
-                    border: `1px solid ${isActive ? s.color + "35" : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)")}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "all 0.25s",
-                  }}>
-                    <Icon size={17} color={isActive ? s.color : colors.textMuted} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <span style={{
-                        fontFamily: "monospace", fontSize: "10px", fontWeight: 700,
-                        color: isActive ? s.color : colors.textMuted, opacity: isActive ? 1 : 0.5,
-                      }}>{s.n}</span>
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: isActive ? colors.text : colors.textMuted }}>
-                        {s.title}
-                      </span>
+        <div className={cn("rounded-[20px] border p-6", isDark ? "border-white/7 bg-white/1.5" : "border-black/7 bg-black/0.8")}>
+          <div className="grid items-start gap-8" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+            {/* Step list */}
+            <div className="flex flex-col gap-1">
+              {STEPS.map((s, i) => {
+                const Icon = s.icon;
+                const isActive = i === active;
+                return (
+                  <button
+                    key={s.n}
+                    onClick={() => setActive(i)}
+                    className="flex w-full items-start gap-3.5 rounded-xl border border-transparent p-4.5 text-left transition-all"
+                    style={{
+                      background: isActive ? `${s.color}0c` : undefined,
+                      borderColor: isActive ? s.color + "30" : undefined,
+                    }}
+                  >
+                    <div
+                      className={cn("flex size-[38px] shrink-0 items-center justify-center rounded-[10px] border transition-all", !isActive && (isDark ? "bg-white/4 border-white/8" : "bg-black/3 border-black/8"))}
+                      style={isActive ? { background: `${s.color}18`, borderColor: s.color + "35" } : undefined}
+                    >
+                      <Icon size={17} color={isActive ? s.color : undefined} className={!isActive ? "text-muted-foreground" : undefined} />
                     </div>
-                    <p style={{
-                      fontSize: "13px", color: colors.textMuted, lineHeight: 1.55,
-                      maxHeight: isActive ? "80px" : "0", overflow: "hidden",
-                      transition: "max-height 0.35s ease",
-                    }}>
-                      {s.description}
-                    </p>
-                  </div>
-                  <ChevronRight size={13} color={isActive ? s.color : colors.textMuted}
-                    style={{ flexShrink: 0, marginTop: "4px", opacity: isActive ? 1 : 0.35, transition: "all 0.2s" }} />
-                </button>
-              );
-            })}
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span
+                          className="font-mono text-[10px] font-bold"
+                          style={{ color: isActive ? s.color : undefined, opacity: isActive ? 1 : 0.5 }}
+                        >{s.n}</span>
+                        <span className={cn("text-sm font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
+                          {s.title}
+                        </span>
+                      </div>
+                      <p
+                        className="overflow-hidden text-[13px] leading-[1.55] text-muted-foreground transition-[max-height] duration-350 ease-in-out"
+                        style={{ maxHeight: isActive ? "80px" : "0" }}
+                      >
+                        {s.description}
+                      </p>
+                    </div>
+                    <ChevronRight
+                      size={13}
+                      color={isActive ? s.color : undefined}
+                      className={cn("mt-1 shrink-0 transition-all", !isActive && "text-muted-foreground opacity-35")}
+                    />
+                  </button>
+                );
+              })}
 
-            {/* Progress dots */}
-            <div style={{ display: "flex", gap: "5px", padding: "12px 18px" }}>
-              {STEPS.map((_, i) => (
-                <div key={i} onClick={() => setActive(i)} style={{
-                  height: "3px",
-                  width: i === active ? "28px" : "6px",
-                  borderRadius: "2px",
-                  background: i === active ? STEPS[active].color : (isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"),
-                  transition: "all 0.3s", cursor: "pointer",
-                }} />
-              ))}
-            </div>
-          </div>
-
-          {/* Preview panel */}
-          <div style={{
-            background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-            borderRadius: "16px", padding: "28px",
-            backdropFilter: "blur(8px)",
-            boxShadow: `0 0 60px ${step.color}08`,
-            transition: "box-shadow 0.4s",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-              <div style={{
-                width: "42px", height: "42px", borderRadius: "11px",
-                background: `${step.color}15`, border: `1px solid ${step.color}30`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <step.icon size={20} color={step.color} />
-              </div>
-              <div>
-                <p style={{ fontSize: "10px", color: colors.textMuted, marginBottom: "2px", opacity: 0.6 }}>{tr("step", lang)} {step.n}</p>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: colors.text }}>{step.title}</h3>
+              {/* Progress dots */}
+              <div className="flex gap-1.25 px-4.5 py-3">
+                {STEPS.map((_, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setActive(i)}
+                    className={cn("h-[3px] cursor-pointer rounded-sm transition-all", i === active ? "w-7" : cn("w-1.5", isDark ? "bg-white/12" : "bg-black/10"))}
+                    style={i === active ? { background: STEPS[active].color } : undefined}
+                  />
+                ))}
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {step.preview.map((item, i) => (
-                <div key={i} style={{
-                  padding: "12px", borderRadius: "9px",
-                  background: `${step.color}08`,
-                  border: `1px solid ${step.color}18`,
-                  transition: "all 0.3s",
-                }}>
-                  {item.icon && <div style={{ fontSize: "16px", marginBottom: "6px" }}>{item.icon}</div>}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", marginBottom: "2px" }}>
-                    <p style={{ fontSize: "12px", fontWeight: 600, color: colors.text, lineHeight: 1.3 }}>{item.label}</p>
-                    {item.badge && (
-                      <span style={{
-                        fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "3px",
-                        background: `${item.color}18`, color: item.color, flexShrink: 0,
-                      }}>{item.badge}</span>
-                    )}
-                  </div>
-                  <p style={{ fontSize: "11px", color: colors.textMuted }}>{item.sub}</p>
+            {/* Preview panel */}
+            <div
+              className={cn("rounded-2xl border p-7 backdrop-blur-sm transition-shadow duration-400", isDark ? "border-white/7 bg-white/2" : "border-black/7 bg-black/1.5")}
+              style={{ boxShadow: `0 0 60px ${step.color}08` }}
+            >
+              <div className="mb-6 flex items-center gap-3">
+                <div
+                  className="flex size-[42px] items-center justify-center rounded-[11px] border"
+                  style={{ background: `${step.color}15`, borderColor: `${step.color}30` }}
+                >
+                  <step.icon size={20} color={step.color} />
                 </div>
-              ))}
+                <div>
+                  <p className="mb-0.5 text-[10px] text-muted-foreground opacity-60">{tr("step", lang)} {step.n}</p>
+                  <h3 className="text-[15px] font-bold text-foreground">{step.title}</h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {step.preview.map((item, i) => (
+                  <div
+                    key={i}
+                    className="rounded-[9px] border p-3 transition-all"
+                    style={{ background: `${step.color}08`, borderColor: `${step.color}18` }}
+                  >
+                    {item.icon && <div className="mb-1.5 text-base">{item.icon}</div>}
+                    <div className="mb-0.5 flex items-center justify-between gap-1">
+                      <p className="text-xs leading-tight font-semibold text-foreground">{item.label}</p>
+                      {item.badge && (
+                        <span
+                          className="shrink-0 rounded px-1.25 py-0.25 text-[9px] font-bold"
+                          style={{ background: `${item.color}18`, color: item.color }}
+                        >{item.badge}</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{item.sub}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </section>

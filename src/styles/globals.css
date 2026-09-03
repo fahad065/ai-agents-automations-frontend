@@ -202,3 +202,17 @@ body.light {
    reasoning as the html font-size fix above: it only affected Tailwind's
    rem-based utility classes, and shrinking them further on mobile is the
    opposite of what those pages want. */
+
+/* Used by the homepage GSAP sections (hero-section.tsx, cta-section.tsx)
+   via Tailwind's animate-[pulse-dot_2s_infinite] arbitrary-value syntax,
+   and by hero-section.tsx's industry pills via an inline animation string
+   (fadeInPill) — moved here from a per-component <style> tag as part of
+   the Tailwind marketing reskin so both keyframes are defined once. */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+@keyframes fadeInPill {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

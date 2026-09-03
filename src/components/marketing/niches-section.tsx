@@ -8,6 +8,8 @@ import { ArrowRight } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { industryName, industryDesc } from "@/lib/translations";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -87,7 +89,7 @@ const NICHES = [
 ];
 
 export function NichesSection() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { lang, isAr } = useLang();
   const sectionRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
@@ -103,41 +105,21 @@ export function NichesSection() {
     return () => ctx.revert();
   }, []);
 
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const hoverBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)";
-
   return (
-    <section ref={sectionRef} dir={isAr ? "rtl" : "ltr"} style={{
-      padding: "100px 24px",
-      background: colors.bg,
-      borderTop: `1px solid ${border}`,
-    }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-
-        <div ref={titleRef} style={{ marginBottom: "64px", maxWidth: "560px" }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            border: "1px solid rgba(124,58,237,0.3)",
-            background: "rgba(124,58,237,0.08)",
-            color: "#a78bfa", padding: "5px 14px",
-            borderRadius: "9999px", fontSize: "12px",
-            fontWeight: 500, marginBottom: "20px",
-          }}>
+    <section ref={sectionRef} dir={isAr ? "rtl" : "ltr"} className={cn("border-t bg-background px-6 py-25", isDark ? "border-white/7" : "border-black/7")}>
+      <div className="mx-auto max-w-[1200px]">
+        <div ref={titleRef} className="mb-16 max-w-[560px]">
+          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1.5 text-xs font-medium text-primary">
             {isAr ? "12 قطاعاً، منصة واحدة" : "12 industries, one platform"}
           </span>
-          <h2 style={{
-            fontSize: "clamp(30px, 4.5vw, 48px)", fontWeight: 800,
-            color: colors.text, letterSpacing: "-0.03em", lineHeight: 1.1,
-            marginBottom: "16px",
-          }}>
+          <h2 className="mb-4 text-[clamp(30px,4.5vw,48px)] leading-[1.1] font-extrabold tracking-[-0.03em] text-foreground">
             {isAr ? "منصة واحدة،" : "One platform,"}
             <br />
-            <span style={{
-              background: "linear-gradient(135deg, #c4b5fd, #a78bfa, #7c3aed)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-            }}>{isAr ? "12 قطاعاً." : "12 industries."}</span>
+            <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
+              {isAr ? "12 قطاعاً." : "12 industries."}
+            </span>
           </h2>
-          <p style={{ fontSize: "15px", color: colors.textMuted, lineHeight: 1.65 }}>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
             {isAr
               ? "وكلاء وأتمتة وشات بوتات جاهزة مصممة لقطاعك — وليس أدوات عامة تحتاج لتخصيصها بنفسك."
               : "Pre-built agents, automations, and chatbots tailored to your industry — not generic tools you have to customise yourself."
@@ -145,60 +127,48 @@ export function NichesSection() {
           </p>
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-          gap: "10px",
-        }}>
+        <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
           {NICHES.map((n) => {
             const isHovered = hovered === n.slug;
             return (
               <Link
                 href={`/industries/${n.slug}`}
-                className="niche-card"
+                className="niche-card block rounded-[14px] border p-5 no-underline transition-all"
                 key={n.slug}
                 onMouseEnter={() => setHovered(n.slug)}
                 onMouseLeave={() => setHovered(null)}
                 style={{
-                  display: "block", textDecoration: "none",
-                  padding: "20px", borderRadius: "14px",
-                  background: isHovered ? `${n.color}08` : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)"),
-                  border: `1px solid ${isHovered ? n.color + "30" : border}`,
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  boxShadow: isHovered ? `0 0 30px ${n.color}10` : "none",
+                  background: isHovered ? `${n.color}08` : undefined,
+                  borderColor: isHovered ? n.color + "30" : undefined,
+                  boxShadow: isHovered ? `0 0 30px ${n.color}10` : undefined,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "38px", height: "38px", borderRadius: "9px",
-                    background: `${n.color}12`, border: `1px solid ${n.color}25`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "18px", flexShrink: 0,
-                  }}>
+                <div className="mb-2.5 flex items-center gap-2.5">
+                  <div
+                    className="flex size-[38px] shrink-0 items-center justify-center rounded-[9px] border text-lg"
+                    style={{ background: `${n.color}12`, borderColor: `${n.color}25` }}
+                  >
                     {n.icon}
                   </div>
-                  <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text }}>{industryName(n.slug, lang)}</p>
+                  <p className="text-sm font-bold text-foreground">{industryName(n.slug, lang)}</p>
                 </div>
 
-                <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.6, marginBottom: "12px" }}>
+                <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
                   {industryDesc(n.slug, lang) || n.desc}
                 </p>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                <div className="flex flex-wrap gap-1">
                   {n.agents.slice(0, 3).map(a => (
-                    <span key={a} style={{
-                      fontSize: "10px", padding: "2px 7px", borderRadius: "4px",
-                      background: `${n.color}10`, color: n.color, fontWeight: 500,
-                      border: `1px solid ${n.color}20`,
-                    }}>{a}</span>
+                    <span
+                      key={a}
+                      className="rounded border px-1.75 py-0.5 text-[10px] font-medium"
+                      style={{ background: `${n.color}10`, color: n.color, borderColor: `${n.color}20` }}
+                    >{a}</span>
                   ))}
                   {n.agents.length > 3 && (
-                    <span style={{
-                      fontSize: "10px", padding: "2px 7px", borderRadius: "4px",
-                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-                      color: colors.textMuted,
-                    }}>+{n.agents.length - 3} {isAr ? "أكثر" : "more"}</span>
+                    <span className={cn("rounded px-1.75 py-0.5 text-[10px] text-muted-foreground", isDark ? "bg-white/6" : "bg-black/5")}>
+                      +{n.agents.length - 3} {isAr ? "أكثر" : "more"}
+                    </span>
                   )}
                 </div>
               </Link>
@@ -206,17 +176,10 @@ export function NichesSection() {
           })}
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "48px" }}>
-          <Link href="/industries" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            border: `1px solid ${border}`,
-            color: colors.textMuted, padding: "12px 24px", borderRadius: "9px",
-            fontSize: "14px", fontWeight: 500, textDecoration: "none",
-            background: "transparent",
-            transition: "all 0.2s",
-          }}>
+        <div className="mt-12 text-center">
+          <Button nativeButton={false} variant="outline" render={<Link href="/industries" />} className="gap-2">
             {isAr ? "تصفح كل القطاعات" : "Browse all industries"} <ArrowRight size={14} />
-          </Link>
+          </Button>
         </div>
       </div>
     </section>

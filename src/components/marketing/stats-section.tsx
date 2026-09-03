@@ -7,11 +7,12 @@ import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
 import { Bot, Zap, Globe, Clock, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function StatsSection() {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { lang, isAr } = useLang();
 
   const STATS = [
@@ -54,69 +55,50 @@ export function StatsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} style={{
-      padding: "80px 24px",
-      background: colors.bg,
-      borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-    }}>
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-
+    <section ref={sectionRef} className="border-t bg-background px-6 py-20">
+      <div className="mx-auto max-w-[1100px]">
         {/* Label */}
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <p style={{ fontSize: "12px", color: colors.textMuted, opacity: 0.6, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        <div className="mb-12 text-center">
+          <p className="text-xs tracking-[0.08em] text-muted-foreground uppercase opacity-60">
             {tr("builtForResults", lang)}
           </p>
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1px",
-          background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-          borderRadius: "18px", overflow: "hidden",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-        }}>
+        <div
+          className={cn(
+            "grid gap-px overflow-hidden rounded-[18px] border",
+            isDark ? "border-white/6 bg-white/6" : "border-black/6 bg-black/6"
+          )}
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}
+        >
           {STATS.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div className="stat-card" key={stat.label} style={{
-                textAlign: "center", padding: "40px 24px",
-                background: colors.bg,
-                position: "relative",
-              }}>
+              <div className="stat-card relative bg-background px-6 py-10 text-center" key={stat.label}>
                 {/* Glow */}
-                <div style={{
-                  position: "absolute", top: "50%", left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: "120px", height: "120px",
-                  background: `${stat.color}08`,
-                  borderRadius: "50%", filter: "blur(30px)",
-                  pointerEvents: "none",
-                }} />
+                <div
+                  className="pointer-events-none absolute top-1/2 left-1/2 size-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[30px]"
+                  style={{ background: `${stat.color}08` }}
+                />
 
-                <div style={{
-                  width: "44px", height: "44px", borderRadius: "12px",
-                  background: `${stat.color}12`, border: `1px solid ${stat.color}25`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 20px",
-                }}>
+                <div
+                  className="mx-auto mb-5 flex size-11 items-center justify-center rounded-xl border"
+                  style={{ background: `${stat.color}12`, borderColor: `${stat.color}25` }}
+                >
                   <Icon size={20} color={stat.color} />
                 </div>
 
-                <div style={{
-                  fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 800,
-                  lineHeight: 1, marginBottom: "8px",
-                  letterSpacing: "-0.03em",
-                  backgroundImage: `linear-gradient(135deg, ${colors.text}, ${stat.color}aa)`,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                }}>
+                <div
+                  className="mb-2 bg-clip-text text-[clamp(36px,5vw,52px)] leading-none font-extrabold tracking-[-0.03em] text-transparent"
+                  style={{ backgroundImage: `linear-gradient(135deg, var(--foreground), ${stat.color}aa)` }}
+                >
                   {stat.value}
                 </div>
 
-                <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "6px" }}>
+                <p className="mb-1.5 text-sm font-semibold text-foreground">
                   {stat.label}
                 </p>
-                <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.5, maxWidth: "180px", margin: "0 auto" }}>
+                <p className="mx-auto max-w-[180px] text-xs leading-relaxed text-muted-foreground">
                   {stat.sub}
                 </p>
               </div>
