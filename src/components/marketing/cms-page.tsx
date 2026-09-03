@@ -1,7 +1,3 @@
-"use client";
-
-import { useTheme } from "@/hooks/use-theme";
-
 interface CmsPageProps {
   title: string;
   subtitle?: string;
@@ -10,91 +6,34 @@ interface CmsPageProps {
 }
 
 export function CmsPage({ title, subtitle, children, maxWidth = "760px" }: CmsPageProps) {
-  const { colors } = useTheme();
-
   return (
-    <div style={{ minHeight: "100vh", background: colors.bg }}>
-      {/* Header */}
-      <section style={{
-        padding: "100px 24px 48px",
-        borderBottom: `1px solid ${colors.border}`,
-        textAlign: "center",
-      }}>
-        <div style={{ maxWidth: "680px", margin: "0 auto" }}>
-          <h1 style={{
-            fontSize: "clamp(28px, 5vw, 48px)", fontWeight: 800,
-            color: colors.text, marginBottom: "12px",
-            letterSpacing: "-0.02em",
-          }}>
+    <div className="min-h-screen bg-background">
+      <section className="border-b px-6 pt-24 pb-12 text-center">
+        <div className="mx-auto max-w-xl">
+          <h1 className="mb-3 text-[clamp(28px,5vw,48px)] font-extrabold tracking-tight text-foreground">
             {title}
           </h1>
-          {subtitle && (
-            <p style={{ fontSize: "16px", color: colors.textMuted, lineHeight: 1.6 }}>
-              {subtitle}
-            </p>
-          )}
+          {subtitle && <p className="text-base leading-relaxed text-muted-foreground">{subtitle}</p>}
         </div>
       </section>
 
-      {/* Content */}
-      <div style={{
-        maxWidth, margin: "0 auto",
-        padding: "56px 24px 96px",
-      }}>
+      <div className="mx-auto px-6 pt-14 pb-24" style={{ maxWidth }}>
         {children}
       </div>
     </div>
   );
 }
 
-// Renders HTML content from CMS with proper styling
+// Renders HTML content from CMS with typography scoped to this element only
+// (the previous version used a global unscoped <style> tag for h2/h3/p/etc,
+// which leaked those rules onto every page rendered alongside it — scoping
+// via Tailwind's descendant selectors fixes that as a side effect of the
+// reskin, not a separate change).
 export function CmsContent({ html }: { html: string }) {
-  const { colors } = useTheme();
-
   return (
-    <>
-      <div
-        dangerouslySetInnerHTML={{ __html: html }}
-        style={{ color: colors.textMuted }}
-      />
-      <style>{`
-        .cms-content h2 {
-          font-size: 22px;
-          font-weight: 700;
-          color: ${colors.text};
-          margin: 32px 0 12px;
-        }
-        .cms-content h3 {
-          font-size: 17px;
-          font-weight: 600;
-          color: ${colors.text};
-          margin: 24px 0 8px;
-        }
-        .cms-content p {
-          font-size: 15px;
-          line-height: 1.8;
-          color: ${colors.textMuted};
-          margin-bottom: 16px;
-        }
-        .cms-content ul, .cms-content ol {
-          padding-left: 20px;
-          margin-bottom: 16px;
-        }
-        .cms-content li {
-          font-size: 15px;
-          line-height: 1.8;
-          color: ${colors.textMuted};
-          margin-bottom: 6px;
-        }
-        .cms-content strong {
-          color: ${colors.text};
-          font-weight: 600;
-        }
-        .cms-content a {
-          color: #a78bfa;
-          text-decoration: none;
-        }
-      `}</style>
-    </>
+    <div
+      dangerouslySetInnerHTML={{ __html: html }}
+      className="text-muted-foreground [&_a]:text-primary [&_a]:no-underline [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-[22px] [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[17px] [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:mb-1.5 [&_li]:text-[15px] [&_li]:leading-[1.8] [&_ol]:mb-4 [&_ol]:pl-5 [&_p]:mb-4 [&_p]:text-[15px] [&_p]:leading-[1.8] [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:mb-4 [&_ul]:pl-5"
+    />
   );
 }

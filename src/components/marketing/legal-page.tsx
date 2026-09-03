@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { CmsPage } from "./cms-page";
 import { Loader2 } from "lucide-react";
 
 export function LegalPage({ slug }: { slug: string }) {
-  const { colors } = useTheme();
   const { isAr } = useLang();
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,9 +21,8 @@ export function LegalPage({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 size={28} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="size-7 animate-spin text-primary" />
       </div>
     );
   }
@@ -40,20 +37,9 @@ export function LegalPage({ slug }: { slug: string }) {
         <div
           dir={isAr ? "rtl" : "ltr"}
           dangerouslySetInnerHTML={{ __html: content }}
-          style={{
-            fontSize: "15px", lineHeight: 1.8,
-            color: colors.textMuted,
-          }}
+          className="text-[15px] leading-[1.8] text-muted-foreground [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:mb-1.5 [&_ol]:mb-3.5 [&_ol]:pl-5 [&_p]:mb-3.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:mb-3.5 [&_ul]:pl-5"
         />
       )}
-      <style>{`
-        h2 { font-size: 20px; font-weight: 700; color: ${colors.text}; margin: 32px 0 12px; }
-        h3 { font-size: 16px; font-weight: 600; color: ${colors.text}; margin: 24px 0 8px; }
-        p { margin-bottom: 14px; }
-        ul, ol { padding-left: 20px; margin-bottom: 14px; }
-        li { margin-bottom: 6px; }
-        strong { color: ${colors.text}; font-weight: 600; }
-      `}</style>
     </CmsPage>
   );
 }

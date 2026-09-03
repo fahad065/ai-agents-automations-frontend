@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { Heart, Zap, Shield, Users, ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AboutPageData {
   title?: string;
@@ -16,7 +16,6 @@ interface AboutPageData {
 }
 
 export function AboutPage() {
-  const { colors, isDark } = useTheme();
   const { isAr } = useLang();
   const [page, setPage] = useState<AboutPageData | null>(null);
 
@@ -31,8 +30,6 @@ export function AboutPage() {
   const cmsTitle = page ? ((isAr && page.title_ar) ? page.title_ar : page.title) : null;
   const cmsSubtitle = page ? ((isAr && page.subtitle_ar) ? page.subtitle_ar : page.subtitle) : null;
   const cmsContent = page ? ((isAr && page.content_ar) ? page.content_ar : page.content) : null;
-
-  const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
   const VALUES = [
     {
@@ -74,45 +71,21 @@ export function AboutPage() {
   ];
 
   return (
-    <div dir={isAr ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: colors.bg }}>
-
+    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-background">
       {/* Hero */}
-      <section style={{
-        padding: "120px 24px 80px", maxWidth: "760px",
-        margin: "0 auto", textAlign: "center",
-        position: "relative",
-      }}>
-        <div style={{
-          position: "absolute", top: "40%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "500px", height: "500px",
-          background: "rgba(124,58,237,0.06)",
-          borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none",
-        }} />
-        <span style={{
-          display: "inline-flex", alignItems: "center", gap: "6px",
-          border: "1px solid rgba(124,58,237,0.3)",
-          background: "rgba(124,58,237,0.08)",
-          color: "#a78bfa", padding: "6px 16px", borderRadius: "9999px",
-          fontSize: "13px", fontWeight: 500, marginBottom: "28px",
-        }}>
+      <section className="relative mx-auto max-w-3xl overflow-hidden px-6 pt-30 pb-20 text-center">
+        <div className="pointer-events-none absolute top-[40%] left-1/2 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.06] blur-[100px]" />
+        <span className="relative mb-7 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] px-4 py-1.5 text-[13px] font-medium text-primary">
           {isAr ? "قصتنا" : "Our story"}
         </span>
         {!page ? (
-          <Loader2 size={28} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto 24px" }} />
+          <Loader2 className="relative mx-auto mb-6 size-7 animate-spin text-primary" />
         ) : (
           <>
-            <h1 style={{
-              fontSize: "clamp(36px, 5.5vw, 64px)", fontWeight: 800,
-              letterSpacing: "-0.04em", color: colors.text,
-              marginBottom: "24px", lineHeight: 1.05,
-            }}>
+            <h1 className="relative mb-6 text-[clamp(36px,5.5vw,64px)] leading-[1.05] font-extrabold tracking-tight text-foreground">
               {cmsTitle || (isAr ? "لوجيك ميت" : "LogicMate")}
             </h1>
-            <p style={{
-              fontSize: "18px", lineHeight: 1.75, color: colors.textMuted,
-              maxWidth: "580px", margin: "0 auto",
-            }}>
+            <p className="relative mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground">
               {cmsSubtitle || (isAr ? "بنينا منصة الوكلاء اللي كنا نتمنى توجد." : "We built the agent platform we wished existed.")}
             </p>
           </>
@@ -121,39 +94,23 @@ export function AboutPage() {
 
       {/* CMS body content (if set by admin) */}
       {cmsContent && (
-        <section style={{ maxWidth: "860px", margin: "0 auto", padding: "0 24px 60px" }}>
+        <section className="mx-auto max-w-4xl px-6 pb-16">
           <div
             dir={isAr ? "rtl" : "ltr"}
             dangerouslySetInnerHTML={{ __html: cmsContent }}
-            style={{ fontSize: "15px", lineHeight: 1.8, color: colors.textMuted }}
+            className="text-[15px] leading-[1.8] text-muted-foreground [&_h2]:my-6 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-foreground [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:ps-6 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:mb-4 [&_ul]:ps-6"
           />
         </section>
       )}
 
       {/* Mission statement */}
-      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "0 24px 80px" }}>
-        <div style={{
-          background: isDark ? "rgba(124,58,237,0.05)" : "rgba(124,58,237,0.03)",
-          border: `1px solid rgba(124,58,237,0.18)`,
-          borderRadius: "18px", padding: "40px 48px",
-          position: "relative", overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute", top: "-60px", right: "-60px",
-            width: "250px", height: "250px",
-            background: "rgba(124,58,237,0.08)",
-            borderRadius: "50%", filter: "blur(60px)", pointerEvents: "none",
-          }} />
-          <p style={{
-            fontSize: "11px", fontWeight: 700, color: "#a78bfa",
-            letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "16px",
-          }}>
+      <section className="mx-auto max-w-4xl px-6 pb-20">
+        <div className="relative overflow-hidden rounded-[18px] border border-primary/[0.18] bg-primary/[0.03] p-10 sm:p-12">
+          <div className="pointer-events-none absolute -top-15 -right-15 size-[250px] rounded-full bg-primary/[0.08] blur-[60px]" />
+          <p className="mb-4 text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
             {isAr ? "مهمتنا" : "Our mission"}
           </p>
-          <p style={{
-            fontSize: "clamp(18px, 2.5vw, 22px)", fontWeight: 600,
-            color: colors.text, lineHeight: 1.65,
-          }}>
+          <p className="text-[clamp(18px,2.5vw,22px)] leading-relaxed font-semibold text-foreground">
             {isAr
               ? '"نجعل أتمتة الذكاء الاصطناعي في متناول كل عمل تجاري في دول الخليج — مو بس اللي عندهم فرق هندسية وميزانيات ضخمة."'
               : '"Make AI automation accessible to every business in the GCC — not just the ones with engineering teams and six-figure budgets."'}
@@ -162,46 +119,28 @@ export function AboutPage() {
       </section>
 
       {/* Values */}
-      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "0 24px 80px" }}>
-        <h2 style={{
-          fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 800,
-          color: colors.text, marginBottom: "12px", letterSpacing: "-0.03em",
-        }}>
+      <section className="mx-auto max-w-4xl px-6 pb-20">
+        <h2 className="mb-3 text-[clamp(24px,3.5vw,36px)] font-extrabold tracking-tight text-foreground">
           {isAr ? "ما نؤمن فيه" : "What we stand for"}
         </h2>
-        <p style={{ fontSize: "15px", color: colors.textMuted, marginBottom: "36px", lineHeight: 1.65 }}>
+        <p className="mb-9 text-[15px] leading-relaxed text-muted-foreground">
           {isAr
             ? "هذي مو قيم مكتوبة على الجدار، هذي قرارات نتخذها كل يوم."
             : "These are not corporate values on a poster. They're decisions we make every day."}
         </p>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px",
-        }}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {VALUES.map((v) => {
             const Icon = v.icon;
             return (
-              <div key={v.label} style={{
-                background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-                border: `1px solid ${border}`,
-                borderRadius: "14px", padding: "24px",
-                transition: "border-color 0.2s",
-              }}>
-                <div style={{
-                  width: "40px", height: "40px", borderRadius: "10px",
-                  background: `${v.color}12`, border: `1px solid ${v.color}25`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: "14px",
-                }}>
+              <div key={v.label} className="rounded-2xl border bg-foreground/[0.015] p-6">
+                <div
+                  className="mb-3.5 flex size-10 items-center justify-center rounded-[10px] border"
+                  style={{ background: `${v.color}12`, borderColor: `${v.color}25` }}
+                >
                   <Icon size={18} color={v.color} />
                 </div>
-                <p style={{ fontSize: "14px", fontWeight: 700, color: colors.text, marginBottom: "8px" }}>
-                  {v.label}
-                </p>
-                <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
-                  {v.desc}
-                </p>
+                <p className="mb-2 text-sm font-bold text-foreground">{v.label}</p>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{v.desc}</p>
               </div>
             );
           })}
@@ -209,104 +148,58 @@ export function AboutPage() {
       </section>
 
       {/* Timeline */}
-      <section style={{
-        maxWidth: "900px", margin: "0 auto", padding: "64px 24px 80px",
-        borderTop: `1px solid ${border}`,
-      }}>
-        <h2 style={{
-          fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 800,
-          color: colors.text, marginBottom: "48px", letterSpacing: "-0.03em",
-          textAlign: "center",
-        }}>
+      <section className="mx-auto max-w-4xl border-t px-6 pt-16 pb-20">
+        <h2 className="mb-12 text-center text-[clamp(24px,3.5vw,36px)] font-extrabold tracking-tight text-foreground">
           {isAr ? "كيف وصلنا لهنا" : "How we got here"}
         </h2>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "24px",
-        }}>
-          {TIMELINE.map((t, i) => (
-            <div key={t.year} style={{
-              textAlign: "center", padding: "28px 20px",
-              background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-              border: `1px solid ${i === TIMELINE.length - 1 ? "rgba(124,58,237,0.3)" : border}`,
-              borderRadius: "14px",
-              position: "relative",
-            }}>
-              {i === TIMELINE.length - 1 && (
-                <div style={{
-                  position: "absolute", top: "-1px", left: "-1px", right: "-1px", bottom: "-1px",
-                  borderRadius: "14px", border: "1px solid rgba(124,58,237,0.35)",
-                  pointerEvents: "none",
-                }} />
-              )}
-              <div style={{
-                width: "36px", height: "36px", borderRadius: "50%",
-                background: i === TIMELINE.length - 1 ? "rgba(124,58,237,0.15)" : (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"),
-                border: `2px solid ${i === TIMELINE.length - 1 ? "#7c3aed" : "rgba(124,58,237,0.25)"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                margin: "0 auto 14px",
-                fontSize: "14px", fontWeight: 800,
-                color: i === TIMELINE.length - 1 ? "#a78bfa" : colors.textMuted,
-              }}>
-                {i + 1}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-5">
+          {TIMELINE.map((t, i) => {
+            const isLast = i === TIMELINE.length - 1;
+            return (
+              <div
+                key={t.year}
+                className="rounded-2xl border p-7 text-center"
+                style={isLast ? { borderColor: "rgba(124,58,237,0.35)" } : undefined}
+              >
+                <div
+                  className="mx-auto mb-3.5 flex size-9 items-center justify-center rounded-full border-2 text-sm font-extrabold"
+                  style={{
+                    background: isLast ? "rgba(124,58,237,0.15)" : undefined,
+                    borderColor: isLast ? "#7c3aed" : "rgba(124,58,237,0.25)",
+                    color: isLast ? "#a78bfa" : undefined,
+                  }}
+                >
+                  <span className={isLast ? "" : "text-muted-foreground"}>{i + 1}</span>
+                </div>
+                <p className="mb-2 text-[13px] font-bold text-primary">{t.year}</p>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{t.event}</p>
               </div>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "#a78bfa", marginBottom: "8px" }}>
-                {t.year}
-              </p>
-              <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.65 }}>
-                {t.event}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {/* CTA */}
-      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "0 24px 100px" }}>
-        <div style={{
-          background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
-          border: `1px solid ${border}`,
-          borderRadius: "18px", padding: "48px",
-          textAlign: "center",
-        }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 800, color: colors.text, marginBottom: "12px", letterSpacing: "-0.03em" }}>
+      <section className="mx-auto max-w-4xl px-6 pb-24">
+        <div className="rounded-[18px] border bg-foreground/[0.015] p-10 text-center sm:p-12">
+          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
             {isAr ? "جاهز تبدأ؟" : "Ready to get started?"}
           </h2>
-          <p style={{ fontSize: "15px", color: colors.textMuted, marginBottom: "28px", lineHeight: 1.65 }}>
+          <p className="mb-7 text-[15px] leading-relaxed text-muted-foreground">
             {isAr
               ? "انشر أول وكيل ذكاء اصطناعي في دقائق. تجربة مجانية 30 يوم، ما في حاجة لبطاقة ائتمان."
               : "Deploy your first AI agent in minutes. 30-day free trial, no credit card required."}
           </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/auth/signup" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-              color: "white", padding: "12px 28px", borderRadius: "9px",
-              fontSize: "14px", fontWeight: 600, textDecoration: "none",
-              boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
-            }}>
-              {isAr ? "ابدأ مجاناً" : "Start for free"} <ArrowRight size={15} />
-            </Link>
-            <Link href="/contact" style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              border: `1px solid ${border}`,
-              color: colors.textMuted, padding: "12px 28px", borderRadius: "9px",
-              fontSize: "14px", fontWeight: 500, textDecoration: "none",
-              background: "transparent",
-            }}>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button nativeButton={false} render={<Link href="/auth/signup" />} className="gap-2 py-5">
+              {isAr ? "ابدأ مجاناً" : "Start for free"} <ArrowRight className="size-3.5" />
+            </Button>
+            <Button nativeButton={false} variant="outline" render={<Link href="/contact" />} className="py-5">
               {isAr ? "كلّمنا" : "Talk to us"}
-            </Link>
+            </Button>
           </div>
         </div>
       </section>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        h2 { font-size: 20px; font-weight: 700; color: ${colors.text}; margin: 24px 0 10px; }
-        ul, ol { padding-${isAr ? "right" : "left"}: 24px; margin-bottom: 16px; }
-        li { margin-bottom: 8px; }
-        strong { color: ${colors.text}; font-weight: 600; }
-      `}</style>
     </div>
   );
 }
