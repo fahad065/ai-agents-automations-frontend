@@ -8,33 +8,29 @@ import { api } from "@/lib/api";
 import dynamic from "next/dynamic";
 import {
   Bell, Shield, Save,
-  Loader2, AlertCircle, Lock, AlertTriangle,
+  Loader2, AlertCircle, AlertTriangle,
   Mail, Bold, Italic, Underline, List, ListOrdered, Link, Eye, EyeOff, Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ReactSelect = dynamic(() => import("react-select"), { ssr: false });
 
-// ── Section ───────────────────────────────────────────────────
-function Section({ title, icon: Icon, children, colors }: {
-  title: string; icon: any; children: React.ReactNode; colors: any;
-}) {
-  return (
-    <div style={{
-      background: colors.bgCard, border: `1px solid ${colors.border}`,
-      borderRadius: "12px", overflow: "hidden", marginBottom: "16px",
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: "10px",
-        padding: "16px 20px", borderBottom: `1px solid ${colors.border}`,
-      }}>
-        <Icon size={15} color="#a78bfa" />
-        <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>{title}</h2>
-      </div>
-      <div style={{ padding: "20px" }}>{children}</div>
-    </div>
-  );
-}
+const TABS = [
+  { key: "notifications", label: "Notifications", icon: Bell, adminOnly: false },
+  { key: "security", label: "Security", icon: Shield, adminOnly: false },
+  { key: "email", label: "Email Sender", icon: Mail, adminOnly: true },
+] as const;
 
 // ── Main ──────────────────────────────────────────────────────
 export function SettingsPage() {
@@ -42,10 +38,13 @@ export function SettingsPage() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as "notifications" | "security" | "email" | null) || "notifications";
+  const isAdmin = (user as any)?.role === "admin";
 
   const [tab, setTab] = useState<"notifications" | "security" | "email">(initialTab);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
   const [notifs, setNotifs] = useState({
     notifyOnComplete: true, notifyOnFail: true,
@@ -146,188 +145,181 @@ export function SettingsPage() {
     setSaving(false);
   };
 
-  const inp = {
-    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+  const deactivateAccount = async () => {
+    setDeactivating(true);
+    try {
+      await api.delete("/users/deactivate");
+      window.location.href = "/auth/login";
+    } catch {
+      toast.error("Failed to deactivate account");
+      setDeactivating(false);
+    }
   };
 
-  const lbl = (text: string) => (
-    <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>
-      {text}
-    </label>
-  );
-
-  const SaveBtn = ({ onClick }: { onClick: () => void }) => (
-    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-      <button onClick={onClick} disabled={saving} style={{
-        display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px",
-        borderRadius: "8px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-        color: "white", border: "none", cursor: saving ? "not-allowed" : "pointer",
-        fontSize: "13px", fontWeight: 600, opacity: saving ? 0.7 : 1,
-        boxShadow: saving ? "none" : "0 4px 12px rgba(124,58,237,0.3)",
-      }}>
-        {saving
-          ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-          : <Save size={14} />}
-        {saving ? "Saving..." : "Save Changes"}
-      </button>
-    </div>
-  );
-
-  const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
-    <button onClick={onChange} style={{
-      width: "44px", height: "24px", borderRadius: "12px", border: "none",
-      cursor: "pointer", position: "relative", flexShrink: 0,
-      background: value ? "#7c3aed" : colors.border, transition: "background 0.2s",
-    }}>
-      <div style={{
-        width: "18px", height: "18px", borderRadius: "50%", background: "white",
-        position: "absolute", top: "3px",
-        left: value ? "23px" : "3px", transition: "left 0.2s",
-      }} />
-    </button>
-  );
-
   return (
-    <div>
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Settings</h1>
-        <p style={{ fontSize: "14px", color: colors.textMuted }}>Manage your profile, notifications and security.</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your notifications, security and account preferences.</p>
       </div>
 
-      {/* Tabs */}
-      <div style={{
-        display: "flex", gap: "2px", marginBottom: "20px",
-        background: colors.bgCard, border: `1px solid ${colors.border}`,
-        borderRadius: "10px", padding: "4px", width: "fit-content",
-      }}>
-        {([
-          { key: "notifications", label: "Notifications", icon: Bell,   adminOnly: false },
-          { key: "security",      label: "Security",      icon: Shield, adminOnly: false },
-          { key: "email",         label: "Email Sender",  icon: Mail,   adminOnly: true  },
-        ] as const).filter(t => !t.adminOnly || (user as any)?.role === "admin").map(({ key, label: lbl2, icon: Icon }) => (
-          <button key={key} onClick={() => setTab(key)} style={{
-            display: "flex", alignItems: "center", gap: "6px",
-            padding: "7px 16px", borderRadius: "7px", fontSize: "13px",
-            fontWeight: tab === key ? 600 : 400, cursor: "pointer", border: "none",
-            background: tab === key ? (isDark ? "#1a1a1a" : "#ffffff") : "transparent",
-            color: tab === key ? colors.text : colors.textMuted,
-            boxShadow: tab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
-          }}>
-            <Icon size={13} /> {lbl2}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[220px_1fr]">
+        {/* Left vertical nav */}
+        <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
+          {TABS.filter((t) => !t.adminOnly || isAdmin).map(({ key, label: navLabel, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                tab === key
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              )}
+            >
+              <Icon className="size-4" />
+              {navLabel}
+            </button>
+          ))}
+        </nav>
 
-      {loading ? (
-        <div style={{ padding: "60px", textAlign: "center" }}>
-          <Loader2 size={22} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
-        </div>
-      ) : (
-        <>
-          {/* ── NOTIFICATIONS ── */}
-          {tab === "notifications" && (
-            <Section title="Notification Preferences" icon={Bell} colors={colors}>
-              <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "18px" }}>
-                Email notifications sent to <strong style={{ color: colors.text }}>{user?.email}</strong>
-              </p>
-              {[
-                { key: "notifyOnComplete", label: "Pipeline Completed",  desc: "When a video or content is successfully uploaded" },
-                { key: "notifyOnFail",     label: "Pipeline Failed",     desc: "When a pipeline run encounters an error" },
-                { key: "notifyTrialExpiry",label: "Trial Expiry",        desc: "3 days before your free trial expires" },
-                { key: "notifyBilling",    label: "Billing Updates",     desc: "Invoices, payment confirmations, subscription changes" },
-                { key: "emailUpdates",     label: "Product Updates",     desc: "Occasional emails about new features" },
-              ].map(({ key, label: lbl2, desc }) => (
-                <div key={key} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "14px 16px", background: colors.bg,
-                  border: `1px solid ${colors.border}`, borderRadius: "9px", marginBottom: "10px",
-                }}>
-                  <div>
-                    <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text }}>{lbl2}</p>
-                    <p style={{ fontSize: "11px", color: colors.textMuted }}>{desc}</p>
-                  </div>
-                  <Toggle
-                    value={(notifs as any)[key]}
-                    onChange={() => setNotifs(n => ({ ...n, [key]: !(n as any)[key] }))}
-                  />
+        {/* Right content */}
+        {loading ? (
+          <div className="flex flex-col gap-4 rounded-xl border bg-card p-6">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : tab === "email" ? (
+          isAdmin && <EmailSenderTab colors={colors} isDark={isDark} selectStyles={selectStyles} />
+        ) : (
+          <div className="rounded-xl border bg-card p-6">
+            {/* ── NOTIFICATIONS ── */}
+            {tab === "notifications" && (
+              <div className="flex flex-col gap-6">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Notification Preferences</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Email notifications sent to <strong className="text-foreground">{user?.email}</strong>
+                  </p>
                 </div>
-              ))}
-              <SaveBtn onClick={saveNotifications} />
-            </Section>
-          )}
 
-          {/* ── SECURITY ── */}
-          {tab === "security" && (
-            <>
-              <Section title="Change Password" icon={Lock} colors={colors}>
-                {(user as any)?.provider && (user as any).provider !== "local" ? (
-                  <div style={{ padding: "14px", background: colors.bg, borderRadius: "8px", border: `1px solid ${colors.border}` }}>
-                    <p style={{ fontSize: "13px", color: colors.textMuted }}>
+                <div className="flex flex-col divide-y divide-border rounded-lg border">
+                  {[
+                    { key: "notifyOnComplete", label: "Pipeline Completed", desc: "When a video or content is successfully uploaded" },
+                    { key: "notifyOnFail", label: "Pipeline Failed", desc: "When a pipeline run encounters an error" },
+                    { key: "notifyTrialExpiry", label: "Trial Expiry", desc: "3 days before your free trial expires" },
+                    { key: "notifyBilling", label: "Billing Updates", desc: "Invoices, payment confirmations, subscription changes" },
+                    { key: "emailUpdates", label: "Product Updates", desc: "Occasional emails about new features" },
+                  ].map(({ key, label: rowLabel, desc }) => (
+                    <div key={key} className="flex items-center justify-between gap-4 px-4 py-3.5">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{rowLabel}</p>
+                        <p className="text-xs text-muted-foreground">{desc}</p>
+                      </div>
+                      <Switch
+                        checked={(notifs as any)[key]}
+                        onCheckedChange={() => setNotifs((n) => ({ ...n, [key]: !(n as any)[key] }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={saveNotifications} disabled={saving} className="gap-1.5">
+                    {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                    {saving ? "Saving…" : "Save changes"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── SECURITY ── */}
+            {tab === "security" && (
+              <div className="flex flex-col gap-8">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Change Password</h2>
+                  {(user as any)?.provider && (user as any).provider !== "local" ? (
+                    <p className="mt-3 text-sm text-muted-foreground">
                       You signed in with {(user as any).provider}. Password is managed by your provider.
                     </p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "14px", maxWidth: "420px" }}>
+                  ) : (
+                    <div className="mt-4 flex max-w-sm flex-col gap-4">
                       {[
-                        { key: "oldPassword", label: "Current Password", placeholder: "••••••••" },
-                        { key: "newPassword", label: "New Password", placeholder: "Min. 8 characters" },
-                        { key: "confirmPassword", label: "Confirm New Password", placeholder: "Repeat password" },
-                      ].map(({ key, label: lbl2, placeholder }) => (
-                        <div key={key}>
-                          {lbl(lbl2)}
-                          <input type="password" value={(passwords as any)[key]}
-                            onChange={(e) => setPasswords(p => ({ ...p, [key]: e.target.value }))}
-                            style={inp} placeholder={placeholder} />
+                        { key: "oldPassword", fieldLabel: "Current Password", placeholder: "••••••••" },
+                        { key: "newPassword", fieldLabel: "New Password", placeholder: "Min. 8 characters" },
+                        { key: "confirmPassword", fieldLabel: "Confirm New Password", placeholder: "Repeat password" },
+                      ].map(({ key, fieldLabel, placeholder }) => (
+                        <div key={key} className="flex flex-col gap-2">
+                          <Label htmlFor={key}>{fieldLabel}</Label>
+                          <Input
+                            id={key}
+                            type="password"
+                            value={(passwords as any)[key]}
+                            onChange={(e) => setPasswords((p) => ({ ...p, [key]: e.target.value }))}
+                            placeholder={placeholder}
+                          />
                         </div>
                       ))}
+                      {pwError && (
+                        <p className="flex items-center gap-1.5 text-xs text-destructive">
+                          <AlertCircle className="size-3" /> {pwError}
+                        </p>
+                      )}
+                      <div>
+                        <Button onClick={changePassword} disabled={saving} className="gap-1.5">
+                          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                          {saving ? "Saving…" : "Save changes"}
+                        </Button>
+                      </div>
                     </div>
-                    {pwError && (
-                      <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "10px", display: "flex", alignItems: "center", gap: "5px" }}>
-                        <AlertCircle size={12} /> {pwError}
-                      </p>
-                    )}
-                    <SaveBtn onClick={changePassword} />
-                  </>
-                )}
-              </Section>
-
-              <Section title="Danger Zone" icon={AlertTriangle} colors={colors}>
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "14px 16px", background: "rgba(239,68,68,0.04)",
-                  border: "1px solid rgba(239,68,68,0.15)", borderRadius: "9px",
-                  flexWrap: "wrap", gap: "12px",
-                }}>
-                  <div>
-                    <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text }}>Deactivate Account</p>
-                    <p style={{ fontSize: "11px", color: colors.textMuted }}>
-                      Disables your account and cancels all active subscriptions.
-                    </p>
-                  </div>
-                  <button onClick={() => {
-                    if (confirm("Are you sure? This will deactivate your account.")) {
-                      api.delete("/users/deactivate").then(() => { window.location.href = "/auth/login"; });
-                    }
-                  }} style={{
-                    padding: "8px 16px", borderRadius: "7px", cursor: "pointer",
-                    border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)",
-                    color: "#ef4444", fontSize: "12px", fontWeight: 600,
-                  }}>
-                    Deactivate Account
-                  </button>
+                  )}
                 </div>
-              </Section>
-            </>
-          )}
-        </>
-      )}
 
-      {tab === "email" && (user as any)?.role === "admin" && (
-        <EmailSenderTab colors={colors} isDark={isDark} selectStyles={selectStyles} />
-      )}
+                <Separator />
+
+                <div>
+                  <h2 className="flex items-center gap-1.5 text-base font-semibold text-destructive">
+                    <AlertTriangle className="size-4" /> Danger Zone
+                  </h2>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] px-4 py-3.5">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Deactivate Account</p>
+                      <p className="text-xs text-muted-foreground">
+                        Disables your account and cancels all active subscriptions.
+                      </p>
+                    </div>
+                    <Button variant="destructive" size="sm" onClick={() => setShowDeactivateConfirm(true)}>
+                      Deactivate Account
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <AlertDialog open={showDeactivateConfirm} onOpenChange={setShowDeactivateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This disables your account and cancels all active subscriptions. You&apos;ll be signed out immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deactivateAccount}
+              disabled={deactivating}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deactivating ? "Deactivating…" : "Deactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
