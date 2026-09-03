@@ -1,100 +1,129 @@
 "use client";
 
 import { useState } from "react";
-import { AuthWrapper } from "./auth-wrapper";
-import { FormField } from "./form-field";
-import { SubmitButton } from "./submit-button";
-import { useTheme } from "@/hooks/use-theme";
-import { Mail } from "lucide-react";
+import Link from "next/link";
+import { GeistSans } from "geist/font/sans";
+import { Loader2, ArrowLeft, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { authApi } from "@/lib/auth";
 
 export function ForgotPasswordForm() {
-  const { colors } = useTheme();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
+
+  const validate = (): boolean => {
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Enter a valid email address");
+      return false;
+    }
+    setError("");
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Enter a valid email address");
-      return;
-    }
+    if (!validate()) return;
     setLoading(true);
-    setError("");
 
     try {
-      // API call will go here when backend endpoint is ready
-      await new Promise((r) => setTimeout(r, 1000));
+      // Backend always returns a generic success message whether or not
+      // the email exists — deliberately doesn't reveal which emails are
+      // registered, so we never branch on the response here.
+      await authApi.forgotPassword(email.trim());
       setSent(true);
-    } catch {
-      setError("Failed to send reset email. Please try again.");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (sent) {
-    return (
-      <AuthWrapper
-        title="Check your email"
-        subtitle={`We sent a reset link to ${email}`}
-        footerText="Remember your password?"
-        footerLinkText="Sign in"
-        footerLinkHref="/auth/login"
-      >
-        <div style={{ textAlign: "center", padding: "16px 0" }}>
-          <div style={{
-            width: "56px", height: "56px", borderRadius: "50%",
-            background: "rgba(124,58,237,0.1)",
-            border: "1px solid rgba(124,58,237,0.25)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 16px",
-          }}>
-            <Mail size={24} color="#a78bfa" />
-          </div>
-          <p style={{ color: colors.textMuted, fontSize: "14px", lineHeight: 1.7 }}>
-            If an account exists for <strong style={{ color: colors.text }}>{email}</strong>,
-            you will receive a password reset link shortly.
-          </p>
-          <p style={{ color: colors.textMuted, fontSize: "13px", marginTop: "12px" }}>
-            Didn&apos;t receive it? Check your spam folder or{" "}
-            <button
-              onClick={() => setSent(false)}
-              style={{
-                background: "none", border: "none",
-                color: "#a78bfa", cursor: "pointer", fontSize: "13px",
-              }}
-            >
-              try again
-            </button>
+  return (
+    <div className={`${GeistSans.className} flex min-h-screen items-center justify-center bg-background px-6 py-16 md:px-10`}>
+      <div className="w-full max-w-sm">
+        <div className="rounded-xl border border-[rgba(0,0,0,0.07)] bg-card p-8 shadow-sm">
+          <Link href="/" className="mb-6 flex w-fit items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800">
+              <img src="/icon.svg" width={26} height={26} className="rounded-lg" alt="" />
+            </div>
+            <span className="text-base font-bold text-foreground">
+              Logic<span className="text-primary">Mate</span>
+            </span>
+          </Link>
+
+          {sent ? (
+            <div className="text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-primary/25 bg-primary/10">
+                <Mail size={24} className="text-primary" />
+              </div>
+              <h1 className="mb-2 text-xl font-semibold">Check your email</h1>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                If an account exists for{" "}
+                <strong className="text-foreground">{email}</strong>, we&apos;ve sent
+                a password reset link. It expires in 1 hour.
+              </p>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Didn&apos;t get it? Check spam, or{" "}
+                <button
+                  type="button"
+                  onClick={() => setSent(false)}
+                  className="font-medium text-primary hover:underline"
+                >
+                  try again
+                </button>
+              </p>
+            </div>
+          ) : (
+            <>
+              <h1 className="mb-2 text-xl font-semibold">Reset your password</h1>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Enter your email and we&apos;ll send you a link to reset it.
+              </p>
+
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="email">
+                    Email <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    autoComplete="email"
+                    disabled={loading}
+                    aria-invalid={!!error}
+                  />
+                  {error && <p className="text-xs text-destructive">{error}</p>}
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : "Send reset link"}
+                </Button>
+              </form>
+            </>
+          )}
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Remember your password?{" "}
+            <Link href="/auth/login" className="font-medium text-primary underline underline-offset-4">
+              Sign in
+            </Link>
           </p>
         </div>
-      </AuthWrapper>
-    );
-  }
 
-  return (
-    <AuthWrapper
-      title="Reset your password"
-      subtitle="Enter your email and we'll send you a reset link"
-      footerText="Remember your password?"
-      footerLinkText="Back to sign in"
-      footerLinkHref="/auth/login"
-    >
-      <form onSubmit={handleSubmit}>
-        <FormField
-          label="Email address"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(v) => { setEmail(v); setError(""); }}
-          error={error}
-          autoComplete="email"
-          disabled={loading}
-        />
-        <SubmitButton label="Send reset link" loading={loading} />
-      </form>
-    </AuthWrapper>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/" className="inline-flex items-center gap-1.5 hover:text-foreground">
+            <ArrowLeft size={14} />
+            Back to home
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
