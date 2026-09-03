@@ -42,6 +42,7 @@ export function SettingsPage() {
 
   const [tab, setTab] = useState<"notifications" | "security" | "email">(initialTab);
   const [saving, setSaving] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
@@ -127,11 +128,13 @@ export function SettingsPage() {
     setSaving(false);
   };
 
-  const changePassword = async () => {
+  const changePassword = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setPwError("");
+    if (!passwords.oldPassword) { setPwError("Enter your current password"); return; }
     if (passwords.newPassword !== passwords.confirmPassword) { setPwError("Passwords do not match"); return; }
     if (passwords.newPassword.length < 8) { setPwError("Minimum 8 characters"); return; }
-    setSaving(true);
+    setSavingPassword(true);
     try {
       await api.patch("/users/change-password", {
         oldPassword: passwords.oldPassword,
@@ -140,9 +143,11 @@ export function SettingsPage() {
       toast.success("Password changed successfully");
       setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to change password")
+      const message = err?.response?.data?.message || "Failed to change password";
+      setPwError(message);
+      toast.error(message);
     }
-    setSaving(false);
+    setSavingPassword(false);
   };
 
   const deactivateAccount = async () => {
@@ -244,19 +249,28 @@ export function SettingsPage() {
                       You signed in with {(user as any).provider}. Password is managed by your provider.
                     </p>
                   ) : (
-                    <div className="mt-4 flex max-w-sm flex-col gap-4">
+                    <form
+                      onSubmit={changePassword}
+                      autoComplete="off"
+                      className="mt-4 flex max-w-sm flex-col gap-4"
+                    >
                       {[
-                        { key: "oldPassword", fieldLabel: "Current Password", placeholder: "••••••••" },
-                        { key: "newPassword", fieldLabel: "New Password", placeholder: "Min. 8 characters" },
-                        { key: "confirmPassword", fieldLabel: "Confirm New Password", placeholder: "Repeat password" },
-                      ].map(({ key, fieldLabel, placeholder }) => (
+                        { key: "oldPassword", fieldLabel: "Current Password", placeholder: "••••••••", autoComplete: "current-password" },
+                        { key: "newPassword", fieldLabel: "New Password", placeholder: "Min. 8 characters", autoComplete: "new-password" },
+                        { key: "confirmPassword", fieldLabel: "Confirm New Password", placeholder: "Repeat password", autoComplete: "new-password" },
+                      ].map(({ key, fieldLabel, placeholder, autoComplete }) => (
                         <div key={key} className="flex flex-col gap-2">
                           <Label htmlFor={key}>{fieldLabel}</Label>
                           <Input
                             id={key}
+                            name={key}
                             type="password"
+                            autoComplete={autoComplete}
                             value={(passwords as any)[key]}
-                            onChange={(e) => setPasswords((p) => ({ ...p, [key]: e.target.value }))}
+                            onChange={(e) => {
+                              setPwError("");
+                              setPasswords((p) => ({ ...p, [key]: e.target.value }));
+                            }}
                             placeholder={placeholder}
                           />
                         </div>
@@ -267,12 +281,12 @@ export function SettingsPage() {
                         </p>
                       )}
                       <div>
-                        <Button onClick={changePassword} disabled={saving} className="gap-1.5">
-                          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                          {saving ? "Saving…" : "Save changes"}
+                        <Button type="submit" disabled={savingPassword} className="gap-1.5">
+                          {savingPassword ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                          {savingPassword ? "Saving…" : "Save changes"}
                         </Button>
                       </div>
-                    </div>
+                    </form>
                   )}
                 </div>
 

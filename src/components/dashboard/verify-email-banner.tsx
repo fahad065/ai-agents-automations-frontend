@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { MailWarning, X } from "lucide-react";
 import { authApi } from "@/lib/auth";
 import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 // Registration no longer waits on a "check your inbox" page — the user is
@@ -48,26 +48,30 @@ export function VerifyEmailBanner() {
   };
 
   return (
-    <Alert className="mx-4 mt-4 border-amber-500/30 bg-amber-500/[0.07] pr-3 [&>svg]:text-amber-500">
-      <MailWarning />
-      <AlertTitle>Verify your email</AlertTitle>
-      <AlertDescription className="text-foreground/70">
-        We sent a link to <strong className="text-foreground">{user.email}</strong>. You can keep exploring, but
-        you&apos;ll need to verify before taking a chatbot or module live.
-      </AlertDescription>
-      <div className="col-start-2 mt-2 flex items-center gap-2">
-        <Button
-          size="sm"
-          disabled={resending || resent}
-          onClick={handleResend}
-          className="bg-amber-500 text-amber-950 hover:bg-amber-500/85"
-        >
-          {resending ? "Sending…" : resent ? "Sent ✓" : "Resend email"}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={handleDismiss} aria-label="Dismiss">
-          <X className="size-3.5" />
-        </Button>
-      </div>
-    </Alert>
+    <div className="px-4 pt-4">
+      <Alert className="border-amber-500/30 bg-amber-500/[0.07] [&>svg]:text-amber-500">
+        <MailWarning />
+        <AlertTitle>Verify your email</AlertTitle>
+        <AlertDescription className="text-foreground/70">
+          We sent a link to <strong className="text-foreground">{user.email}</strong>. You can keep exploring, but
+          you&apos;ll need to verify before taking a chatbot or module live.
+        </AlertDescription>
+        <AlertAction>
+          <Button size="icon-sm" variant="ghost" onClick={handleDismiss} aria-label="Dismiss">
+            <X className="size-3.5" />
+          </Button>
+        </AlertAction>
+        <div className="col-start-2 mt-2.5">
+          <Button
+            size="sm"
+            disabled={resending || resent}
+            onClick={handleResend}
+            className="bg-amber-500 text-amber-950 hover:bg-amber-500/85"
+          >
+            {resending ? "Sending…" : resent ? "Sent ✓" : "Resend email"}
+          </Button>
+        </div>
+      </Alert>
+    </div>
   );
 }

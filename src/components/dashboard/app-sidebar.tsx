@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ChevronRight, Search } from "lucide-react";
 
 import { useCommandPalette } from "./command-palette-provider";
@@ -29,20 +29,27 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
-function urlMatches(url: string, pathname: string, tab: string | null) {
-  const [path, query] = url.split("?");
-  if (path !== pathname) return false;
-  if (!query) return !tab; // plain /dashboard/settings only "active" with no ?tab
-  const urlTab = new URLSearchParams(query).get("tab");
-  return urlTab === tab;
+// Matches on pathname only — deliberately ignores each item's own ?tab=
+// query string. Reading the live query string here would need
+// useSearchParams(), which forces a Suspense boundary around the sidebar;
+// since the sidebar is part of the persistent dashboard layout (not a
+// single page), that boundary's fallback (rendered into the statically
+// prerendered HTML) never matches what the client immediately renders once
+// real search params are available — a real hydration mismatch that was
+// severe enough to swallow sidebar link clicks entirely. Losing exact
+// per-tab sub-item highlighting is a fair trade for that.
+function urlMatches(url: string, pathname: string) {
+  const [path] = url.split("?");
+  return path === pathname;
 }
 
-function NavLeaf({ item, isActive }: { item: NavItem; isActive: boolean }) {
+function NavLeaf({ item, isActive, onNavigate }: { item: NavItem; isActive: boolean; onNavigate: () => void }) {
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton tooltip={item.title} isActive={isActive} render={<Link href={item.url} />}>
+      <SidebarMenuButton tooltip={item.title} isActive={isActive} render={<Link href={item.url} onClick={onNavigate} />}>
         <item.icon />
         <span>{item.title}</span>
       </SidebarMenuButton>
@@ -51,8 +58,8 @@ function NavLeaf({ item, isActive }: { item: NavItem; isActive: boolean }) {
   );
 }
 
-function NavGroup({ item, pathname, tab }: { item: NavItem; pathname: string; tab: string | null }) {
-  const isChildActive = item.items!.some((sub) => urlMatches(sub.url, pathname, tab));
+function NavGroup({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate: () => void }) {
+  const isChildActive = urlMatches(item.url, pathname);
   const [open, setOpen] = React.useState(isChildActive);
 
   React.useEffect(() => {
@@ -75,7 +82,12 @@ function NavGroup({ item, pathname, tab }: { item: NavItem; pathname: string; ta
           <SidebarMenuSub>
             {item.items!.map((sub) => (
               <SidebarMenuSubItem key={sub.url}>
-                <SidebarMenuSubButton isActive={urlMatches(sub.url, pathname, tab)} render={<Link href={sub.url} />}>
+                {/* Sub-items share one pathname (e.g. every Settings tab is
+                    /dashboard/settings?tab=...) — no per-tab active state
+                    without reading the live query string, which needs
+                    useSearchParams() and the hydration issues that comes
+                    with in this persistent-layout sidebar (see urlMatches). */}
+                <SidebarMenuSubButton render={<Link href={sub.url} onClick={onNavigate} />}>
                   <span>{sub.title}</span>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
@@ -89,19 +101,19 @@ function NavGroup({ item, pathname, tab }: { item: NavItem; pathname: string; ta
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get("tab");
   const { setOpen } = useCommandPalette();
+  const { setOpenMobile } = useSidebar();
   const { user } = useAuthStore();
   const isAdmin = user?.role === "admin";
   const sections = getNavSections(isAdmin);
+  const closeMobile = () => setOpenMobile(false);
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
+            <SidebarMenuButton size="lg" render={<Link href="/dashboard" onClick={closeMobile} />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800 text-white">
                 <img src="/icon.svg" width={20} height={20} className="rounded" alt="" />
               </div>
@@ -147,9 +159,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {section.items.map((item) =>
                   item.items ? (
-                    <NavGroup key={item.url} item={item} pathname={pathname} tab={tab} />
+                    <NavGroup key={item.url} item={item} pathname={pathname} onNavigate={closeMobile} />
                   ) : (
-                    <NavLeaf key={item.url} item={item} isActive={urlMatches(item.url, pathname, tab)} />
+                    <NavLeaf
+                      key={item.url}
+                      item={item}
+                      isActive={urlMatches(item.url, pathname)}
+                      onNavigate={closeMobile}
+                    />
                   )
                 )}
               </SidebarMenu>

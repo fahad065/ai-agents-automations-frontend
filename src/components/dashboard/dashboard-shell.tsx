@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { SiteHeader } from "./site-header";
@@ -13,9 +12,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <CommandPaletteProvider>
       <SidebarProvider>
-        <Suspense fallback={null}>
-          <AppSidebar />
-        </Suspense>
+        <AppSidebar />
         <SidebarInset>
           <SiteHeader />
           <VerifyEmailBanner />
