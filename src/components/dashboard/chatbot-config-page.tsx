@@ -635,24 +635,27 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="mb-5 flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-lg border bg-card p-1">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              "flex items-center gap-1.5 whitespace-nowrap rounded-md border-none px-4 py-1.5 text-[13px]",
-              tab === key
-                ? "bg-background font-semibold text-foreground shadow-sm"
-                : "bg-transparent font-normal text-muted-foreground",
-            )}
-          >
-            <Icon size={13} /> {label}
-          </button>
-        ))}
-      </div>
+      {/* Tabs — platform-wide convention: vertical nav card on the left,
+          content on the right, matching settings-page.tsx. See CLAUDE.md. */}
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[220px_1fr]">
+        <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                tab === key
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" /> {label}
+            </button>
+          ))}
+        </nav>
 
+        <div className="min-w-0">
       {/* ── OVERVIEW ── */}
       {tab === "overview" && (
         <>
@@ -824,6 +827,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       {tab === "guide" && (
         <GuideTab isAdmin={isAdmin} isOwnBot={chatbot.userId === (user as any)?._id} />
       )}
+        </div>
+      </div>
 
       {showKeyDialog && (
         <AddOpenAiKeyDialog

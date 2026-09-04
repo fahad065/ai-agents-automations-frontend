@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User, Mail,
+  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User, Mail, AlertTriangle,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -45,6 +45,11 @@ interface Chatbot {
   // adding a separate field, so this is the same "userId" key, just an
   // object instead of a string when the admin listing is used.
   userId?: string | { _id: string; name: string; email: string };
+  // Also admin-listing-only — computed server-side so an admin managing
+  // many clients has a real queue instead of remembering per-bot status.
+  // See backend CLAUDE.md's "Admin needs-setup queue" section.
+  needsSetup?: boolean;
+  setupFlags?: { noOpenAiKey: boolean; whatsappPending: boolean; instagramPending: boolean };
 }
 
 interface AdminUserOption {
@@ -263,6 +268,11 @@ export function ChatbotsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Chatbot | null>(null);
 
+  // Admin-only queue filter — see backend CLAUDE.md's needs-setup flags.
+  const [showNeedsSetupOnly, setShowNeedsSetupOnly] = useState(false);
+  const needsSetupCount = chatbots.filter((b) => b.needsSetup).length;
+  const visibleChatbots = isAdmin && showNeedsSetupOnly ? chatbots.filter((b) => b.needsSetup) : chatbots;
+
   useEffect(() => { fetchChatbots(); }, [isAdmin]);
 
   // Admin sees every client's chatbot (so they can open and configure any of
@@ -308,6 +318,31 @@ export function ChatbotsPage() {
         </Button>
       </div>
 
+      {/* Admin needs-setup queue filter */}
+      {isAdmin && !loading && chatbots.length > 0 && (
+        <div className="mb-4 flex items-center gap-2">
+          <button
+            onClick={() => setShowNeedsSetupOnly(false)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-semibold",
+              !showNeedsSetupOnly ? "border-primary bg-primary/10 text-[#a78bfa]" : "text-muted-foreground",
+            )}
+          >
+            All ({chatbots.length})
+          </button>
+          <button
+            onClick={() => setShowNeedsSetupOnly(true)}
+            disabled={needsSetupCount === 0}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-40",
+              showNeedsSetupOnly ? "border-amber-500 bg-amber-500/10 text-amber-600" : "text-muted-foreground",
+            )}
+          >
+            <AlertTriangle size={12} /> Needs setup ({needsSetupCount})
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       {loading ? (
         <div className="p-15 text-center">
@@ -322,9 +357,15 @@ export function ChatbotsPage() {
             <Plus size={15} /> Create your first chatbot
           </Button>
         </div>
+      ) : visibleChatbots.length === 0 ? (
+        <div className="rounded-xl border bg-card px-6 py-15 text-center">
+          <Check size={40} className="mx-auto mb-4 text-[#22c55e]" />
+          <h2 className="mb-2 text-base font-semibold text-foreground">Nothing needs setup</h2>
+          <p className="text-sm text-muted-foreground">Every client's chatbot has an OpenAI key on file and configured channels.</p>
+        </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
-          {chatbots.map((bot) => {
+          {visibleChatbots.map((bot) => {
             const sc = STATUS_CONFIG[bot.status] || STATUS_CONFIG.draft;
             const emoji = (bot.template && TEMPLATE_EMOJI[bot.template]) || "🤖";
             const channels = bot.channels || {};
@@ -349,9 +390,23 @@ export function ChatbotsPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={cn("shrink-0 rounded-full px-2 py-0.75 text-[10px] font-semibold", sc.className)}>
-                    {sc.label}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className={cn("rounded-full px-2 py-0.75 text-[10px] font-semibold", sc.className)}>
+                      {sc.label}
+                    </span>
+                    {isAdmin && bot.needsSetup && (
+                      <span
+                        title={[
+                          bot.setupFlags?.noOpenAiKey && "No OpenAI key",
+                          bot.setupFlags?.whatsappPending && "WhatsApp enabled, not configured",
+                          bot.setupFlags?.instagramPending && "Instagram enabled, not configured",
+                        ].filter(Boolean).join(" · ")}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.75 text-[10px] font-semibold text-amber-600"
+                      >
+                        <AlertTriangle size={10} /> Needs setup
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
