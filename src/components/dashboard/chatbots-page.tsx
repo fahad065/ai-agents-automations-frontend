@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User,
+  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User, Mail,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -94,6 +94,13 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Set once creation succeeds — swaps the modal to a brief "check your
+  // email" confirmation (a real setup-guide email is sent server-side on
+  // create, see backend CLAUDE.md) before handing off to onCreated(), so the
+  // redirect into the config page doesn't happen so fast that this notice
+  // gets missed entirely.
+  const [createdId, setCreatedId] = useState<string | null>(null);
+
   // Admin-only: build this bot under a specific client's account instead of
   // their own — the "close the deal, build it for them" onboarding flow.
   // Left unselected, it creates under the admin's own account same as before.
@@ -120,12 +127,34 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
       });
       const created = res.data?.data || res.data;
       toast.success("Chatbot created!");
-      onCreated(created._id);
+      setCreatedId(created._id);
+      setTimeout(() => onCreated(created._id), 5000);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to create chatbot");
     }
     setSaving(false);
   };
+
+  if (createdId) {
+    return (
+      <Dialog open onOpenChange={(open) => !open && onCreated(createdId)}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center py-6 text-center">
+            <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10">
+              <Mail size={26} className="text-primary" />
+            </div>
+            <h2 className="mb-1.5 text-base font-semibold text-foreground">Check your email for setup guidance</h2>
+            <p className="mb-5 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
+              We've sent a quick setup guide to your inbox — what to fill in yourself, and what our team handles for you. You can also find it anytime under the <strong className="text-foreground">Guide to Setup</strong> tab.
+            </p>
+            <Button onClick={() => onCreated(createdId)} className="gap-2">
+              <Loader2 size={14} className="animate-spin" /> Taking you to your chatbot...
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>

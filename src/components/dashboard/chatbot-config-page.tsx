@@ -8,7 +8,7 @@ import {
   ArrowLeft, Loader2, Save, Settings, BookOpen, Radio, MessageSquare,
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
-  DollarSign, CheckCircle2, Clock, Mail,
+  DollarSign, CheckCircle2, Clock, Mail, Wrench,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -160,6 +160,7 @@ const TABS = [
   { key: "conversations", label: "Conversations", icon: MessageSquare },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "billing", label: "Billing", icon: DollarSign },
+  { key: "guide", label: "Guide to Setup", icon: HelpCircle },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -817,6 +818,11 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           confirming={confirming}
           confirmPayment={confirmPayment}
         />
+      )}
+
+      {/* ── GUIDE TO SETUP ── */}
+      {tab === "guide" && (
+        <GuideTab isAdmin={isAdmin} isOwnBot={chatbot.userId === (user as any)?._id} />
       )}
 
       {showKeyDialog && (
@@ -1568,6 +1574,81 @@ function BillingTab({
             ))}
           </div>
         )}
+      </Section>
+    </>
+  );
+}
+
+// ── Guide to Setup Tab ───────────────────────────────────────
+// Always-visible, static reference — never needs a save button. Same
+// content as the "check your inbox" setup-guide email (and its attached
+// PDF) sent when the chatbot was created, so losing that email is never a
+// dead end. See backend CLAUDE.md's "Chatbot Setup Guide" section for the
+// client/admin split this mirrors.
+function GuideStep({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-2 flex gap-3 rounded-lg border bg-background px-3.5 py-3">
+      <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
+        {n}
+      </div>
+      <div className="min-w-0">
+        <p className="mb-0.5 text-[13px] font-semibold text-foreground">{title}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+function GuideTab({ isAdmin, isOwnBot }: { isAdmin: boolean; isOwnBot: boolean }) {
+  const viewerIsClient = !isAdmin || isOwnBot;
+  return (
+    <>
+      <Section title="What you'll do — no technical skills needed" icon={CheckCircle2}>
+        <p className="mb-3.5 text-xs text-muted-foreground">
+          Just information about your own business. Everything below lives in this dashboard.
+        </p>
+        <GuideStep n={1} title="Overview tab — basic details">
+          Your bot's name, a short description, its persona (how it should sound), and which language(s) it should reply in.
+        </GuideStep>
+        <GuideStep n={2} title="Knowledge Base tab — your content">
+          Menu items and prices, opening hours, booking policies, FAQs — whatever your customers usually ask. No knowledge base means every reply falls back to a generic message, so this is the most important step.
+        </GuideStep>
+        <GuideStep n={3} title="Your OpenAI API key">
+          Your chatbot needs its own OpenAI key to think and reply — this keeps your usage and billing separate from every other client. Create a free account at platform.openai.com, generate a key, and paste it in when prompted.
+          {!viewerIsClient && " Not comfortable doing this themselves? They can send you the key and you can add it for them from this same dashboard."}
+        </GuideStep>
+      </Section>
+
+      <Section title="What our team handles for you" icon={Wrench}>
+        <p className="mb-3.5 text-xs text-muted-foreground">
+          These steps involve Meta's platform with real technical setup — {viewerIsClient ? "the LogicMate team takes care of this so you don't have to." : "handle these on the client's behalf."}
+        </p>
+        <GuideStep n={1} title="WhatsApp connection">
+          Requires a Meta Business App and secure access credentials — real technical setup on Meta's platform.
+          {viewerIsClient
+            ? " Reply to your welcome email with the WhatsApp number you'd like connected, and we'll handle the entire setup."
+            : " Once the client sends the number they'd like connected, paste the Phone Number ID + Access Token into the Channels tab."}
+        </GuideStep>
+        <GuideStep n={2} title="Instagram connection">
+          Same idea as WhatsApp. Note: Instagram DM automation also requires a review from Meta before it goes fully live, which can take a few days on their end.
+        </GuideStep>
+        <div className="mt-1 flex gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3.5 py-3">
+          <Globe size={16} className="mt-0.5 shrink-0 text-blue-500" />
+          <div>
+            <p className="mb-0.5 text-[13px] font-semibold text-foreground">Website widget — the easy one</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Unlike WhatsApp/Instagram, adding this chatbot to a website needs no Meta account at all — just enable it in the Channels tab and copy the ready-made code snippet.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Need help?" icon={Mail}>
+        <p className="text-[13px] text-muted-foreground">
+          {viewerIsClient
+            ? <>Reply to your welcome email or write to <a href="mailto:hello@logicmate.io" className="font-medium text-primary underline-offset-2 hover:underline">hello@logicmate.io</a> — we're happy to set up as much or as little as you'd like.</>
+            : <>The client's welcome email points them to <a href="mailto:hello@logicmate.io" className="font-medium text-primary underline-offset-2 hover:underline">hello@logicmate.io</a> for anything they need help with.</>}
+        </p>
       </Section>
     </>
   );
