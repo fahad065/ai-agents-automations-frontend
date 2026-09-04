@@ -32,8 +32,8 @@ export function FeaturesSection() {
       title: tr("step2Title", lang),
       description: tr("step2Desc", lang),
       preview: [
-        { label: "🇦🇪 " + (isAr ? "الإمارات العربية المتحدة" : "United Arab Emirates"), sub: isAr ? "أسواق العربية والإنجليزية" : "Arabic + English markets", color: "#7c3aed", icon: "", badge: isAr ? "نشط" : "Active" },
-        { label: "🇰🇪 " + (isAr ? "كينيا" : "Kenya"), sub: isAr ? "أسواق السواحيلية والإنجليزية" : "Swahili + English markets", color: "#22c55e", icon: "", badge: isAr ? "نشط" : "Active" },
+        { label: isAr ? "اللغة: عربي + إنجليزي" : "Language: EN + AR", sub: isAr ? "محتوى ثنائي اللغة تلقائياً" : "Bilingual content, automatically", color: "#7c3aed", icon: "🌐", badge: isAr ? "نشط" : "Active" },
+        { label: isAr ? "التخصص: الضيافة" : "Niche: Hospitality", sub: isAr ? "حجوزات المطاعم والفنادق" : "Restaurant & hotel bookings", color: "#22c55e", icon: "", badge: isAr ? "نشط" : "Active" },
         { label: isAr ? "التخصص: العقارات" : "Niche: Real Estate", sub: isAr ? "مبيعات وإيجارات العقارات" : "Property sales & rentals", color: "#3b82f6", icon: "", badge: "" },
         { label: isAr ? "الجدول: يومي 9ص" : "Schedule: Daily 9am", sub: isAr ? "تشغيل تلقائي" : "Automated runs", color: "#f59e0b", icon: "", badge: "" },
       ],
@@ -127,12 +127,14 @@ export function FeaturesSection() {
                           {s.title}
                         </span>
                       </div>
-                      <p
-                        className="overflow-hidden text-[13px] leading-[1.55] text-muted-foreground transition-[max-height] duration-350 ease-in-out"
-                        style={{ maxHeight: isActive ? "80px" : "0" }}
+                      <div
+                        className="grid min-h-0 transition-[grid-template-rows] duration-350 ease-in-out"
+                        style={{ gridTemplateRows: isActive ? "1fr" : "0fr" }}
                       >
-                        {s.description}
-                      </p>
+                        <p className="min-h-0 overflow-hidden text-[13px] leading-[1.55] text-muted-foreground">
+                          {s.description}
+                        </p>
+                      </div>
                     </div>
                     <ChevronRight
                       size={13}

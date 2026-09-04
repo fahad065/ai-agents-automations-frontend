@@ -55,19 +55,19 @@ export function AboutPage() {
     },
     {
       icon: Users, color: "#7c3aed",
-      label: isAr ? "مصمم للمنطقة" : "Built for the region",
+      label: isAr ? "مصمم لكل الأسواق" : "Built for every market",
       desc: isAr
-        ? "أتمتة ذكاء اصطناعي مصممة لأعمال الإمارات وكينيا، مع دعم اللغة العربية واستراتيجيات محتوى خاصة بكل سوق."
-        : "AI automation built for UAE and Kenyan businesses, with Arabic language support and market-specific content strategies.",
+        ? "أتمتة ذكاء اصطناعي مصممة لأعمال الإمارات وكينيا، وأيضاً للشركات الدولية حول العالم، مع دعم اللغة العربية واستراتيجيات محتوى خاصة بكل سوق."
+        : "AI automation built not only for UAE and Kenyan businesses, but for international businesses everywhere — with Arabic language support and market-specific content strategies.",
     },
   ];
 
   const TIMELINE = [
     { year: "2023", event: isAr ? "تأسست في دبي. بدأنا بوكيل أتمتة يوتيوب واحد." : "Founded in Dubai. Started with a single YouTube automation agent." },
-    { year: "2024 Q1", event: isAr ? "توسعنا لـ 4 وكلاء ذكاء اصطناعي. أول 50 مستخدم في السوق الإماراتي." : "Expanded to 4 AI agents. First 50 users in the UAE market." },
-    { year: "2024 Q3", event: isAr ? "انطلقنا في كينيا. أضفنا خطوط أتمتة العقارات والتسويق." : "Launched in Kenya. Added Real Estate and Marketing pipelines." },
-    { year: "2025", event: isAr ? "13 وكيل في 12 قطاع. خليجي أولاً، ونتوسع عالمياً." : "13 agents across 12 industries. GCC-first, expanding globally." },
-    { year: "2026", event: isAr ? "أطلقنا الشات بوتات — 9 قوالب جاهزة عبر الموقع وواتساب وإنستقرام. المنصة الآن أكثر من 20 وكيلاً وأتمتة وشات بوت." : "Launched chatbots — 9 ready-made templates across website, WhatsApp and Instagram. The platform is now 20+ agents, automations and chatbots strong." },
+    { year: "2024 Q1", event: isAr ? "توسعنا لـ 4 وكلاء ذكاء اصطناعي. أول 50 مستخدم على المنصة." : "Expanded to 4 AI agents. First 50 users onboarded." },
+    { year: "2024 Q3", event: isAr ? "أضفنا خطوط أتمتة العقارات والتسويق، وتوسعنا فيما وراء إنشاء المحتوى." : "Expanded into Real Estate and Marketing automation, growing beyond content creation." },
+    { year: "2025", event: isAr ? "13 وكيل في 12 قطاع، تخدم أعمالاً في أسواق متعددة حول العالم." : "13 agents across 12 industries, serving businesses across multiple markets worldwide." },
+    { year: "2026", event: isAr ? "أطلقنا الشات بوتات — 9 قوالب جاهزة عبر الموقع وواتساب وإنستقرام. المنصة الآن أكثر من 20 وكيلاً وأتمتة وشات بوت، تخدم أعمالاً حول العالم." : "Launched chatbots — 9 ready-made templates across website, WhatsApp and Instagram. The platform is now 20+ agents, automations and chatbots strong, serving businesses worldwide." },
   ];
 
   return (
@@ -112,8 +112,8 @@ export function AboutPage() {
           </p>
           <p className="text-[clamp(18px,2.5vw,22px)] leading-relaxed font-semibold text-foreground">
             {isAr
-              ? '"نجعل أتمتة الذكاء الاصطناعي في متناول كل عمل تجاري في دول الخليج — مو بس اللي عندهم فرق هندسية وميزانيات ضخمة."'
-              : '"Make AI automation accessible to every business in the GCC — not just the ones with engineering teams and six-figure budgets."'}
+              ? '"نخلي أتمتة الذكاء الاصطناعي في متناول أي عمل تجاري، أينما كان — مو بس اللي عندهم فرق هندسية وميزانيات ضخمة."'
+              : '"Make AI automation accessible to every business, anywhere in the world — not just the ones with engineering teams and six-figure budgets."'}
           </p>
         </div>
       </section>

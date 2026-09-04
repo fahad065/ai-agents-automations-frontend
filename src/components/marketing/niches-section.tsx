@@ -24,7 +24,7 @@ const NICHES = [
     icon: "🏡", label: "Real Estate",
     slug: "real_estate", color: "#3b82f6",
     agents: ["WhatsApp Sales Agent", "Real Estate Pipeline", "Lead Generation", "Real Estate Lead Bot"],
-    desc: "Qualify leads on WhatsApp and follow up 24/7 across UAE and Kenyan markets.",
+    desc: "Qualify leads on WhatsApp and follow up 24/7 across UAE, Kenya and international markets.",
   },
   {
     icon: "📣", label: "Marketing",

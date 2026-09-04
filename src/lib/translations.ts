@@ -69,12 +69,12 @@ const t = {
   builtForResults: { en: "Built for results", ar: "مبنية للنتائج" },
 
   // CTA section
-  ctaBadge: { en: "Deploy your first agent today", ar: "انشر وكيلك الأول اليوم" },
+  ctaBadge: { en: "Deploy your first AI teammate today", ar: "انشر أول زميل ذكاء اصطناعي لك اليوم" },
   ctaHeadingLine1: { en: "Your competitors are already", ar: "منافسوك يعملون بالأتمتة" },
   ctaHeadingLine2: { en: "automating. Are you?", ar: "بالفعل. وأنت؟" },
   ctaSub: {
-    en: "Join businesses in the UAE and Kenya deploying AI agents, automations and chatbots that handle content, sales, support and marketing 24 hours a day.",
-    ar: "انضم إلى الشركات في الإمارات وكينيا التي تنشر وكلاء ذكاء اصطناعي وأتمتة وشات بوتات تتولى المحتوى والمبيعات والدعم والتسويق على مدار 24 ساعة.",
+    en: "Join businesses worldwide deploying AI agents, automations and chatbots that handle content, sales, support and marketing 24 hours a day.",
+    ar: "انضم إلى الشركات حول العالم التي تنشر وكلاء ذكاء اصطناعي وأتمتة وشات بوتات تتولى المحتوى والمبيعات والدعم والتسويق على مدار 24 ساعة.",
   },
   ctaPrimary: { en: "Get started free", ar: "ابدأ مجاناً" },
   ctaSecondaryIndustries: { en: "Browse industries", ar: "تصفح القطاعات" },
@@ -96,10 +96,10 @@ const t = {
     en: "Choose from 20+ pre-built agents, automations and chatbots across 12 industries. Each one is production-ready with no configuration required.",
     ar: "اختر من بين أكثر من 20 وكيلاً وأتمتة وشات بوت جاهزة عبر 12 قطاعاً. كل واحد جاهز للإنتاج دون الحاجة لأي إعداد.",
   },
-  step2Title: { en: "Pick your country & niche", ar: "اختر بلدك وتخصصك" },
+  step2Title: { en: "Pick your niche & language", ar: "اختر تخصصك ولغتك" },
   step2Desc: {
-    en: "Select your market (UAE or Kenya) and your industry niche. The agent adapts its content, language and strategy to your context.",
-    ar: "اختر سوقك (الإمارات أو كينيا) وتخصصك في القطاع. يكيّف الوكيل محتواه ولغته واستراتيجيته حسب سياقك.",
+    en: "Select your industry niche and preferred language. The agent adapts its content, tone and strategy to fit your business — wherever you are.",
+    ar: "اختر تخصصك في القطاع ولغتك المفضلة. يكيّف الوكيل محتواه ونبرته واستراتيجيته ليلائم عملك — أينما كنت.",
   },
   step3Title: { en: "Deploy and let it run", ar: "انشر ودعه يعمل" },
   step3Desc: {
@@ -114,8 +114,8 @@ const t = {
 
   // Footer
   footerDesc: {
-    en: "The AI automation platform for GCC businesses. Deploy agents, not employees.",
-    ar: "منصة الأتمتة بالذكاء الاصطناعي لشركات دول مجلس التعاون الخليجي. انشر وكلاء، لا موظفين.",
+    en: "The AI automation platform for growing businesses worldwide. Deploy agents, not employees.",
+    ar: "منصة الأتمتة بالذكاء الاصطناعي للشركات النامية حول العالم. انشر وكلاء، لا موظفين.",
   },
   footerProduct: { en: "Product", ar: "المنتج" },
   footerCompany: { en: "Company", ar: "الشركة" },

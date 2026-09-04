@@ -9,7 +9,7 @@ import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 
 const INDUSTRIES = [
   { slug: "content_social",   icon: "🎬", label: "Content & Social",  color: "#7c3aed", agents: ["YouTube Automation", "Instagram Reels Agent", "Arabic Content Agent"], desc: "Post to every platform, every day, in any language — without lifting a finger." },
-  { slug: "real_estate",      icon: "🏡", label: "Real Estate",        color: "#3b82f6", agents: ["WhatsApp Sales Agent", "Real Estate Pipeline", "Lead Generation"], desc: "Qualify leads on WhatsApp and follow up 24/7 across UAE and Kenyan markets." },
+  { slug: "real_estate",      icon: "🏡", label: "Real Estate",        color: "#3b82f6", agents: ["WhatsApp Sales Agent", "Real Estate Pipeline", "Lead Generation"], desc: "Qualify leads on WhatsApp and follow up 24/7 across UAE, Kenya and international markets." },
   { slug: "marketing",        icon: "📣", label: "Marketing",          color: "#f59e0b", agents: ["Lead Generation Automation", "Email Marketing", "Content Repurposing"], desc: "Build automated funnels that generate, nurture and convert leads at scale." },
   { slug: "ecommerce_retail", icon: "🛒", label: "E-commerce",         color: "#ef4444", agents: ["Product Description AI", "Review Responder", "Social Commerce Agent"], desc: "Automate product listings, customer reviews and social selling." },
   { slug: "healthcare",       icon: "🏥", label: "Healthcare",         color: "#22c55e", agents: ["Patient Communication", "Appointment Reminder", "Health Content Agent"], desc: "HIPAA-aware agents for patient outreach and healthcare content." },

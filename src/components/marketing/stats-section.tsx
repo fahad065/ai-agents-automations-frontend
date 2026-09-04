@@ -34,7 +34,7 @@ export function StatsSection() {
     {
       icon: Globe, color: "#f59e0b",
       value: "12", label: isAr ? "القطاعات المدعومة" : "Industries supported",
-      sub: isAr ? "دعم المحتوى العربي، أسواق الإمارات وكينيا" : "Arabic content support, UAE & Kenya markets",
+      sub: isAr ? "دعم المحتوى العربي، لأسواق حول العالم" : "Arabic content support, built for global markets",
     },
     {
       icon: Clock, color: "#ef4444",
