@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
 import {
   Loader2, CheckCircle2, XCircle, Clock,
-  RefreshCw, Terminal, X, ChevronLeft, ChevronRight,
+  RefreshCw, Terminal, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 interface PipelineRun {
   _id: string;
@@ -39,7 +41,7 @@ function normalizeStatus(status: string): string {
 }
 
 // ── Log Drawer ────────────────────────────────────────────────
-function LogDrawer({ run, onClose, isDark }: { run: PipelineRun; onClose: () => void; isDark: boolean }) {
+function LogDrawer({ run, onClose }: { run: PipelineRun; onClose: () => void }) {
   const [logs, setLogs] = useState<string[]>(run.logs || []);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -68,53 +70,30 @@ function LogDrawer({ run, onClose, isDark }: { run: PipelineRun; onClose: () => 
   }, [logs]);
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 800,
-      background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "20px",
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: "#0d0d0d", border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "16px", width: "100%", maxWidth: "720px",
-        maxHeight: "75vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 32px 80px rgba(0,0,0,0.8)",
-      }}>
-        <div style={{
-          padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Terminal size={14} color="#a78bfa" />
-            <span style={{ color: "#e5e5e5", fontSize: "13px", fontWeight: 600 }}>Pipeline Logs</span>
-            <span style={{ fontSize: "11px", color: "#525252" }}>— {run.runId}</span>
+    <Sheet open onOpenChange={(open) => !open && onClose()}>
+      <SheetContent
+        side="bottom"
+        className="mx-auto max-h-[75vh] w-full max-w-[720px] gap-0 rounded-t-2xl border border-white/8 bg-[#0d0d0d] p-0 [&_svg]:text-[#737373]"
+      >
+        <div className="flex items-center justify-between border-b border-white/6 px-4.5 py-3.5">
+          <div className="flex items-center gap-2">
+            <Terminal size={14} className="text-[#a78bfa]" />
+            <span className="text-[13px] font-semibold text-[#e5e5e5]">Pipeline Logs</span>
+            <span className="text-[11px] text-[#525252]">— {run.runId}</span>
             {isRunning && (
-              <span style={{
-                fontSize: "9px", padding: "2px 7px", borderRadius: "4px",
-                background: "rgba(34,197,94,0.15)", color: "#22c55e", fontWeight: 700,
-                animation: "pulse 1.5s ease-in-out infinite",
-              }}>LIVE</span>
+              <span className="animate-pulse rounded bg-[#22c55e]/15 px-1.75 py-0.5 text-[9px] font-bold text-[#22c55e]">LIVE</span>
             )}
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button onClick={fetchLogs} style={{
-              padding: "4px 10px", borderRadius: "6px", cursor: "pointer",
-              border: "1px solid rgba(255,255,255,0.08)", background: "transparent",
-              color: "#737373", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px",
-            }}>
-              {loading
-                ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />
-                : <RefreshCw size={10} />} Refresh
-            </button>
-            <button onClick={onClose} style={{
-              width: "26px", height: "26px", borderRadius: "6px", cursor: "pointer",
-              border: "1px solid rgba(255,255,255,0.08)", background: "transparent",
-              color: "#737373", display: "flex", alignItems: "center", justifyContent: "center",
-            }}><X size={12} /></button>
-          </div>
+          <button
+            onClick={fetchLogs}
+            className="mr-9 flex items-center gap-1 rounded-md border border-white/8 px-2.5 py-1 text-[11px] text-[#737373]"
+          >
+            {loading ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />} Refresh
+          </button>
         </div>
-        <div style={{ flex: 1, overflow: "auto", padding: "16px 18px", fontFamily: "monospace" }}>
+        <div className="flex-1 overflow-auto px-4.5 py-4 font-mono">
           {logs.length === 0 ? (
-            <p style={{ color: "#525252", fontSize: "12px" }}>No logs yet...</p>
+            <p className="text-xs text-[#525252]">No logs yet...</p>
           ) : (
             logs.map((log, i) => {
               const isError   = log.includes("❌") || log.toLowerCase().includes("error") || log.includes("failed");
@@ -122,11 +101,14 @@ function LogDrawer({ run, onClose, isDark }: { run: PipelineRun; onClose: () => 
               const isStep    = log.includes("[Step");
               const isCost    = log.includes("💰");
               return (
-                <div key={i} style={{
-                  fontSize: "12px", lineHeight: "1.7", marginBottom: "2px",
-                  color: isError ? "#fca5a5" : isCost ? "#fbbf24" : isSuccess ? "#86efac" : isStep ? "#c4b5fd" : "#a3a3a3",
-                }}>
-                  <span style={{ color: "#404040", marginRight: "8px", userSelect: "none" }}>
+                <div
+                  key={i}
+                  className={cn(
+                    "mb-0.5 text-xs leading-[1.7]",
+                    isError ? "text-[#fca5a5]" : isCost ? "text-[#fbbf24]" : isSuccess ? "text-[#86efac]" : isStep ? "text-[#c4b5fd]" : "text-[#a3a3a3]"
+                  )}
+                >
+                  <span className="mr-2 text-[#404040] select-none">
                     {String(i + 1).padStart(3, " ")}
                   </span>
                   {log}
@@ -136,27 +118,23 @@ function LogDrawer({ run, onClose, isDark }: { run: PipelineRun; onClose: () => 
           )}
           <div ref={bottomRef} />
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 // ── Status Badge ──────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const normalized = normalizeStatus(status);
-  const map: Record<string, { color: string; bg: string; icon: any; label: string }> = {
-    running:   { color: "#22c55e", bg: "rgba(34,197,94,0.12)",  icon: <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />, label: "Running" },
-    completed: { color: "#22c55e", bg: "rgba(34,197,94,0.12)",  icon: <CheckCircle2 size={10} />, label: "Completed" },
-    failed:    { color: "#ef4444", bg: "rgba(239,68,68,0.12)",  icon: <XCircle size={10} />,      label: "Failed" },
-    pending:   { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", icon: <Clock size={10} />,        label: "Pending" },
+  const map: Record<string, { className: string; icon: React.ReactNode; label: string }> = {
+    running:   { className: "bg-[#22c55e]/12 text-[#22c55e]", icon: <Loader2 size={10} className="animate-spin" />, label: "Running" },
+    completed: { className: "bg-[#22c55e]/12 text-[#22c55e]", icon: <CheckCircle2 size={10} />, label: "Completed" },
+    failed:    { className: "bg-destructive/12 text-destructive", icon: <XCircle size={10} />, label: "Failed" },
+    pending:   { className: "bg-[#f59e0b]/12 text-[#f59e0b]", icon: <Clock size={10} />, label: "Pending" },
   };
   const s = map[normalized] || map.pending;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: "4px",
-      padding: "3px 9px", borderRadius: "6px",
-      background: s.bg, color: s.color, fontSize: "11px", fontWeight: 600,
-    }}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2.25 py-0.75 text-[11px] font-semibold", s.className)}>
       {s.icon} {s.label}
     </span>
   );
@@ -173,7 +151,6 @@ const MODULE_TYPES = [
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function PipelineLogsPage() {
-  const { colors, isDark } = useTheme();
   const [runs, setRuns] = useState<PipelineRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRun, setSelectedRun] = useState<PipelineRun | null>(null);
@@ -244,78 +221,59 @@ export default function PipelineLogsPage() {
     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  const inp = {
-    padding: "7px 12px", borderRadius: "8px", fontSize: "12px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none", cursor: "pointer",
-  };
-
   return (
-    <div style={{ padding: "24px", maxWidth: "860px", margin: "0 auto" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
-
+    <div className="mx-auto max-w-[860px] p-6">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, margin: "0 0 4px" }}>Pipeline Logs</h1>
-          <p style={{ fontSize: "13px", color: colors.textMuted, margin: 0 }}>Track all your pipeline runs</p>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Pipeline Logs</h1>
+          <p className="text-[13px] text-muted-foreground">Track all your pipeline runs</p>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="flex items-center gap-2">
           {/* Module filter */}
           <select
             value={moduleFilter}
             onChange={e => setModuleFilter(e.target.value)}
-            style={inp}
+            className="cursor-pointer rounded-lg border bg-background px-3 py-1.75 text-xs text-foreground outline-none"
           >
             {MODULE_TYPES.map(m => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
           {/* Refresh */}
-          <button onClick={() => fetchRuns(page, moduleFilter)} style={{
-            padding: "7px 12px", borderRadius: "8px", cursor: "pointer",
-            border: `1px solid ${colors.border}`, background: "transparent",
-            color: colors.textMuted, fontSize: "12px",
-            display: "flex", alignItems: "center", gap: "4px",
-          }}>
+          <Button variant="outline" size="sm" onClick={() => fetchRuns(page, moduleFilter)} className="gap-1">
             <RefreshCw size={12} /> Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "24px" }}>
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Total Runs",  value: total,          color: "#a78bfa" },
           { label: "Completed",   value: stats.completed, color: "#22c55e" },
           { label: "Failed",      value: stats.failed,    color: "#ef4444" },
           { label: "Running",     value: stats.running,   color: "#f59e0b" },
         ].map((s, i) => (
-          <div key={i} style={{
-            padding: "14px 16px", borderRadius: "12px",
-            background: colors.bgCard, border: `1px solid ${colors.border}`,
-          }}>
-            <p style={{ fontSize: "22px", fontWeight: 700, color: s.color, margin: "0 0 2px" }}>{s.value}</p>
-            <p style={{ fontSize: "11px", color: colors.textMuted, margin: 0 }}>{s.label}</p>
+          <div key={i} className="rounded-xl border bg-card px-4 py-3.5">
+            <p className="mb-0.5 text-[22px] font-bold" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Run List */}
       {loading && runs.length === 0 ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "48px" }}>
-          <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
+        <div className="flex justify-center p-12">
+          <Loader2 size={24} className="animate-spin text-primary" />
         </div>
       ) : runs.length === 0 ? (
-        <div style={{
-          padding: "48px", textAlign: "center", borderRadius: "12px",
-          background: colors.bgCard, border: `1px solid ${colors.border}`,
-        }}>
-          <Terminal size={32} color={colors.textMuted} style={{ marginBottom: "12px" }} />
-          <p style={{ color: colors.textMuted, fontSize: "14px", margin: 0 }}>No pipeline runs yet</p>
+        <div className="rounded-xl border bg-card p-12 text-center">
+          <Terminal size={32} className="mx-auto mb-3 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No pipeline runs yet</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="flex flex-col gap-2.5">
           {runs.map((run) => {
             const status    = normalizeStatus(run.status);
             const isRunning = status === "running";
@@ -324,106 +282,94 @@ export default function PipelineLogsPage() {
             const isPending = status === "pending";
 
             return (
-              <div key={run._id} style={{
-                padding: "16px 18px", borderRadius: "12px",
-                background: colors.bgCard,
-                border: `1px solid ${isFailed ? "rgba(239,68,68,0.2)" : isRunning ? "rgba(34,197,94,0.2)" : colors.border}`,
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                key={run._id}
+                className={cn(
+                  "rounded-xl border bg-card px-4.5 py-4",
+                  isFailed ? "border-destructive/20" : isRunning && "border-[#22c55e]/20"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     {/* Status + type */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <StatusBadge status={run.status} />
-                      <span style={{
-                        fontSize: "11px", fontWeight: 600, padding: "2px 8px",
-                        borderRadius: "5px", background: "rgba(124,58,237,0.08)", color: "#a78bfa",
-                      }}>
+                      <span className="rounded px-2 py-0.5 text-[11px] font-semibold text-[#a78bfa]" style={{ background: "rgba(124,58,237,0.08)" }}>
                         {run.moduleType || "youtube"}
                       </span>
-                      <span style={{ fontSize: "12px", color: colors.textMuted }}>
+                      <span className="text-xs text-muted-foreground">
                         {run.niche || "general"}
                       </span>
                     </div>
 
                     {/* Video title */}
                     {run.title && (
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p className="mb-1 overflow-hidden text-[13px] font-semibold text-ellipsis whitespace-nowrap text-foreground">
                         "{run.title}"
                       </p>
                     )}
 
                     {/* Error message */}
                     {isFailed && run.errorMessage && (
-                      <p style={{ fontSize: "12px", color: "#fca5a5", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p className="mb-1 overflow-hidden text-xs text-ellipsis whitespace-nowrap text-[#fca5a5]">
                         ❌ {run.errorMessage.slice(0, 120)}
                       </p>
                     )}
 
                     {/* Step progress bar */}
                     {isRunning && run.currentStep != null && run.totalSteps != null && run.totalSteps > 0 && (
-                      <div style={{ marginTop: "8px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "11px", color: colors.textMuted }}>Step {run.currentStep}/{run.totalSteps}</span>
+                      <div className="mt-2">
+                        <div className="mb-1 flex justify-between">
+                          <span className="text-[11px] text-muted-foreground">Step {run.currentStep}/{run.totalSteps}</span>
                         </div>
-                        <div style={{ height: "3px", borderRadius: "2px", background: isDark ? "#2a2a2a" : "#e5e5e5" }}>
-                          <div style={{
-                            height: "100%", borderRadius: "2px", background: "#22c55e",
-                            width: `${(run.currentStep / run.totalSteps) * 100}%`,
-                            transition: "width 0.5s ease",
-                          }} />
+                        <div className="h-0.75 rounded-sm bg-border">
+                          <div
+                            className="h-full rounded-sm bg-[#22c55e] transition-[width] duration-500 ease-out"
+                            style={{ width: `${(run.currentStep / run.totalSteps) * 100}%` }}
+                          />
                         </div>
                       </div>
                     )}
 
                     {/* Meta — date + cost */}
-                    <p style={{ fontSize: "11px", color: colors.textMuted, margin: "6px 0 0" }}>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
                       {formatDate(run.createdAt)}
                       {run.cost ? ` · $${run.cost.toFixed(2)}` : ""}
                     </p>
                   </div>
 
                   {/* Action buttons */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
+                  <div className="flex shrink-0 flex-col gap-1.5">
                     {/* View / Live Logs — always visible */}
-                    <button onClick={() => setSelectedRun(run)} style={{
-                      padding: "6px 12px", borderRadius: "7px", cursor: "pointer",
-                      border: `1px solid ${colors.border}`, background: "transparent",
-                      color: colors.textMuted, fontSize: "11px",
-                      display: "flex", alignItems: "center", gap: "4px",
-                    }}>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedRun(run)} className="gap-1 text-[11px] text-muted-foreground">
                       <Terminal size={11} /> {isRunning ? "Live Logs" : "View Logs"}
-                    </button>
+                    </Button>
 
                     {/* Watch on YouTube — completed only */}
                     {isDone && run.youtubeUrl && (
-                      <a href={run.youtubeUrl} target="_blank" rel="noreferrer" style={{
-                        padding: "6px 12px", borderRadius: "7px",
-                        border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)",
-                        color: "#ef4444", fontSize: "11px", textDecoration: "none",
-                        display: "flex", alignItems: "center", gap: "4px",
-                      }}>
+                      <a
+                        href={run.youtubeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-1.5 text-[11px] text-destructive no-underline"
+                      >
                         <FaYoutube size={11} /> Watch
                       </a>
                     )}
 
                     {/* Retry — failed or stuck pending */}
                     {(isFailed || isPending) && (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleRetry(run)}
                         disabled={retrying === run._id}
-                        style={{
-                          padding: "6px 12px", borderRadius: "7px",
-                          cursor: retrying === run._id ? "not-allowed" : "pointer",
-                          border: "1px solid rgba(124,58,237,0.3)",
-                          background: "rgba(124,58,237,0.08)",
-                          color: "#a78bfa", fontSize: "11px",
-                          display: "flex", alignItems: "center", gap: "4px",
-                          opacity: retrying === run._id ? 0.6 : 1,
-                        }}>
+                        className="gap-1 border-primary/30 bg-primary/8 text-[11px] text-[#a78bfa]"
+                      >
                         {retrying === run._id
-                          ? <><Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Retrying...</>
+                          ? <><Loader2 size={10} className="animate-spin" /> Retrying...</>
                           : <><RefreshCw size={10} /> Retry</>}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -435,59 +381,35 @@ export default function PipelineLogsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          marginTop: "16px", padding: "12px 16px",
-          background: colors.bgCard, border: `1px solid ${colors.border}`,
-          borderRadius: "10px",
-        }}>
-          <span style={{ fontSize: "12px", color: colors.textMuted }}>
+        <div className="mt-4 flex items-center justify-between rounded-[10px] border bg-card px-4 py-3">
+          <span className="text-xs text-muted-foreground">
             {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} runs
           </span>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              style={{
-                width: "30px", height: "30px", borderRadius: "7px",
-                cursor: page === 1 ? "not-allowed" : "pointer",
-                border: `1px solid ${colors.border}`, background: "transparent",
-                color: colors.text, display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: page === 1 ? 0.4 : 1,
-              }}>
+          <div className="flex gap-1.5">
+            <Button variant="ghost" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
               <ChevronLeft size={14} />
-            </button>
+            </Button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
-              <button key={p} onClick={() => setPage(p)} style={{
-                width: "30px", height: "30px", borderRadius: "7px", cursor: "pointer",
-                border: `1px solid ${p === page ? "#7c3aed" : colors.border}`,
-                background: p === page ? "rgba(124,58,237,0.15)" : "transparent",
-                color: p === page ? "#a78bfa" : colors.text,
-                fontSize: "12px", fontWeight: p === page ? 700 : 400,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
+              <Button
+                key={p}
+                variant={p === page ? "outline" : "ghost"}
+                size="icon"
+                onClick={() => setPage(p)}
+                className={p === page ? "border-primary bg-primary/15 text-[#a78bfa]" : ""}
+              >
                 {p}
-              </button>
+              </Button>
             ))}
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              style={{
-                width: "30px", height: "30px", borderRadius: "7px",
-                cursor: page === totalPages ? "not-allowed" : "pointer",
-                border: `1px solid ${colors.border}`, background: "transparent",
-                color: colors.text, display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: page === totalPages ? 0.4 : 1,
-              }}>
+            <Button variant="ghost" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
               <ChevronRight size={14} />
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Log Drawer */}
       {selectedRun && (
-        <LogDrawer run={selectedRun} onClose={() => setSelectedRun(null)} isDark={isDark} />
+        <LogDrawer run={selectedRun} onClose={() => setSelectedRun(null)} />
       )}
     </div>
   );

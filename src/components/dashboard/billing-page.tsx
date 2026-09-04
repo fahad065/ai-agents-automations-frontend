@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
-import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  CreditCard, Package, ChevronLeft, ChevronRight,
-  Loader2, CheckCircle2, XCircle, Clock, Filter,
-  TrendingUp, DollarSign, Zap, BarChart3,
+  Package, ChevronLeft, ChevronRight,
+  Loader2, CheckCircle2, Filter,
+  TrendingUp, DollarSign,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface BillingRecord {
   _id: string;
@@ -39,25 +45,22 @@ interface Summary {
   month: string;
 }
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
-  paid:    { color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
-  pending: { color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-  failed:  { color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
-  refunded:{ color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+const STATUS_CONFIG: Record<string, string> = {
+  paid:    "bg-[#22c55e]/10 text-[#22c55e]",
+  pending: "bg-[#f59e0b]/10 text-[#f59e0b]",
+  failed:  "bg-destructive/10 text-destructive",
+  refunded:"bg-[#3b82f6]/10 text-[#3b82f6]",
 };
 
-const PLAN_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  free_trial:   { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  label: "Free Trial" },
-  monthly:      { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Monthly" },
-  annual:       { color: "#3b82f6", bg: "rgba(59,130,246,0.1)",  label: "Annual" },
-  free_forever: { color: "#a78bfa", bg: "rgba(167,139,250,0.1)", label: "Free Forever" },
-  trial:        { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  label: "Free Trial" },
+const PLAN_CONFIG: Record<string, { className: string; label: string }> = {
+  free_trial:   { className: "bg-[#f59e0b]/10 text-[#f59e0b]", label: "Free Trial" },
+  monthly:      { className: "bg-[#22c55e]/10 text-[#22c55e]", label: "Monthly" },
+  annual:       { className: "bg-[#3b82f6]/10 text-[#3b82f6]", label: "Annual" },
+  free_forever: { className: "bg-primary/10 text-[#a78bfa]", label: "Free Forever" },
+  trial:        { className: "bg-[#f59e0b]/10 text-[#f59e0b]", label: "Free Trial" },
 };
 
 export function BillingPage() {
-  const { colors, isDark } = useTheme();
-  const { user } = useAuthStore();
-
   const [tab, setTab] = useState<"subscriptions" | "history">("subscriptions");
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
@@ -67,6 +70,7 @@ export function BillingPage() {
   const [total, setTotal] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [cancelTarget, setCancelTarget] = useState<Subscription | null>(null);
   const limit = 10;
 
   useEffect(() => { fetchAll(); }, []);
@@ -100,127 +104,116 @@ export function BillingPage() {
     setLoading(false);
   };
 
-  const cancelSubscription = async (id: string) => {
-    if (!confirm("Cancel this subscription?")) return;
+  const cancelSubscription = async () => {
+    if (!cancelTarget) return;
     try {
-      await api.patch(`/usermodules/${id}/cancel`);
+      await api.patch(`/usermodules/${cancelTarget._id}/cancel`);
+      toast.success("Subscription cancelled");
       fetchAll();
-    } catch {}
+    } catch {
+      toast.error("Failed to cancel subscription");
+    }
+    setCancelTarget(null);
   };
 
   const totalPages = Math.ceil(total / limit);
 
-  const inputStyle = {
-    padding: "7px 10px", borderRadius: "7px", fontSize: "12px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none",
-  };
-
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Billing</h1>
-        <p style={{ fontSize: "14px", color: colors.textMuted }}>Manage your subscriptions and payment history.</p>
+      <div className="mb-6">
+        <h1 className="mb-1 text-xl font-bold text-foreground">Billing</h1>
+        <p className="text-sm text-muted-foreground">Manage your subscriptions and payment history.</p>
       </div>
 
       {/* Manual payment banner */}
-      <div style={{
-        background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)",
-        borderRadius: "10px", padding: "14px 18px", marginBottom: "24px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexWrap: "wrap", gap: "12px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "20px" }}>💳</span>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-primary/20 bg-primary/6 px-4.5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xl">💳</span>
           <div>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
+            <p className="mb-0.5 text-[13px] font-semibold text-foreground">
               Ready to subscribe?
             </p>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>
+            <p className="text-xs text-muted-foreground">
               We accept manual bank transfer payments. View instructions and notify us after payment.
             </p>
           </div>
         </div>
-        <a href="/dashboard/payment-instructions" style={{
-          padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
-          background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-          color: "white", textDecoration: "none", whiteSpace: "nowrap",
-        }}>
+        <Button nativeButton={false} render={<a href="/dashboard/payment-instructions" />} className="whitespace-nowrap">
           View Payment Instructions →
-        </a>
+        </Button>
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+      <div className="mb-6 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
         {/* Total this month */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>This Month</p>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <DollarSign size={15} color="#f59e0b" />
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">This Month</p>
+            <div className="flex size-8 items-center justify-center rounded-lg border border-[#f59e0b]/20 bg-[#f59e0b]/10">
+              <DollarSign size={15} className="text-[#f59e0b]" />
             </div>
           </div>
-          <p style={{ fontSize: "24px", fontWeight: 700, color: colors.text }}>${(summary?.grandTotal || 0).toFixed(2)}</p>
-          <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>{summary?.month || "—"}</p>
+          <p className="text-2xl font-bold text-foreground">${(summary?.grandTotal || 0).toFixed(2)}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{summary?.month || "—"}</p>
         </div>
 
         {/* Active subscriptions */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>Active Plans</p>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CheckCircle2 size={15} color="#22c55e" />
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Active Plans</p>
+            <div className="flex size-8 items-center justify-center rounded-lg border border-[#22c55e]/20 bg-[#22c55e]/10">
+              <CheckCircle2 size={15} className="text-[#22c55e]" />
             </div>
           </div>
-          <p style={{ fontSize: "24px", fontWeight: 700, color: colors.text }}>
+          <p className="text-2xl font-bold text-foreground">
             {subscriptions.filter(s => s.status === "active" || s.status === "trial").length}
           </p>
-          <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>of {subscriptions.length} total</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">of {subscriptions.length} total</p>
         </div>
 
         {/* Top module */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>Top Service</p>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <TrendingUp size={15} color="#a78bfa" />
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Top Service</p>
+            <div className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+              <TrendingUp size={15} className="text-[#a78bfa]" />
             </div>
           </div>
-          <p style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "2px" }}>
+          <p className="mb-0.5 text-[15px] font-bold text-foreground">
             {summary?.byModule?.[0]?.moduleName || "—"}
           </p>
-          <p style={{ fontSize: "11px", color: colors.textMuted }}>${(summary?.byModule?.[0]?.total || 0).toFixed(2)} this month</p>
+          <p className="text-[11px] text-muted-foreground">${(summary?.byModule?.[0]?.total || 0).toFixed(2)} this month</p>
         </div>
 
         {/* API key mode */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>API Key Mode</p>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img src="/icon.svg" width="30" height="30" style={{ borderRadius: "8px" }} />
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">API Key Mode</p>
+            <div className="flex size-8 items-center justify-center rounded-lg border border-[#3b82f6]/20 bg-[#3b82f6]/10">
+              <img src="/icon.svg" width="30" height="30" className="rounded-lg" />
             </div>
           </div>
-          <p style={{ fontSize: "15px", fontWeight: 700, color: colors.text, marginBottom: "2px" }}>
+          <p className="mb-0.5 text-[15px] font-bold text-foreground">
             {subscriptions[0]?.apiKeyMode === "own_keys" ? "Own Keys" : "Platform Keys"}
           </p>
-          <p style={{ fontSize: "11px", color: colors.textMuted }}>
+          <p className="text-[11px] text-muted-foreground">
             {subscriptions[0]?.apiKeyMode === "own_keys" ? "Lower monthly rate" : "Higher monthly rate"}
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "2px", marginBottom: "16px", background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "4px", width: "fit-content" }}>
+      <div className="mb-4 flex w-fit gap-0.5 rounded-[10px] border bg-card p-1">
         {(["subscriptions", "history"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            padding: "7px 18px", borderRadius: "7px", fontSize: "13px",
-            fontWeight: tab === t ? 600 : 400, cursor: "pointer", border: "none",
-            background: tab === t ? (isDark ? "#1a1a1a" : "#ffffff") : "transparent",
-            color: tab === t ? colors.text : colors.textMuted,
-            boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
-            textTransform: "capitalize",
-          }}>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "rounded-[7px] border-0 px-4.5 py-1.75 text-[13px] transition-colors",
+              tab === t ? "bg-background font-semibold text-foreground shadow-sm" : "font-normal text-muted-foreground"
+            )}
+          >
             {t === "subscriptions" ? "My Subscriptions" : "Payment History"}
           </button>
         ))}
@@ -230,52 +223,47 @@ export function BillingPage() {
       {tab === "subscriptions" && (
         <div>
           {loading ? (
-            <div style={{ padding: "60px", textAlign: "center" }}>
-              <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+            <div className="p-15 text-center">
+              <Loader2 size={24} className="mx-auto animate-spin text-primary" />
             </div>
           ) : subscriptions.length === 0 ? (
-            <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "60px 24px", textAlign: "center" }}>
-              <Package size={36} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
-              <p style={{ fontSize: "15px", fontWeight: 500, color: colors.text, marginBottom: "6px" }}>No subscriptions yet</p>
-              <p style={{ fontSize: "13px", color: colors.textMuted }}>Browse the marketplace to subscribe to a module.</p>
+            <div className="rounded-xl border bg-card px-6 py-15 text-center">
+              <Package size={36} className="mx-auto mb-3 text-muted-foreground" />
+              <p className="mb-1.5 text-[15px] font-medium text-foreground">No subscriptions yet</p>
+              <p className="text-[13px] text-muted-foreground">Browse the marketplace to subscribe to a module.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "12px" }}>
+            <div className="grid gap-3">
               {subscriptions.map((sub) => {
                 const plan = PLAN_CONFIG[sub.planType] || PLAN_CONFIG.free_trial;
                 const isExpiringSoon = sub.trialEndDate && new Date(sub.trialEndDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                 return (
-                  <div key={sub._id} style={{
-                    background: colors.bgCard, border: `1px solid ${isExpiringSoon ? "rgba(245,158,11,0.3)" : colors.border}`,
-                    borderRadius: "12px", padding: "18px 20px",
-                    display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap",
-                  }}>
+                  <div
+                    key={sub._id}
+                    className={cn("flex flex-wrap items-center gap-4 rounded-xl border bg-card px-5 py-4.5", isExpiringSoon && "border-[#f59e0b]/30")}
+                  >
                     {/* Icon */}
-                    <div style={{
-                      width: "44px", height: "44px", borderRadius: "10px", flexShrink: 0,
-                      background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Package size={20} color="#a78bfa" />
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/10">
+                      <Package size={20} className="text-[#a78bfa]" />
                     </div>
 
                     {/* Info */}
-                    <div style={{ flex: 1, minWidth: "150px" }}>
-                      <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "4px" }}>
+                    <div className="min-w-[150px] flex-1">
+                      <p className="mb-1 text-sm font-semibold text-foreground">
                         {sub.moduleName}
                       </p>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "11px", color: colors.textMuted, textTransform: "capitalize" }}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground capitalize">
                           {sub.moduleType}
                         </span>
-                        <span style={{ color: colors.border }}>·</span>
-                        <span style={{ fontSize: "11px", color: colors.textMuted, textTransform: "capitalize" }}>
+                        <span className="text-border">·</span>
+                        <span className="text-[11px] text-muted-foreground capitalize">
                           {sub.apiKeyMode === "own_keys" ? "Own API Keys" : "Platform Keys"}
                         </span>
                         {sub.trialEndDate && (
                           <>
-                            <span style={{ color: colors.border }}>·</span>
-                            <span style={{ fontSize: "11px", color: isExpiringSoon ? "#f59e0b" : colors.textMuted }}>
+                            <span className="text-border">·</span>
+                            <span className={cn("text-[11px]", isExpiringSoon ? "text-[#f59e0b]" : "text-muted-foreground")}>
                               {isExpiringSoon ? "⚠️ " : ""}Expires {new Date(sub.trialEndDate).toLocaleDateString()}
                             </span>
                           </>
@@ -284,29 +272,27 @@ export function BillingPage() {
                     </div>
 
                     {/* Plan badge */}
-                    <span style={{
-                      fontSize: "11px", fontWeight: 600, padding: "4px 12px",
-                      borderRadius: "9999px", background: plan.bg, color: plan.color,
-                    }}>
+                    <span className={cn("rounded-full px-3 py-1 text-[11px] font-semibold", plan.className)}>
                       {plan.label}
                     </span>
 
                     {/* Price */}
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontSize: "16px", fontWeight: 700, color: colors.text }}>
+                    <div className="text-right">
+                      <p className="text-base font-bold text-foreground">
                         ${sub.billingAmount > 0 ? `${sub.billingAmount}/mo` : "Free"}
                       </p>
                     </div>
 
                     {/* Cancel */}
                     {(sub.status === "active" || sub.status === "trial") && (
-                      <button onClick={() => cancelSubscription(sub._id)} style={{
-                        padding: "7px 14px", borderRadius: "7px", cursor: "pointer",
-                        border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)",
-                        color: "#ef4444", fontSize: "12px", fontWeight: 500,
-                      }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCancelTarget(sub)}
+                        className="border-destructive/20 bg-destructive/6 text-destructive"
+                      >
                         Cancel
-                      </button>
+                      </Button>
                     )}
                   </div>
                 );
@@ -320,121 +306,114 @@ export function BillingPage() {
       {tab === "history" && (
         <div>
           {/* Date filters */}
-          <div style={{
-            display: "flex", gap: "10px", marginBottom: "14px",
-            flexWrap: "wrap", alignItems: "center",
-            background: colors.bgCard, border: `1px solid ${colors.border}`,
-            borderRadius: "10px", padding: "12px 16px",
-          }}>
-            <Filter size={13} color={colors.textMuted} />
-            <span style={{ fontSize: "12px", color: colors.textMuted }}>From</span>
-            <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} style={inputStyle} />
-            <span style={{ fontSize: "12px", color: colors.textMuted }}>To</span>
-            <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} style={inputStyle} />
+          <div className="mb-3.5 flex flex-wrap items-center gap-2.5 rounded-[10px] border bg-card px-4 py-3">
+            <Filter size={13} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">From</span>
+            <input
+              type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+              className="rounded-md border bg-background px-2.5 py-1.75 text-xs text-foreground outline-none"
+            />
+            <span className="text-xs text-muted-foreground">To</span>
+            <input
+              type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+              className="rounded-md border bg-background px-2.5 py-1.75 text-xs text-foreground outline-none"
+            />
             {(startDate || endDate) && (
-              <button onClick={() => { setStartDate(""); setEndDate(""); setPage(1); }} style={{
-                padding: "5px 10px", borderRadius: "6px", cursor: "pointer",
-                border: `1px solid ${colors.border}`, background: "transparent",
-                color: colors.textMuted, fontSize: "12px",
-              }}>
+              <Button variant="outline" size="sm" onClick={() => { setStartDate(""); setEndDate(""); setPage(1); }}>
                 Clear
-              </button>
+              </Button>
             )}
-            <span style={{ fontSize: "12px", color: colors.textMuted, marginLeft: "auto" }}>
+            <span className="ml-auto text-xs text-muted-foreground">
               {total} records
             </span>
           </div>
 
           {/* Table */}
-          <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-            {/* Header */}
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 100px 80px 80px 100px",
-              gap: "10px", padding: "10px 18px",
-              background: colors.bg, borderBottom: `1px solid ${colors.border}`,
-            }}>
-              {["Description", "Module", "Type", "Amount", "Status"].map((h) => (
-                <span key={h} style={{ fontSize: "11px", fontWeight: 600, color: colors.textMuted }}>{h}</span>
-              ))}
-            </div>
-
+          <div className="overflow-hidden rounded-xl border bg-card">
             {loading ? (
-              <div style={{ padding: "40px", textAlign: "center" }}>
-                <Loader2 size={22} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+              <div className="p-10 text-center">
+                <Loader2 size={22} className="mx-auto animate-spin text-primary" />
               </div>
             ) : billingRecords.length === 0 ? (
-              <div style={{ padding: "40px", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: colors.textMuted }}>No billing records found</p>
+              <div className="p-10 text-center">
+                <p className="text-[13px] text-muted-foreground">No billing records found</p>
               </div>
             ) : (
-              billingRecords.map((record, i) => {
-                const sc = STATUS_CONFIG[record.status] || STATUS_CONFIG.pending;
-                return (
-                  <div key={record._id} style={{
-                    display: "grid", gridTemplateColumns: "1fr 100px 80px 80px 100px",
-                    gap: "10px", padding: "12px 18px", alignItems: "center",
-                    borderBottom: i < billingRecords.length - 1 ? `1px solid ${colors.border}` : "none",
-                  }}>
-                    <div>
-                      <p style={{ fontSize: "13px", color: colors.text, fontWeight: 500, marginBottom: "2px" }}>
-                        {record.description}
-                      </p>
-                      <p style={{ fontSize: "11px", color: colors.textMuted }}>
-                        {new Date(record.billingDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "12px", color: colors.textMuted }}>{record.moduleName}</p>
-                    <span style={{
-                      fontSize: "11px", fontWeight: 600, padding: "3px 7px", borderRadius: "6px",
-                      background: "rgba(124,58,237,0.08)", color: "#a78bfa",
-                      display: "inline-block", textTransform: "capitalize",
-                    }}>
-                      {record.type}
-                    </span>
-                    <p style={{ fontSize: "13px", fontWeight: 700, color: record.type === "refund" ? "#22c55e" : colors.text }}>
-                      {record.type === "refund" ? "+" : ""}${record.amount.toFixed(2)}
-                    </p>
-                    <span style={{
-                      fontSize: "11px", fontWeight: 600, padding: "3px 8px",
-                      borderRadius: "9999px", background: sc.bg, color: sc.color,
-                      display: "inline-block",
-                    }}>
-                      {record.status}
-                    </span>
-                  </div>
-                );
-              })
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Module</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {billingRecords.map((record) => (
+                    <TableRow key={record._id}>
+                      <TableCell className="whitespace-normal">
+                        <p className="mb-0.5 text-[13px] font-medium text-foreground">{record.description}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {new Date(record.billingDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{record.moduleName}</TableCell>
+                      <TableCell>
+                        <span className="inline-block rounded-md bg-primary/8 px-1.75 py-0.75 text-[11px] font-semibold text-[#a78bfa] capitalize">
+                          {record.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className={cn("text-[13px] font-bold", record.type === "refund" ? "text-[#22c55e]" : "text-foreground")}>
+                        {record.type === "refund" ? "+" : ""}${record.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("inline-block rounded-full px-2 py-0.75 text-[11px] font-semibold", STATUS_CONFIG[record.status] || STATUS_CONFIG.pending)}>
+                          {record.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px" }}>
-              <p style={{ fontSize: "12px", color: colors.textMuted }}>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
                 {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
               </p>
-              <div style={{ display: "flex", gap: "4px" }}>
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{
-                  width: "30px", height: "30px", borderRadius: "7px", cursor: page === 1 ? "not-allowed" : "pointer",
-                  border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-                  display: "flex", alignItems: "center", justifyContent: "center", opacity: page === 1 ? 0.4 : 1,
-                }}>
+              <div className="flex gap-1">
+                <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                   <ChevronLeft size={13} />
-                </button>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{
-                  width: "30px", height: "30px", borderRadius: "7px", cursor: page === totalPages ? "not-allowed" : "pointer",
-                  border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-                  display: "flex", alignItems: "center", justifyContent: "center", opacity: page === totalPages ? 0.4 : 1,
-                }}>
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                   <ChevronRight size={13} />
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this subscription?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelTarget && `"${cancelTarget.moduleName}" will be cancelled immediately. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep subscription</AlertDialogCancel>
+            <AlertDialogAction onClick={cancelSubscription} className="bg-destructive text-white hover:bg-destructive/90">
+              Cancel subscription
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
