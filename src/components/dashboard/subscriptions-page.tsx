@@ -1,16 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   Package, Search, ChevronLeft, ChevronRight,
-  Loader2, Shield, Clock, XCircle, CheckCircle2,
-  RefreshCw, Filter, X, Save, AlertTriangle,
+  Loader2, Shield, Clock, XCircle,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface Subscription {
   _id: string;
@@ -45,24 +52,23 @@ const PLAN_CONFIG: Record<string, { color: string; bg: string; label: string }> 
 };
 
 // ── Manage Modal ──────────────────────────────────────────────
-function ManageModal({ sub, onClose, onRefresh, colors, isDark }: {
-  sub: Subscription; onClose: () => void;
-  onRefresh: () => void; colors: any; isDark: boolean;
+function ManageModal({ sub, onClose, onRefresh }: {
+  sub: Subscription; onClose: () => void; onRefresh: () => void;
 }) {
   const [extendDays, setExtendDays] = useState(30);
   const [saving, setSaving] = useState(false);
   const [action, setAction] = useState<string | null>(null);
-
-  const panelBg = isDark ? "#161616" : "#ffffff";
-  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)";
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const handleExtend = async () => {
     setSaving(true); setAction("extend");
     try {
       await api.patch(`/usermodules/${sub._id}/extend-trial`, { days: extendDays });
-      toast.success("Subscription updated.")
+      toast.success("Subscription updated.");
       onRefresh(); onClose();
-    } catch {}
+    } catch {
+      toast.error("Failed to extend trial");
+    }
     setSaving(false); setAction(null);
   };
 
@@ -70,143 +76,135 @@ function ManageModal({ sub, onClose, onRefresh, colors, isDark }: {
     setSaving(true); setAction("free");
     try {
       await api.patch(`/usermodules/${sub._id}/free-forever`);
-      toast.success("Updated successfully.")
+      toast.success("Updated successfully.");
       onRefresh(); onClose();
-    } catch {}
+    } catch {
+      toast.error("Failed to update");
+    }
     setSaving(false); setAction(null);
   };
 
   const handleCancel = async () => {
-    if (!confirm("Cancel this subscription?")) return;
     setSaving(true); setAction("cancel");
     try {
       await api.patch(`/usermodules/${sub._id}/cancel`);
-      toast.success("Subscription updated")
+      toast.success("Subscription updated");
       onRefresh(); onClose();
-    } catch {}
+    } catch {
+      toast.error("Failed to cancel subscription");
+    }
     setSaving(false); setAction(null);
-  };
-
-  const inputStyle = {
-    padding: "8px 10px", borderRadius: "7px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none", width: "80px",
+    setConfirmCancel(false);
   };
 
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, zIndex: 500,
-      background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", padding: "24px",
-    }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        background: panelBg, border: `1px solid ${panelBorder}`,
-        borderRadius: "16px", width: "100%", maxWidth: "440px",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: `1px solid ${panelBorder}` }}>
-          <div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: isDark ? "#e5e5e5" : "#111", marginBottom: "2px" }}>
-              Manage Subscription
-            </p>
-            <p style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>
-              {(sub.userId as any)?.name || "Unknown"} · {sub.moduleName}
-            </p>
-          </div>
-          <button onClick={onClose} style={{
-            width: "28px", height: "28px", borderRadius: "7px", border: `1px solid ${panelBorder}`,
-            background: "transparent", color: isDark ? "#737373" : "#6b7280", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <X size={13} />
-          </button>
-        </div>
+    <>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage Subscription</DialogTitle>
+        </DialogHeader>
+        <p className="-mt-3 text-xs text-muted-foreground">
+          {(sub.userId as any)?.name || "Unknown"} · {sub.moduleName}
+        </p>
 
         {/* Current status */}
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${panelBorder}` }}>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <span style={{
-              fontSize: "12px", fontWeight: 600, padding: "4px 12px", borderRadius: "9999px",
-              background: STATUS_CONFIG[sub.status]?.bg || "rgba(107,114,128,0.1)",
-              color: STATUS_CONFIG[sub.status]?.color || "#6b7280",
-            }}>
-              {sub.status}
+        <div className="flex flex-wrap gap-2.5 border-t border-b py-3">
+          <span
+            className="rounded-full px-3 py-1 text-xs font-semibold"
+            style={{ background: STATUS_CONFIG[sub.status]?.bg || "rgba(107,114,128,0.1)", color: STATUS_CONFIG[sub.status]?.color || "#6b7280" }}
+          >
+            {sub.status}
+          </span>
+          <span
+            className="rounded-full px-3 py-1 text-xs font-semibold"
+            style={{ background: PLAN_CONFIG[sub.planType]?.bg || "rgba(107,114,128,0.1)", color: PLAN_CONFIG[sub.planType]?.color || "#6b7280" }}
+          >
+            {PLAN_CONFIG[sub.planType]?.label || sub.planType}
+          </span>
+          {sub.trialEndDate && (
+            <span className="text-xs text-muted-foreground">
+              Expires: {new Date(sub.trialEndDate).toLocaleDateString()}
             </span>
-            <span style={{
-              fontSize: "12px", fontWeight: 600, padding: "4px 12px", borderRadius: "9999px",
-              background: PLAN_CONFIG[sub.planType]?.bg || "rgba(107,114,128,0.1)",
-              color: PLAN_CONFIG[sub.planType]?.color || "#6b7280",
-            }}>
-              {PLAN_CONFIG[sub.planType]?.label || sub.planType}
-            </span>
-            {sub.trialEndDate && (
-              <span style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>
-                Expires: {new Date(sub.trialEndDate).toLocaleDateString()}
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Actions */}
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-
+        <div className="flex flex-col gap-3">
           {/* Extend trial */}
-          <div style={{ padding: "14px", borderRadius: "10px", background: colors.bg, border: `1px solid ${colors.border}` }}>
-            <p style={{ fontSize: "13px", fontWeight: 500, color: isDark ? "#e5e5e5" : "#111", marginBottom: "10px" }}>
-              Extend Trial
-            </p>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <input type="number" value={extendDays} min={1} max={365}
+          <div className="rounded-lg border bg-background p-3.5">
+            <p className="mb-2.5 text-[13px] font-medium text-foreground">Extend Trial</p>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={extendDays}
+                min={1}
+                max={365}
                 onChange={(e) => setExtendDays(parseInt(e.target.value))}
-                style={inputStyle} />
-              <span style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>days</span>
-              <button onClick={handleExtend} disabled={saving && action === "extend"} style={{
-                padding: "8px 16px", borderRadius: "7px", cursor: "pointer",
-                background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)",
-                color: "#a78bfa", fontSize: "12px", fontWeight: 600,
-                display: "flex", alignItems: "center", gap: "6px",
-              }}>
-                {saving && action === "extend" ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Clock size={12} />}
+                className="w-20"
+              />
+              <span className="text-xs text-muted-foreground">days</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExtend}
+                disabled={saving && action === "extend"}
+                className="ml-auto gap-1.5 border-primary/20 bg-primary/10 text-[#a78bfa] hover:bg-primary/20 hover:text-[#a78bfa]"
+              >
+                {saving && action === "extend" ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
                 Extend
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Free forever */}
-          <button onClick={handleFreeForever} disabled={sub.isFreeForever} style={{
-            padding: "12px 16px", borderRadius: "9px", cursor: sub.isFreeForever ? "not-allowed" : "pointer",
-            background: sub.isFreeForever ? "rgba(167,139,250,0.05)" : "rgba(167,139,250,0.08)",
-            border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa",
-            fontSize: "13px", fontWeight: 600,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            opacity: sub.isFreeForever ? 0.6 : 1,
-          }}>
-            {saving && action === "free" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Shield size={14} />}
+          <Button
+            variant="outline"
+            onClick={handleFreeForever}
+            disabled={sub.isFreeForever}
+            className="justify-center gap-2 border-primary/20 bg-primary/[0.08] text-[#a78bfa] hover:bg-primary/15 hover:text-[#a78bfa]"
+          >
+            {saving && action === "free" ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
             {sub.isFreeForever ? "Already Free Forever" : "Grant Free Forever Access"}
-          </button>
+          </Button>
 
           {/* Cancel */}
           {sub.status !== "cancelled" && (
-            <button onClick={handleCancel} style={{
-              padding: "12px 16px", borderRadius: "9px", cursor: "pointer",
-              background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)",
-              color: "#ef4444", fontSize: "13px", fontWeight: 600,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            }}>
-              {saving && action === "cancel" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <XCircle size={14} />}
+            <Button
+              variant="outline"
+              onClick={() => setConfirmCancel(true)}
+              className="justify-center gap-2 border-destructive/20 bg-destructive/[0.06] text-destructive hover:bg-destructive/15 hover:text-destructive"
+            >
+              {saving && action === "cancel" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
               Cancel Subscription
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
+
+    <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel this subscription?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {sub.moduleName} for {(sub.userId as any)?.name || "this user"} will be cancelled.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep it</AlertDialogCancel>
+          <AlertDialogAction onClick={handleCancel} className="bg-destructive text-white hover:bg-destructive/90">
+            Cancel Subscription
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────
 export function SubscriptionsPage() {
-  const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
   const router = useRouter();
 
@@ -242,11 +240,7 @@ export function SubscriptionsPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
-  const inputStyle = {
-    padding: "8px 12px", borderRadius: "8px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none",
-  };
+  const selectClass = "h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none cursor-pointer";
 
   // Stats
   const activeSubs = subs.filter(s => s.status === "active" || s.status === "trial").length;
@@ -256,192 +250,169 @@ export function SubscriptionsPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Subscriptions</h1>
-          <p style={{ fontSize: "14px", color: colors.textMuted }}>Manage all user subscriptions — {total} total</p>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Subscriptions</h1>
+          <p className="text-sm text-muted-foreground">Manage all user subscriptions — {total} total</p>
         </div>
-        <button onClick={fetchSubs} style={{
-          display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px",
-          borderRadius: "8px", border: `1px solid ${colors.border}`,
-          background: colors.bgCard, color: colors.textMuted, cursor: "pointer", fontSize: "13px",
-        }}>
+        <Button variant="outline" onClick={fetchSubs} className="gap-1.5">
           <RefreshCw size={13} /> Refresh
-        </button>
+        </Button>
       </div>
 
       {/* Quick stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Total", value: total, color: "#7c3aed" },
           { label: "Active / Trial", value: activeSubs, color: "#22c55e" },
           { label: "Expired", value: expiredSubs, color: "#ef4444" },
           { label: "Free Forever", value: freeForeverSubs, color: "#a78bfa" },
         ].map((s) => (
-          <div key={s.label} style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "10px", padding: "14px 16px" }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "6px" }}>{s.label}</p>
-            <p style={{ fontSize: "22px", fontWeight: 700, color: s.color }}>{s.value}</p>
+          <div key={s.label} className="rounded-lg border bg-card px-4 py-3.5">
+            <p className="mb-1.5 text-xs text-muted-foreground">{s.label}</p>
+            <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center",
-        background: colors.bgCard, border: `1px solid ${colors.border}`,
-        borderRadius: "10px", padding: "12px 16px",
-      }}>
-        <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-          <Search size={13} color={colors.textMuted} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
+      <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-lg border bg-card p-3">
+        <div className="relative min-w-[200px] flex-1">
+          <Search size={13} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && fetchSubs()}
             placeholder="Search user or module..."
-            style={{ ...inputStyle, width: "100%", paddingLeft: "30px", boxSizing: "border-box" as const }} />
+            className="pl-7.5"
+          />
         </div>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} style={{ ...inputStyle, minWidth: "130px" }}>
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[130px]")}>
           <option value="all">All Status</option>
           <option value="trial">Trial</option>
           <option value="active">Active</option>
           <option value="expired">Expired</option>
           <option value="cancelled">Cancelled</option>
         </select>
-        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} style={{ ...inputStyle, minWidth: "130px" }}>
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[130px]")}>
           <option value="all">All Types</option>
           <option value="agent">Agent</option>
           <option value="automation">Automation</option>
         </select>
-        <span style={{ fontSize: "12px", color: colors.textMuted, marginLeft: "auto" }}>{total} results</span>
+        <span className="ml-auto text-xs text-muted-foreground">{total} results</span>
       </div>
 
       {/* Table */}
-      <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-        <div style={{
-          display: "grid", gridTemplateColumns: "2fr 1.5fr 100px 100px 80px 90px 80px",
-          gap: "10px", padding: "10px 18px",
-          background: colors.bg, borderBottom: `1px solid ${colors.border}`,
-        }}>
-          {["User", "Module", "Type", "Plan", "Status", "Expires", "Actions"].map((h) => (
-            <span key={h} style={{ fontSize: "11px", fontWeight: 600, color: colors.textMuted }}>{h}</span>
-          ))}
-        </div>
+      <div className="overflow-hidden rounded-xl border bg-card">
+        <div className="overflow-x-auto">
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-[2fr_1.5fr_100px_100px_80px_90px_80px] gap-2.5 border-b bg-background px-4.5 py-2.5">
+              {["User", "Module", "Type", "Plan", "Status", "Expires", "Actions"].map((h) => (
+                <span key={h} className="text-[11px] font-semibold text-muted-foreground">{h}</span>
+              ))}
+            </div>
 
-        {loading ? (
-          <div style={{ padding: "60px", textAlign: "center" }}>
-            <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
-          </div>
-        ) : subs.length === 0 ? (
-          <div style={{ padding: "60px", textAlign: "center" }}>
-            <Package size={32} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
-            <p style={{ fontSize: "14px", color: colors.textMuted }}>No subscriptions found</p>
-          </div>
-        ) : (
-          subs.map((sub, i) => {
-            const sc = STATUS_CONFIG[sub.status] || STATUS_CONFIG.cancelled;
-            const pc = PLAN_CONFIG[sub.planType] || PLAN_CONFIG.free_trial;
-            const isExpiringSoon = sub.trialEndDate &&
-              new Date(sub.trialEndDate) < new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-            return (
-              <div key={sub._id} style={{
-                display: "grid", gridTemplateColumns: "2fr 1.5fr 100px 100px 80px 90px 80px",
-                gap: "10px", padding: "12px 18px", alignItems: "center",
-                borderBottom: i < subs.length - 1 ? `1px solid ${colors.border}` : "none",
-              }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = colors.bg; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
-              >
-                {/* User */}
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {(sub.userId as any)?.name || "Unknown"}
-                  </p>
-                  <p style={{ fontSize: "11px", color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {(sub.userId as any)?.email || "—"}
-                  </p>
-                </div>
-
-                {/* Module */}
-                <p style={{ fontSize: "12px", color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {sub.moduleName}
-                </p>
-
-                {/* Type */}
-                <span style={{
-                  fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "6px",
-                  background: "rgba(124,58,237,0.08)", color: "#a78bfa",
-                  display: "inline-block", textTransform: "capitalize",
-                }}>
-                  {sub.moduleType}
-                </span>
-
-                {/* Plan */}
-                <span style={{
-                  fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px",
-                  background: pc.bg, color: pc.color, display: "inline-block",
-                }}>
-                  {pc.label}
-                </span>
-
-                {/* Status */}
-                <span style={{
-                  fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px",
-                  background: sc.bg, color: sc.color, display: "inline-block",
-                }}>
-                  {sub.status}
-                </span>
-
-                {/* Expires */}
-                <p style={{ fontSize: "11px", color: isExpiringSoon ? "#f59e0b" : colors.textMuted }}>
-                  {sub.trialEndDate
-                    ? new Date(sub.trialEndDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-                    : "—"}
-                </p>
-
-                {/* Actions */}
-                <button onClick={() => setSelected(sub)} style={{
-                  padding: "5px 10px", borderRadius: "6px", cursor: "pointer",
-                  border: "1px solid rgba(124,58,237,0.2)", background: "rgba(124,58,237,0.06)",
-                  color: "#a78bfa", fontSize: "11px", fontWeight: 600,
-                }}>
-                  Manage
-                </button>
+            {loading ? (
+              <div className="p-15 text-center">
+                <Loader2 size={24} className="mx-auto animate-spin text-primary" />
               </div>
-            );
-          })
-        )}
+            ) : subs.length === 0 ? (
+              <div className="p-15 text-center">
+                <Package size={32} className="mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No subscriptions found</p>
+              </div>
+            ) : (
+              subs.map((sub, i) => {
+                const sc = STATUS_CONFIG[sub.status] || STATUS_CONFIG.cancelled;
+                const pc = PLAN_CONFIG[sub.planType] || PLAN_CONFIG.free_trial;
+                const isExpiringSoon = sub.trialEndDate &&
+                  new Date(sub.trialEndDate) < new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+                return (
+                  <div
+                    key={sub._id}
+                    className={cn(
+                      "grid grid-cols-[2fr_1.5fr_100px_100px_80px_90px_80px] items-center gap-2.5 px-4.5 py-3 hover:bg-background",
+                      i < subs.length - 1 && "border-b",
+                    )}
+                  >
+                    {/* User */}
+                    <div className="min-w-0">
+                      <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium text-foreground">
+                        {(sub.userId as any)?.name || "Unknown"}
+                      </p>
+                      <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-muted-foreground">
+                        {(sub.userId as any)?.email || "—"}
+                      </p>
+                    </div>
+
+                    {/* Module */}
+                    <p className="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted-foreground">
+                      {sub.moduleName}
+                    </p>
+
+                    {/* Type */}
+                    <span className="inline-block w-fit rounded-md bg-primary/[0.08] px-2 py-0.75 text-[11px] font-semibold text-[#a78bfa] capitalize">
+                      {sub.moduleType}
+                    </span>
+
+                    {/* Plan */}
+                    <span className="inline-block w-fit rounded-full px-2 py-0.75 text-[11px] font-semibold" style={{ background: pc.bg, color: pc.color }}>
+                      {pc.label}
+                    </span>
+
+                    {/* Status */}
+                    <span className="inline-block w-fit rounded-full px-2 py-0.75 text-[11px] font-semibold" style={{ background: sc.bg, color: sc.color }}>
+                      {sub.status}
+                    </span>
+
+                    {/* Expires */}
+                    <p className={cn("text-[11px]", isExpiringSoon ? "text-amber-500" : "text-muted-foreground")}>
+                      {sub.trialEndDate
+                        ? new Date(sub.trialEndDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                        : "—"}
+                    </p>
+
+                    {/* Actions */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelected(sub)}
+                      className="w-fit border-primary/20 bg-primary/[0.06] text-[#a78bfa] hover:bg-primary/15 hover:text-[#a78bfa]"
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "14px" }}>
-          <p style={{ fontSize: "13px", color: colors.textMuted }}>
+        <div className="mt-3.5 flex items-center justify-between">
+          <p className="text-[13px] text-muted-foreground">
             {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
           </p>
-          <div style={{ display: "flex", gap: "4px" }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{
-              width: "30px", height: "30px", borderRadius: "7px", cursor: page === 1 ? "not-allowed" : "pointer",
-              border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-              display: "flex", alignItems: "center", justifyContent: "center", opacity: page === 1 ? 0.4 : 1,
-            }}>
+          <div className="flex gap-1">
+            <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
               <ChevronLeft size={13} />
-            </button>
+            </Button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} style={{
-                width: "30px", height: "30px", borderRadius: "7px", cursor: "pointer",
-                border: `1px solid ${page === p ? "rgba(124,58,237,0.3)" : colors.border}`,
-                background: page === p ? "rgba(124,58,237,0.1)" : colors.bgCard,
-                color: page === p ? "#a78bfa" : colors.text,
-                fontSize: "13px", fontWeight: page === p ? 600 : 400,
-              }}>
+              <Button
+                key={p}
+                variant="outline"
+                size="icon"
+                onClick={() => setPage(p)}
+                className={cn(page === p && "border-primary/30 bg-primary/10 text-[#a78bfa]")}
+              >
                 {p}
-              </button>
+              </Button>
             ))}
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{
-              width: "30px", height: "30px", borderRadius: "7px", cursor: page === totalPages ? "not-allowed" : "pointer",
-              border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-              display: "flex", alignItems: "center", justifyContent: "center", opacity: page === totalPages ? 0.4 : 1,
-            }}>
+            <Button variant="outline" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
               <ChevronRight size={13} />
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -451,12 +422,8 @@ export function SubscriptionsPage() {
           sub={selected}
           onClose={() => setSelected(null)}
           onRefresh={fetchSubs}
-          colors={colors}
-          isDark={isDark}
         />
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

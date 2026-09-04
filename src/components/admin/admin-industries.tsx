@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
-import { Plus, Pencil, Loader2, Package, X, Check, Globe } from "lucide-react";
+import { Plus, Pencil, Loader2, Package, Check, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface Module {
   _id: string;
@@ -39,7 +46,6 @@ const emptyForm = {
 };
 
 export function AdminIndustries() {
-  const { colors } = useTheme();
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [allModules, setAllModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,10 +119,10 @@ export function AdminIndustries() {
       };
       if (editingId) {
         await api.patch(`/industries/${form.slug}`, payload);
-        toast.success("Industry updated ✅");
+        toast.success("Industry updated");
       } else {
         await api.post("/industries", payload);
-        toast.success("Industry created ✅");
+        toast.success("Industry created");
       }
       setShowForm(false);
       fetchData();
@@ -143,296 +149,266 @@ export function AdminIndustries() {
     }));
   };
 
-  const border = colors.border || (colors as any).isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-
-  const inp: React.CSSProperties = {
-    width: "100%", padding: "8px 12px", borderRadius: "8px",
-    border: `1px solid ${border}`, background: colors.bg,
-    color: colors.text, fontSize: "13px", outline: "none",
-    boxSizing: "border-box",
-  };
-
-  const lbl = (text: string, hint?: string) => (
-    <label style={{ fontSize: "11px", fontWeight: 600, color: colors.textMuted, display: "block", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-      {text} {hint && <span style={{ fontWeight: 400, textTransform: "none" }}>({hint})</span>}
-    </label>
-  );
-
-  const fld = (children: React.ReactNode, full = false) => (
-    <div style={{ gridColumn: full ? "1/-1" : undefined, marginBottom: "16px" }}>
-      {children}
-    </div>
-  );
-
   const filteredModules = allModules.filter(m =>
     m.name.toLowerCase().includes(moduleSearch.toLowerCase()) ||
     m.slug.toLowerCase().includes(moduleSearch.toLowerCase())
   );
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1100px" }}>
+    <div className="max-w-[1100px] p-6">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
+      <div className="mb-7 flex items-center justify-between">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Industries</h1>
-          <p style={{ fontSize: "13px", color: colors.textMuted }}>Manage industry bundles and their default module assignments.</p>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Industries</h1>
+          <p className="text-[13px] text-muted-foreground">Manage industry bundles and their default module assignments.</p>
         </div>
-        <button onClick={openNew} style={{
-          display: "flex", alignItems: "center", gap: "6px",
-          padding: "9px 18px", borderRadius: "9px",
-          background: "#7c3aed", color: "white",
-          border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 600,
-        }}>
+        <Button onClick={openNew} className="gap-1.5">
           <Plus size={14} /> Add Industry
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px" }}>
-          <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div className="p-15 text-center">
+          <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
       ) : (
-        <div style={{ border: `1px solid ${border}`, borderRadius: "12px", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: (colors as any).isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
-                {["Industry", "Slug", "Countries", "Default Modules", "Sort", "Status", ""].map(h => (
-                  <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: "11px", fontWeight: 600, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${border}` }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {industries.map((ind, i) => (
-                <tr key={ind._id} style={{ borderBottom: i < industries.length - 1 ? `1px solid ${border}` : "none" }}>
-                  <td style={{ padding: "12px 14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div style={{
-                        width: "36px", height: "36px", borderRadius: "9px", flexShrink: 0,
-                        background: `${ind.color}15`, border: `1px solid ${ind.color}30`,
-                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px",
-                      }}>{ind.icon}</div>
-                      <div>
-                        <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>{ind.name}</p>
-                        {ind.name_ar && <p style={{ fontSize: "11px", color: colors.textMuted, direction: "rtl" }}>{ind.name_ar}</p>}
+        <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {["Industry", "Slug", "Countries", "Default Modules", "Sort", "Status", ""].map(h => (
+                    <TableHead key={h} className="whitespace-nowrap">{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {industries.map((ind) => (
+                  <TableRow key={ind._id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="flex size-9 shrink-0 items-center justify-center rounded-lg border text-lg"
+                          style={{ background: `${ind.color}15`, borderColor: `${ind.color}30` }}
+                        >
+                          {ind.icon}
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-semibold text-foreground">{ind.name}</p>
+                          {ind.name_ar && <p className="text-[11px] text-muted-foreground" dir="rtl">{ind.name_ar}</p>}
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <code style={{ fontSize: "11px", color: "#a78bfa", background: "rgba(124,58,237,0.1)", padding: "2px 7px", borderRadius: "4px" }}>{ind.slug}</code>
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <div style={{ display: "flex", gap: "4px" }}>
-                      {ind.availableIn.map(c => (
-                        <span key={c} style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "9999px", background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 600 }}>{c}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <Package size={12} color={colors.textMuted} />
-                      <span style={{ fontSize: "13px", color: colors.textMuted }}>{ind.defaultModuleIds.length} modules</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 14px", fontSize: "13px", color: colors.textMuted }}>{ind.sortOrder}</td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <span style={{
-                      fontSize: "11px", padding: "3px 9px", borderRadius: "9999px", fontWeight: 600,
-                      background: ind.isActive ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.1)",
-                      color: ind.isActive ? "#22c55e" : "#ef4444",
-                    }}>{ind.isActive ? "Active" : "Inactive"}</span>
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <button onClick={() => openEdit(ind)} style={{
-                      display: "flex", alignItems: "center", gap: "5px",
-                      padding: "6px 12px", borderRadius: "7px",
-                      border: `1px solid ${border}`, background: "transparent",
-                      color: colors.textMuted, cursor: "pointer", fontSize: "12px",
-                    }}>
-                      <Pencil size={11} /> Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </TableCell>
+                    <TableCell>
+                      <code className="rounded bg-primary/10 px-1.75 py-0.5 text-[11px] text-[#a78bfa]">{ind.slug}</code>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {ind.availableIn.map(c => (
+                          <span key={c} className="rounded-full border border-[#22c55e]/20 bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#22c55e]">{c}</span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Package size={12} />
+                        <span className="text-[13px]">{ind.defaultModuleIds.length} modules</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-[13px] text-muted-foreground">{ind.sortOrder}</TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.25 py-0.75 text-[11px] font-semibold",
+                          ind.isActive ? "bg-[#22c55e]/[0.12] text-[#22c55e]" : "bg-destructive/10 text-destructive",
+                        )}
+                      >
+                        {ind.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => openEdit(ind)} className="gap-1.5">
+                        <Pencil size={11} /> Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
       {/* Modal */}
-      {showForm && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 9999, padding: "20px",
-        }}>
-          <div style={{
-            background: colors.bg, borderRadius: "16px",
-            border: `1px solid ${border}`,
-            width: "100%", maxWidth: "680px",
-            maxHeight: "90vh", display: "flex", flexDirection: "column",
-            boxShadow: "0 25px 80px rgba(0,0,0,0.4)",
-          }}>
-            {/* Modal Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: `1px solid ${border}` }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: colors.text }}>
-                {editingId ? `Edit: ${form.name}` : "New Industry"}
-              </h3>
-              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: colors.textMuted }}>
-                <X size={18} />
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? `Edit: ${form.name}` : "New Industry"}</DialogTitle>
+          </DialogHeader>
+
+          {/* Tabs */}
+          <div className="-mt-2 flex border-b">
+            {(["details", "arabic", "modules"] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={cn(
+                  "border-b-2 px-4 py-2.5 text-[13px] capitalize",
+                  activeTab === t ? "border-primary font-semibold text-[#a78bfa]" : "border-transparent font-normal text-muted-foreground",
+                )}
+              >
+                {t === "arabic" ? "🇦🇪 Arabic" : t === "modules" ? `Modules (${form.defaultModuleIds.length})` : t}
               </button>
-            </div>
-
-            {/* Tabs */}
-            <div style={{ display: "flex", borderBottom: `1px solid ${border}`, paddingLeft: "24px", flexShrink: 0 }}>
-              {(["details", "arabic", "modules"] as const).map(t => (
-                <button key={t} onClick={() => setActiveTab(t)} style={{
-                  padding: "11px 16px", fontSize: "13px",
-                  fontWeight: activeTab === t ? 600 : 400,
-                  color: activeTab === t ? "#a78bfa" : colors.textMuted,
-                  background: "transparent", border: "none",
-                  borderBottom: `2px solid ${activeTab === t ? "#7c3aed" : "transparent"}`,
-                  cursor: "pointer", textTransform: "capitalize",
-                }}>
-                  {t === "arabic" ? "🇦🇪 Arabic" : t === "modules" ? `Modules (${form.defaultModuleIds.length})` : t}
-                </button>
-              ))}
-            </div>
-
-            {/* Body */}
-            <div style={{ padding: "24px", overflowY: "auto", flex: 1 }}>
-
-              {/* DETAILS TAB */}
-              {activeTab === "details" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                  {fld(<>{lbl("Name *")}<input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Real Estate" style={inp} /></>)}
-                  {fld(<>{lbl("Slug *")}<input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "_") }))} placeholder="real_estate" style={inp} /></>)}
-                  {fld(<>{lbl("Icon", "emoji")}<input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🏢" style={inp} /></>)}
-                  {fld(<>
-                    {lbl("Color", "hex")}
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ width: "44px", height: "36px", borderRadius: "8px", border: `1px solid ${border}`, cursor: "pointer", padding: "2px" }} />
-                      <input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ ...inp, flex: 1 }} />
-                    </div>
-                  </>)}
-                  {fld(<>{lbl("Sort Order")}<input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} style={inp} /></>)}
-                  {fld(<>
-                    {lbl("Countries")}
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      {["UAE", "Kenya"].map(c => (
-                        <button key={c} onClick={() => toggleCountry(c)} style={{
-                          padding: "7px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: 600,
-                          border: `1px solid ${form.availableIn.includes(c) ? "#22c55e" : border}`,
-                          background: form.availableIn.includes(c) ? "rgba(34,197,94,0.1)" : "transparent",
-                          color: form.availableIn.includes(c) ? "#22c55e" : colors.textMuted,
-                        }}>{c}</button>
-                      ))}
-                    </div>
-                  </>)}
-                  {fld(<>
-                    {lbl("Description")}
-                    <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} style={{ ...inp, resize: "vertical" as const }} />
-                  </>, true)}
-                  {fld(<>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
-                      <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
-                      Active (visible to users)
-                    </label>
-                  </>, true)}
-                </div>
-              )}
-
-              {/* ARABIC TAB */}
-              {activeTab === "arabic" && (
-                <div>
-                  <div style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
-                    <p style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 600, marginBottom: "4px" }}>🇦🇪 Arabic (UAE) Content</p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.7 }}>These fields are shown when the portal language is set to Arabic (AR). Leave blank to fall back to English.</p>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
-                    {fld(<>
-                      {lbl("Name (AR) — الاسم")}
-                      <input value={form.name_ar} onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))} placeholder="العقارات" dir="rtl" style={{ ...inp, fontFamily: "inherit" }} />
-                    </>)}
-                    {fld(<>
-                      {lbl("Description (AR) — الوصف")}
-                      <textarea value={form.description_ar} onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))} rows={4} placeholder="وصف الصناعة بالعربية..." dir="rtl" style={{ ...inp, resize: "vertical" as const, fontFamily: "inherit" }} />
-                    </>)}
-                  </div>
-                </div>
-              )}
-
-              {/* MODULES TAB */}
-              {activeTab === "modules" && (
-                <div>
-                  <div style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
-                    <p style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 600, marginBottom: "4px" }}>
-                      <Package size={11} style={{ display: "inline", marginRight: "4px" }} />
-                      Default Modules ({form.defaultModuleIds.length} selected)
-                    </p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.7 }}>
-                      These modules are automatically included when a user subscribes to this industry. Users can add more on top.
-                    </p>
-                  </div>
-                  <input
-                    value={moduleSearch}
-                    onChange={e => setModuleSearch(e.target.value)}
-                    placeholder="Search modules..."
-                    style={{ ...inp, marginBottom: "14px" }}
-                  />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "340px", overflowY: "auto" }}>
-                    {filteredModules.map(m => {
-                      const selected = form.defaultModuleIds.includes(m._id);
-                      return (
-                        <div key={m._id} onClick={() => toggleModule(m._id)} style={{
-                          display: "flex", alignItems: "center", gap: "12px",
-                          padding: "10px 14px", borderRadius: "9px", cursor: "pointer",
-                          border: `1px solid ${selected ? "rgba(124,58,237,0.35)" : border}`,
-                          background: selected ? "rgba(124,58,237,0.07)" : "transparent",
-                          transition: "all 0.15s",
-                        }}>
-                          <div style={{
-                            width: "20px", height: "20px", borderRadius: "4px",
-                            border: `2px solid ${selected ? "#7c3aed" : border}`,
-                            background: selected ? "#7c3aed" : "transparent",
-                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                          }}>
-                            {selected && <Check size={11} color="white" strokeWidth={3} />}
-                          </div>
-                          <span style={{ fontSize: "16px" }}>{m.icon}</span>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text }}>{m.name}</p>
-                            <p style={{ fontSize: "11px", color: colors.textMuted }}>{m.moduleType} · {m.slug}</p>
-                          </div>
-                          {selected && <Globe size={13} color="#7c3aed" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div style={{ display: "flex", gap: "8px", padding: "16px 24px", borderTop: `1px solid ${border}`, flexShrink: 0 }}>
-              <button onClick={() => setShowForm(false)} style={{
-                flex: 1, padding: "10px", borderRadius: "9px",
-                border: `1px solid ${border}`, background: "transparent",
-                color: colors.textMuted, cursor: "pointer", fontSize: "13px",
-              }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} style={{
-                flex: 2, padding: "10px", borderRadius: "9px",
-                background: "#7c3aed", color: "white", border: "none",
-                cursor: saving ? "not-allowed" : "pointer", fontSize: "13px", fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-              }}>
-                {saving ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Saving...</> : "Save Industry"}
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto">
+            {/* DETAILS TAB */}
+            {activeTab === "details" && (
+              <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Name *</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Real Estate" />
+                </div>
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Slug *</Label>
+                  <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "_") }))} placeholder="real_estate" />
+                </div>
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Icon <span className="font-normal normal-case">(emoji)</span></Label>
+                  <Input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🏢" />
+                </div>
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Color <span className="font-normal normal-case">(hex)</span></Label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={form.color}
+                      onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                      className="h-9 w-11 cursor-pointer rounded-lg border p-0.5"
+                    />
+                    <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="flex-1" />
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Sort Order</Label>
+                  <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} />
+                </div>
+                <div className="mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Countries</Label>
+                  <div className="flex gap-2">
+                    {["UAE", "Kenya"].map(c => (
+                      <button
+                        key={c}
+                        onClick={() => toggleCountry(c)}
+                        className={cn(
+                          "rounded-lg border px-4 py-1.75 text-xs font-semibold",
+                          form.availableIn.includes(c)
+                            ? "border-[#22c55e] bg-[#22c55e]/10 text-[#22c55e]"
+                            : "border-border bg-transparent text-muted-foreground",
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-full mb-4">
+                  <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Description</Label>
+                  <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+                </div>
+                <div className="col-span-full mb-4">
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
+                    <Checkbox checked={form.isActive} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isActive: !!v }))} />
+                    Active (visible to users)
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* ARABIC TAB */}
+            {activeTab === "arabic" && (
+              <div>
+                <div className="mb-5 rounded-lg border border-primary/20 bg-primary/[0.06] p-3.5">
+                  <p className="mb-1 text-xs font-semibold text-[#a78bfa]">🇦🇪 Arabic (UAE) Content</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">These fields are shown when the portal language is set to Arabic (AR). Leave blank to fall back to English.</p>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Name (AR) — الاسم</Label>
+                    <Input value={form.name_ar} onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))} placeholder="العقارات" dir="rtl" />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Description (AR) — الوصف</Label>
+                    <Textarea value={form.description_ar} onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))} rows={4} placeholder="وصف الصناعة بالعربية..." dir="rtl" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODULES TAB */}
+            {activeTab === "modules" && (
+              <div>
+                <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/[0.06] p-3.5">
+                  <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-blue-500">
+                    <Package size={11} />
+                    Default Modules ({form.defaultModuleIds.length} selected)
+                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    These modules are automatically included when a user subscribes to this industry. Users can add more on top.
+                  </p>
+                </div>
+                <Input
+                  value={moduleSearch}
+                  onChange={e => setModuleSearch(e.target.value)}
+                  placeholder="Search modules..."
+                  className="mb-3.5"
+                />
+                <div className="flex max-h-[340px] flex-col gap-1.5 overflow-y-auto">
+                  {filteredModules.map(m => {
+                    const selected = form.defaultModuleIds.includes(m._id);
+                    return (
+                      <div
+                        key={m._id}
+                        onClick={() => toggleModule(m._id)}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-2.5 transition-colors",
+                          selected ? "border-primary/35 bg-primary/[0.07]" : "border-border bg-transparent",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded border-2",
+                            selected ? "border-primary bg-primary" : "border-border bg-transparent",
+                          )}
+                        >
+                          {selected && <Check size={11} className="text-primary-foreground" strokeWidth={3} />}
+                        </div>
+                        <span className="text-base">{m.icon}</span>
+                        <div className="flex-1">
+                          <p className="text-[13px] font-medium text-foreground">{m.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{m.moduleType} · {m.slug}</p>
+                        </div>
+                        {selected && <Globe size={13} className="text-primary" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+              {saving ? "Saving..." : "Save Industry"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
