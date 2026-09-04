@@ -313,6 +313,7 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
 
       {/* Price */}
       <div className="mb-5 flex items-end gap-1.5 border-b pb-5">
+        {isBot && <span className="mb-1 text-xs font-medium text-muted-foreground">From</span>}
         <span className="text-[40px] leading-none font-extrabold tracking-[-0.04em] text-foreground">
           ${price}
         </span>
@@ -352,7 +353,7 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
           href={href}
           className="flex items-center justify-center rounded-[9px] border px-3.5 py-2.75 text-xs font-medium whitespace-nowrap text-muted-foreground no-underline"
         >
-          Details
+          {isBot ? "See all plans" : "Details"}
         </Link>
       </div>
 

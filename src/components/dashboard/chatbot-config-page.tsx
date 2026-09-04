@@ -8,12 +8,12 @@ import {
   ArrowLeft, Loader2, Save, Settings, BookOpen, Radio, MessageSquare,
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
-  DollarSign, CheckCircle2, Clock, Mail, Wrench,
+  DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
 import { ChatbotTrialBanner } from "./chatbot-trial-banner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,6 +75,9 @@ interface Billing {
   monthlyFee: number;
   currency: string;
   status: "trial" | "awaiting_setup_payment" | "active" | "past_due" | "suspended";
+  // Drives feature gating (Analytics tab, WhatsApp/Instagram channels) —
+  // see backend CLAUDE.md's "Tiered chatbot pricing" section.
+  tier: "basic" | "pro" | "custom";
   trialEndsAt?: string;
   setupPaidAt?: string;
   lastBillingDate?: string;
@@ -113,6 +116,11 @@ const BILLING_STATUS_COLOR: Record<string, string> = {
   active: "#22c55e",
   past_due: "#ef4444",
   suspended: "#6b7280",
+};
+const TIER_COLOR: Record<string, string> = {
+  basic: "#6b7280",
+  pro: "#7c3aed",
+  custom: "#f59e0b",
 };
 
 interface KnowledgeEntry {
@@ -190,6 +198,30 @@ function SaveBtn({ onClick, saving, label = "Save Changes" }: { onClick: () => v
         {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
         {saving ? "Saving..." : label}
       </Button>
+    </div>
+  );
+}
+
+// Shown in place of a Pro-tier feature (Analytics tab, WhatsApp/Instagram
+// channel cards) when the chatbot is on Basic. See backend CLAUDE.md's
+// "Tiered chatbot pricing" — upgrades are admin-set (Billing tab), not a
+// self-serve payment flow, so this points at the same place.
+function UpgradeLockCard({ title, description, isAdmin, compact }: {
+  title: string; description: string; isAdmin: boolean; compact?: boolean;
+}) {
+  return (
+    <div className={cn(
+      "flex flex-col items-center gap-2 rounded-xl border border-dashed bg-muted/30 text-center",
+      compact ? "px-4 py-6" : "px-6 py-12",
+    )}>
+      <div className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+        <Lock size={16} className="text-primary" />
+      </div>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="max-w-xs text-xs text-muted-foreground">{description}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {isAdmin ? "Set this client's plan to Pro from the Billing tab." : "Ask us about upgrading to Pro — see the Billing tab."}
+      </p>
     </div>
   );
 }
@@ -325,7 +357,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const [billingLoaded, setBillingLoaded] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [pricingForm, setPricingForm] = useState({
-    setupFee: "0", monthlyFee: "0", currency: "USD", trialEndsAt: "", notes: "",
+    setupFee: "0", monthlyFee: "0", currency: "USD", trialEndsAt: "", notes: "", tier: "basic" as "basic" | "pro" | "custom",
   });
   const [pricingSaving, setPricingSaving] = useState(false);
   const [payKind, setPayKind] = useState<"setup" | "monthly">("setup");
@@ -456,6 +488,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           currency: b.currency || "USD",
           trialEndsAt: b.trialEndsAt ? b.trialEndsAt.slice(0, 10) : "",
           notes: b.notes || "",
+          tier: b.tier || "basic",
         });
       }
       setBillingLoaded(true);
@@ -474,6 +507,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         currency: pricingForm.currency,
         trialEndsAt: pricingForm.trialEndsAt || undefined,
         notes: pricingForm.notes,
+        tier: pricingForm.tier,
       });
       setChatbot((c) => c ? { ...c, billing: res.data?.data?.billing || res.data.billing } : c);
       toast.success("Pricing saved");
@@ -587,6 +621,13 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     );
   }
 
+  // Tier gating — see backend CLAUDE.md's "Tiered chatbot pricing" section.
+  // 'custom' bots get everything Pro gets, plus (not modeled here) custom
+  // integrations negotiated directly, so it's treated the same as Pro
+  // everywhere gating is checked.
+  const isProOrAbove = chatbot.billing.tier === "pro" || chatbot.billing.tier === "custom";
+  const visibleTabs = TABS.filter((t) => t.key !== "analytics" || isProOrAbove);
+
   const statusMeta: Record<string, { label: string; desc: string; color: string; bg: string }> = {
     draft: { label: "Draft", desc: "Bot is in draft — not visible to customers yet.", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
     active: { label: "Live", desc: "Bot is live and responding to customers.", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
@@ -639,7 +680,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           content on the right, matching settings-page.tsx. See CLAUDE.md. */}
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[220px_1fr]">
         <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
-          {TABS.map(({ key, label, icon: Icon }) => (
+          {visibleTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -780,6 +821,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           saveChannel={saveChannel}
           embedCode={embedCode}
           embedLoading={embedLoading}
+          isProOrAbove={isProOrAbove}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -794,8 +837,15 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       )}
 
       {/* ── ANALYTICS ── */}
-      {tab === "analytics" && (
+      {tab === "analytics" && isProOrAbove && (
         <AnalyticsTab analytics={analytics} loading={analyticsLoading} />
+      )}
+      {tab === "analytics" && !isProOrAbove && (
+        <UpgradeLockCard
+          title="Analytics is a Pro feature"
+          description="Track conversations, messages and handoffs across every channel."
+          isAdmin={isAdmin}
+        />
       )}
 
       {/* ── BILLING ── */}
@@ -1037,10 +1087,10 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
 }
 
 // ── Channels Tab ─────────────────────────────────────────────
-function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading }: {
+function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin }: {
   embedKey: string; channels: Channels; setChannels: (fn: (c: Channels) => Channels) => void;
   savingChannel: string | null; saveChannel: (key: "website" | "whatsapp" | "instagram") => void;
-  embedCode: string; embedLoading: boolean;
+  embedCode: string; embedLoading: boolean; isProOrAbove: boolean; isAdmin: boolean;
 }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
   const whatsappWebhook = `${apiUrl}/webhooks/whatsapp/${embedKey}`;
@@ -1120,49 +1170,63 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
       <Section
         title="WhatsApp"
         icon={FaWhatsapp}
-        right={<Switch checked={!!channels.whatsapp.enabled} onCheckedChange={() => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, enabled: !c.whatsapp.enabled } }))} />}
+        right={isProOrAbove
+          ? <Switch checked={!!channels.whatsapp.enabled} onCheckedChange={() => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, enabled: !c.whatsapp.enabled } }))} />
+          : <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.75 text-[10px] font-semibold text-muted-foreground"><Lock size={9} /> Pro</span>}
       >
-        <p className="mb-3.5 text-xs text-muted-foreground">
-          Get these from your Meta Business App → WhatsApp → API Setup.
-        </p>
-        <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
-          <div>
-            {fieldLabel("Phone Number ID")}
-            <Input
-              type="password"
-              value={channels.whatsapp.phoneNumberId || ""}
-              onChange={(e) => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, phoneNumberId: e.target.value } }))}
-              placeholder="•••••••••••"
-            />
-          </div>
-          <div>
-            {fieldLabel("Access Token")}
-            <Input
-              type="password"
-              value={channels.whatsapp.accessToken || ""}
-              onChange={(e) => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, accessToken: e.target.value } }))}
-              placeholder="•••••••••••"
-            />
-          </div>
-        </div>
-        <div className="mb-3.5">
-          {fieldLabel("Webhook URL — paste this into Meta")}
-          <div className="flex gap-2">
-            <Input readOnly value={whatsappWebhook} className="cursor-text text-muted-foreground" />
-            <Button variant="outline" onClick={() => copyText(whatsappWebhook, "Webhook URL")} className="shrink-0 gap-1.5">
-              <Copy size={12} /> Copy
-            </Button>
-          </div>
-        </div>
-        <SaveBtn onClick={() => saveChannel("whatsapp")} saving={savingChannel === "whatsapp"} label="Save WhatsApp Channel" />
+        {!isProOrAbove ? (
+          <UpgradeLockCard title="WhatsApp is a Pro feature" description="Connect a Meta Business App to answer customers on WhatsApp." isAdmin={isAdmin} compact />
+        ) : (
+          <>
+            <p className="mb-3.5 text-xs text-muted-foreground">
+              Get these from your Meta Business App → WhatsApp → API Setup.
+            </p>
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
+              <div>
+                {fieldLabel("Phone Number ID")}
+                <Input
+                  type="password"
+                  value={channels.whatsapp.phoneNumberId || ""}
+                  onChange={(e) => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, phoneNumberId: e.target.value } }))}
+                  placeholder="•••••••••••"
+                />
+              </div>
+              <div>
+                {fieldLabel("Access Token")}
+                <Input
+                  type="password"
+                  value={channels.whatsapp.accessToken || ""}
+                  onChange={(e) => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, accessToken: e.target.value } }))}
+                  placeholder="•••••••••••"
+                />
+              </div>
+            </div>
+            <div className="mb-3.5">
+              {fieldLabel("Webhook URL — paste this into Meta")}
+              <div className="flex gap-2">
+                <Input readOnly value={whatsappWebhook} className="cursor-text text-muted-foreground" />
+                <Button variant="outline" onClick={() => copyText(whatsappWebhook, "Webhook URL")} className="shrink-0 gap-1.5">
+                  <Copy size={12} /> Copy
+                </Button>
+              </div>
+            </div>
+            <SaveBtn onClick={() => saveChannel("whatsapp")} saving={savingChannel === "whatsapp"} label="Save WhatsApp Channel" />
+          </>
+        )}
       </Section>
 
       {/* Instagram */}
       <Section
         title="Instagram"
         icon={FaInstagram}
-        right={<Switch checked={!!channels.instagram.enabled} onCheckedChange={() => setChannels((c) => ({ ...c, instagram: { ...c.instagram, enabled: !c.instagram.enabled } }))} />}
+        right={isProOrAbove
+          ? <Switch checked={!!channels.instagram.enabled} onCheckedChange={() => setChannels((c) => ({ ...c, instagram: { ...c.instagram, enabled: !c.instagram.enabled } }))} />
+          : <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.75 text-[10px] font-semibold text-muted-foreground"><Lock size={9} /> Pro</span>}
       >
+        {!isProOrAbove ? (
+          <UpgradeLockCard title="Instagram is a Pro feature" description="Connect a Meta Business App to answer customers on Instagram DMs." isAdmin={isAdmin} compact />
+        ) : (
+          <>
         <p className="mb-3.5 text-xs text-muted-foreground">
           Requires Meta App Review for the <code>instagram_manage_messages</code> permission.
         </p>
@@ -1196,6 +1260,8 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
           </div>
         </div>
         <SaveBtn onClick={() => saveChannel("instagram")} saving={savingChannel === "instagram"} label="Save Instagram Channel" />
+          </>
+        )}
       </Section>
     </>
   );
@@ -1381,7 +1447,7 @@ function BillingTab({
   confirming, confirmPayment,
 }: {
   billing: Billing; history: BillingRecord[]; loading: boolean; isAdmin: boolean;
-  pricingForm: { setupFee: string; monthlyFee: string; currency: string; trialEndsAt: string; notes: string };
+  pricingForm: { setupFee: string; monthlyFee: string; currency: string; trialEndsAt: string; notes: string; tier: "basic" | "pro" | "custom" };
   setPricingForm: (fn: any) => void;
   savePricing: () => void; pricingSaving: boolean;
   payKind: "setup" | "monthly"; setPayKind: (k: "setup" | "monthly") => void;
@@ -1415,13 +1481,37 @@ function BillingTab({
             </p>
           </div>
         </div>
-        <span
-          className="rounded-full border px-3 py-1.5 text-xs font-bold"
-          style={{ background: `${statusColor}18`, color: statusColor, borderColor: `${statusColor}30` }}
-        >
-          {BILLING_STATUS_LABEL[billing?.status] || "Trial"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="rounded-full border px-2.5 py-1.5 text-xs font-bold capitalize"
+            style={{ background: `${TIER_COLOR[billing?.tier || "basic"]}18`, color: TIER_COLOR[billing?.tier || "basic"], borderColor: `${TIER_COLOR[billing?.tier || "basic"]}30` }}
+          >
+            {billing?.tier === "custom" ? "Custom" : billing?.tier === "pro" ? "Pro" : "Basic"} plan
+          </span>
+          <span
+            className="rounded-full border px-3 py-1.5 text-xs font-bold"
+            style={{ background: `${statusColor}18`, color: statusColor, borderColor: `${statusColor}30` }}
+          >
+            {BILLING_STATUS_LABEL[billing?.status] || "Trial"}
+          </span>
+        </div>
       </div>
+
+      {/* Client-facing: nudge to upgrade if still on Basic */}
+      {!isAdmin && billing?.tier === "basic" && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-5 py-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Want WhatsApp, Instagram & Analytics?</p>
+            <p className="text-xs text-muted-foreground">Upgrade to Pro to unlock every channel and full conversation analytics.</p>
+          </div>
+          <a
+            href="mailto:hello@logicmate.io?subject=Upgrade%20to%20Pro"
+            className={cn(buttonVariants({ size: "sm" }), "shrink-0 no-underline")}
+          >
+            Ask about upgrading
+          </a>
+        </div>
+      )}
 
       {/* Admin: pricing editor */}
       {isAdmin && (
@@ -1429,6 +1519,23 @@ function BillingTab({
           <p className="mb-4 text-xs text-muted-foreground">
             Not shown publicly — priced per deal. The customer sees these amounts once set.
           </p>
+          <div className="mb-3.5">
+            {fieldLabel("Plan")}
+            <div className="flex gap-2">
+              {(["basic", "pro", "custom"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setPricingForm((f: any) => ({ ...f, tier: t }))}
+                  className={cn(
+                    "flex-1 rounded-lg border-[1.5px] py-2 text-[13px] font-semibold capitalize",
+                    pricingForm.tier === t ? "border-primary bg-primary/10 text-[#a78bfa]" : "bg-background text-foreground",
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <div>
               {fieldLabel("Setup Fee (one-time)")}

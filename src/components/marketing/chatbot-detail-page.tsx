@@ -57,9 +57,13 @@ interface ChatbotModule {
   faq: { question: string; answer: string }[];
   demoVideoUrl?: string;
   isComingSoon?: boolean;
-  // Same pricing shape agents/automations use — admin-edited from the same
-  // /dashboard/cms-modules form, not a separate chatbot-only system.
+  // Legacy single-plan shape — only its hasCustomPlan/customLabel are still
+  // used now (for the Custom/Enterprise card), see pricingTiers below.
   pricing?: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
+  // Basic/Pro tiered pricing — see backend CLAUDE.md's "Tiered chatbot
+  // pricing" section. Admin-edited per template in SEED_MODULES (not yet
+  // in the /dashboard/cms-modules form UI, same gap hasCustomPlan has).
+  pricingTiers?: { key: "basic" | "pro"; monthly: number; annual: number; features: string[] }[];
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -97,6 +101,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [videoError, setVideoError] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -137,16 +142,14 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     return () => ctx.revert();
   }, [agent]);
 
-  // Picking a pricing card creates the chatbot pre-filled with this template
-  // (auto-30-day-trial, billed at module.pricing.monthly — see
-  // ChatbotsService.create() on the backend) and takes the owner straight
-  // into the config portal to set it up. One plan, everything included —
-  // same story as agents/automations, so Monthly and Annual both just start
-  // the trial; there's no separate tier to choose between.
-  const handleGetStarted = async () => {
+  // Picking a pricing card creates the chatbot pre-filled with this
+  // template and the chosen tier (auto-30-day-trial, billed at that tier's
+  // monthly rate — see ChatbotsService.create() on the backend) and takes
+  // the owner straight into the config portal to set it up.
+  const handleGetStarted = async (tier: "basic" | "pro" = "basic") => {
     if (!agent) return;
     if (!isAuthenticated) {
-      const redirectTo = `/chatbots/${agent.slug}?autostart=1`;
+      const redirectTo = `/chatbots/${agent.slug}?autostart=1&tier=${tier}`;
       router.push(`/auth/signup?redirect=${encodeURIComponent(redirectTo)}`);
       return;
     }
@@ -158,6 +161,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         template: TEMPLATE_ENUM[agent.slug] || "custom",
         language: "both",
         moduleSlug: agent.slug,
+        tier,
       });
       const created = res.data?.data || res.data;
       toast.success("Chatbot created — 30-day free trial started!");
@@ -193,8 +197,9 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
     if (searchParams.get("autostart") !== "1") return;
     if (!agent || !isAuthenticated) return;
     autoStartFired.current = true;
+    const requestedTier = searchParams.get("tier") === "pro" ? "pro" : "basic";
     router.replace(`/chatbots/${slug}`, { scroll: false });
-    handleGetStarted();
+    handleGetStarted(requestedTier);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent, isAuthenticated, searchParams]);
 
@@ -558,86 +563,103 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         </section>
       )}
 
-      {/* Pricing — same shape as agents/automations: module.pricing, admin-edited from /dashboard/cms-modules */}
-      {agent.pricing && agent.pricing.monthly > 0 && (
-        <section id="pricing" className="border-b bg-card px-6 py-20">
-          <div className="mx-auto max-w-[900px] text-center">
-            <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
-              {isAr ? "تسعير بسيط" : "Simple pricing"}
-            </h2>
-            <p className="mb-12 text-base text-muted-foreground">
-              {isAr ? "خطة واحدة. كل شيء مشمول — الموقع + واتساب + إنستغرام. إلغاء في أي وقت." : "One plan. Everything included — website + WhatsApp + Instagram. Cancel anytime."}
-            </p>
+      {/* Pricing — Basic/Pro tiers (module.pricingTiers), Custom reuses
+          module.pricing.hasCustomPlan/customLabel. See backend CLAUDE.md's
+          "Tiered chatbot pricing" section. */}
+      {agent.pricingTiers && agent.pricingTiers.length > 0 && (() => {
+        const basic = agent.pricingTiers!.find((t) => t.key === "basic");
+        const pro = agent.pricingTiers!.find((t) => t.key === "pro");
+        if (!basic || !pro) return null;
+        const priceFor = (t: { monthly: number; annual: number }) => billingCycle === "annual" ? t.annual : t.monthly;
+        return (
+          <section id="pricing" className="border-b bg-card px-6 py-20">
+            <div className="mx-auto max-w-[960px] text-center">
+              <h2 className="mb-3 text-[clamp(24px,3vw,40px)] font-bold text-foreground">
+                {isAr ? "اختر خطتك" : "Choose your plan"}
+              </h2>
+              <p className="mb-8 text-base text-muted-foreground">
+                {isAr ? "ابدأ بالموقع فقط، أو أضف واتساب وإنستغرام والتحليلات مع خطة Pro. إلغاء في أي وقت." : "Start with website-only, or add WhatsApp, Instagram and analytics with Pro. Cancel anytime."}
+              </p>
 
-            <div
-              className={cn("mx-auto grid grid-cols-1 gap-4", agent.pricing?.hasCustomPlan ? "sm:grid-cols-3" : "sm:grid-cols-2")}
-              style={{ maxWidth: agent.pricing?.hasCustomPlan ? "900px" : "640px" }}
-            >
-              {/* Monthly */}
-              <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
-                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "شهري" : "Monthly"}</p>
-                <div className="mb-5">
-                  <span className="text-4xl font-extrabold text-foreground">${agent.pricing.monthly}</span>
-                  <span className="text-sm text-muted-foreground">/mo</span>
-                </div>
-                <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "يُحسب شهرياً. إلغاء في أي وقت." : "Billed monthly. Cancel anytime."}</p>
-                <ul className="mb-6 flex-1 list-none p-0">
-                  {agent.pricing.features.slice(0, 5).map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
-                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="outline" onClick={handleGetStarted} disabled={creating} className="w-full">
-                  {creating ? <Loader2 size={14} className="animate-spin" /> : (isAr ? "ابدأ" : "Get started")}
-                </Button>
+              {/* Billing cycle toggle */}
+              <div className="mb-10 inline-flex items-center gap-1 rounded-full border bg-background p-1">
+                {(["monthly", "annual"] as const).map((cycle) => (
+                  <button
+                    key={cycle}
+                    onClick={() => setBillingCycle(cycle)}
+                    className={cn(
+                      "rounded-full border-none px-4 py-1.5 text-[13px] font-semibold",
+                      billingCycle === cycle ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground",
+                    )}
+                  >
+                    {cycle === "monthly" ? (isAr ? "شهري" : "Monthly") : (isAr ? "سنوي (وفّر ٢٠٪)" : "Annual (save ~20%)")}
+                  </button>
+                ))}
               </div>
 
-              {/* Annual */}
-              <div className="relative flex flex-col rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/8 to-[#6d28d9]/4 p-7 text-left shadow-[0_0_40px_rgba(124,58,237,0.1)]">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-primary to-[#6d28d9] px-4 py-1 text-[11px] font-bold whitespace-nowrap text-white">
-                  ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
-                </div>
-                <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-[#a78bfa] uppercase">{isAr ? "سنوي" : "Annual"}</p>
-                <div className="mb-1">
-                  <span className="text-4xl font-extrabold text-foreground">${agent.pricing.annual}</span>
-                  <span className="text-sm text-muted-foreground">/mo</span>
-                </div>
-                <p className="mb-5 text-xs font-semibold text-[#22c55e]">
-                  Save ${(agent.pricing.monthly - agent.pricing.annual) * 12}/year — billed annually
-                </p>
-                <ul className="mb-6 flex-1 list-none p-0">
-                  {agent.pricing.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-foreground">
-                      <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button onClick={handleGetStarted} disabled={creating} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
-                  {creating ? <Loader2 size={14} className="animate-spin" /> : (
-                    <>
-                      {isAr ? "ابدأ التجربة المجانية" : "Start free trial"}
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </Button>
-                <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
-              </div>
-
-              {/* Custom / Enterprise */}
-              {agent.pricing?.hasCustomPlan && (
+              <div className="mx-auto grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {/* Basic */}
                 <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
-                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "مؤسسي" : "Enterprise"}</p>
+                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "أساسي" : "Basic"}</p>
                   <div className="mb-5">
-                    <span className="text-4xl font-extrabold text-foreground">{isAr ? "مخصص" : "Custom"}</span>
+                    <span className="text-4xl font-extrabold text-foreground">${priceFor(basic)}</span>
+                    <span className="text-sm text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "الموقع فقط. إلغاء في أي وقت." : "Website widget only. Cancel anytime."}</p>
+                  <ul className="mb-6 flex-1 list-none p-0">
+                    {basic.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
+                        <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="outline" onClick={() => handleGetStarted("basic")} disabled={creating} className="w-full">
+                    {creating ? <Loader2 size={14} className="animate-spin" /> : (isAr ? "ابدأ" : "Get started")}
+                  </Button>
+                </div>
+
+                {/* Pro */}
+                <div className="relative flex flex-col rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/8 to-[#6d28d9]/4 p-7 text-left shadow-[0_0_40px_rgba(124,58,237,0.1)]">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-primary to-[#6d28d9] px-4 py-1 text-[11px] font-bold whitespace-nowrap text-white">
+                    ⭐ {isAr ? "الأكثر شيوعاً" : "Most Popular"}
+                  </div>
+                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-[#a78bfa] uppercase">{isAr ? "برو" : "Pro"}</p>
+                  <div className="mb-5">
+                    <span className="text-4xl font-extrabold text-foreground">${priceFor(pro)}</span>
+                    <span className="text-sm text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "الموقع + واتساب + إنستغرام + التحليلات." : "Website + WhatsApp + Instagram + Analytics."}</p>
+                  <ul className="mb-6 flex-1 list-none p-0">
+                    {pro.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-foreground">
+                        <CheckCircle2 size={13} className="shrink-0 text-[#22c55e]" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button onClick={() => handleGetStarted("pro")} disabled={creating} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
+                    {creating ? <Loader2 size={14} className="animate-spin" /> : (
+                      <>
+                        {isAr ? "ابدأ التجربة المجانية" : "Start free trial"}
+                        <ArrowRight size={14} />
+                      </>
+                    )}
+                  </Button>
+                  <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
+                </div>
+
+                {/* Custom / Enterprise */}
+                <div className="flex flex-col rounded-2xl border bg-background p-7 text-left">
+                  <p className="mb-2 text-[13px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{isAr ? "مؤسسي" : "Custom"}</p>
+                  <div className="mb-5">
+                    <span className="text-4xl font-extrabold text-foreground">{isAr ? "مخصص" : "Contact us"}</span>
                   </div>
                   <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
-                    {agent.pricing.customLabel || "Need a tailored solution for your business?"}
+                    {agent.pricing?.customLabel || "Need custom integrations or multiple bots?"}
                   </p>
                   <ul className="mb-6 flex-1 list-none p-0">
-                    {["Multiple locations / bots", "Dedicated onboarding", "Custom integrations", "Priority support"].map((f) => (
+                    {["Everything in Pro", "Custom integrations (CRM/POS)", "Multiple bots, one account", "Dedicated onboarding"].map((f) => (
                       <li key={f} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
                         <CheckCircle2 size={13} className="shrink-0 text-primary" />
                         {f}
@@ -648,11 +670,11 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
                     {isAr ? "تواصل معنا" : "Contact us"} →
                   </a>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       {/* FAQ */}
       {agent.faq?.length > 0 && (
