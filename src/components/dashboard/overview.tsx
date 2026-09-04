@@ -345,70 +345,43 @@ export function DashboardOverview() {
 
       {/* ── ONBOARDING / WELCOME CARD — shown until email is verified ── */}
       {!isAdmin && !loading && !isVerified && (
-        <div style={{
-          background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04))",
-          border: "1px solid rgba(124,58,237,0.2)",
-          borderRadius: "14px", padding: "28px 32px",
-          marginBottom: "24px",
-        }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "20px" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "28px" }}>🚀</span>
-                <h2 style={{ fontSize: "18px", fontWeight: 700, color: colors.text }}>
+        <div className="mb-6 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] via-primary/[0.03] to-transparent">
+          <div className="p-6 sm:p-8">
+            <div className="mb-6 flex items-center gap-3.5">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-2xl">🚀</div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
                   {daypart}, {firstName}. Welcome to LogicMate!
                 </h2>
-              </div>
-              <p style={{ fontSize: "14px", color: colors.textMuted, marginBottom: "20px", lineHeight: 1.6 }}>
-                Here&apos;s what you can do on LogicMate — AI agents, automations and chatbots, all running on
-                your own API keys. Get your first module live in three steps:
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { step: "1", title: "Add your API keys", desc: "OpenAI and Atlas Cloud keys are required to run any pipeline", href: "/dashboard/api-keys", cta: "Add keys →", color: "#f59e0b" },
-                  { step: "2", title: "Choose an AI agent, automation or chatbot", desc: "Browse our marketplace — YouTube, Instagram, chatbots and more", href: "/dashboard/modules", cta: "Browse marketplace →", color: "#7c3aed" },
-                  { step: "3", title: "Run your first pipeline", desc: "Click 'Configure & Run' — results delivered automatically", href: "/dashboard/modules", cta: "Get started →", color: "#22c55e" },
-                ].map((item) => (
-                  <div key={item.step} style={{
-                    display: "flex", alignItems: "center", gap: "14px",
-                    padding: "12px 16px", borderRadius: "10px",
-                    background: colors.bgCard, border: `1px solid ${colors.border}`,
-                  }}>
-                    <div style={{
-                      width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
-                      background: `${item.color}15`, border: `1px solid ${item.color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "12px", fontWeight: 700, color: item.color,
-                    }}>
-                      {item.step}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text, marginBottom: "2px" }}>
-                        {item.title}
-                      </p>
-                      <p style={{ fontSize: "12px", color: colors.textMuted }}>{item.desc}</p>
-                    </div>
-                    <Link href={item.href} style={{
-                      fontSize: "12px", fontWeight: 600, color: item.color,
-                      textDecoration: "none", whiteSpace: "nowrap",
-                      padding: "6px 12px", borderRadius: "7px",
-                      border: `1px solid ${item.color}30`,
-                      background: `${item.color}08`,
-                    }}>
-                      {item.cta}
-                    </Link>
-                  </div>
-                ))}
+                <p className="text-sm text-muted-foreground">
+                  AI agents, automations and chatbots — all running on your own API keys.
+                </p>
               </div>
             </div>
 
-            <div style={{
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: "12px", padding: "20px", minWidth: "200px", flexShrink: 0,
-            }}>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: colors.textMuted, marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                What you get
-              </p>
+            <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+              {[
+                { step: 1, title: "Add your API keys", desc: "OpenAI and Atlas Cloud keys are required to run any pipeline", href: "/dashboard/api-keys", cta: "Add keys", color: "#f59e0b" },
+                { step: 2, title: "Choose a module", desc: "Browse agents, automations and chatbots in the marketplace", href: "/dashboard/modules", cta: "Browse marketplace", color: "#7c3aed" },
+                { step: 3, title: "Run your first pipeline", desc: "Click ‘Configure & Run’ — results delivered automatically", href: "/dashboard/modules", cta: "Get started", color: "#22c55e" },
+              ].map((item) => (
+                <div key={item.step} className="flex flex-col rounded-xl border bg-card p-4">
+                  <div
+                    className="mb-3 flex size-7 items-center justify-center rounded-full text-xs font-bold"
+                    style={{ background: `${item.color}15`, border: `1px solid ${item.color}30`, color: item.color }}
+                  >
+                    {item.step}
+                  </div>
+                  <p className="mb-1 text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="mb-4 flex-1 text-xs leading-relaxed text-muted-foreground">{item.desc}</p>
+                  <Link href={item.href} className="text-xs font-semibold no-underline" style={{ color: item.color }}>
+                    {item.cta} →
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               {[
                 { emoji: "🤖", text: "AI agents & automations" },
                 { emoji: "💬", text: "Ready-made chatbots" },
@@ -417,10 +390,9 @@ export function DashboardOverview() {
                 { emoji: "📧", text: "Email notifications" },
                 { emoji: "🆓", text: "30-day free trial" },
               ].map((item) => (
-                <div key={item.text} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "5px 0" }}>
-                  <span style={{ fontSize: "14px" }}>{item.emoji}</span>
-                  <span style={{ fontSize: "13px", color: colors.textMuted }}>{item.text}</span>
-                </div>
+                <span key={item.text} className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                  <span>{item.emoji}</span>{item.text}
+                </span>
               ))}
             </div>
           </div>

@@ -642,6 +642,13 @@ User confirmed the pricingTiers form worked, then reported two issues while test
 
 **Verified**: `tsc --noEmit` + `npm run build` clean (all 41 routes), and a Playwright pass confirmed the filter dropdown now lists `["All types","Agent","Automation","Chatbot"]`, the new nav renders all 6 labels and switches tabs correctly (including the Pricing tab's Basic/Pro sections from the previous fix), the dialog measures 896px wide on desktop, and there's zero horizontal overflow with a correctly-row-oriented nav at 390px.
 
+## Dashboard onboarding-card redesign (implemented, 2026-09)
+User signed up as a fresh test account, verified their email, and disliked the unverified-user onboarding card on `/dashboard` (screenshot showed the 3-step list crammed into the left column while a narrow "What you get" box sat on the right leaving a large empty gap next to it).
+
+`overview.tsx`'s onboarding card — the one section of this otherwise still-inline-styled file — converted to Tailwind for this pass (the rest of the file, stat cards/charts/tables, is untouched and still 100% `useTheme()`/`colors`, consistent with how this codebase already tolerates partial-file Tailwind adoption, e.g. `modules-page.tsx`'s batch-3 conversion): the awkward two-column split (steps list + orphaned side panel) is now a full-width layout — the 3 steps render as an even `sm:grid-cols-3` row of equal cards (numbered badge, title, description, colored CTA link), and "What you get" is a `flex-wrap` row of pill badges spanning the same width below it, instead of a narrow floating box. Per-item accent colors (`#f59e0b`/`#7c3aed`/`#22c55e` for the 3 steps) stayed inline `style={{}}`, same rule every other batch in this codebase uses for genuinely dynamic per-item colors.
+
+Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and Playwright at 1440px/390px against a mocked unverified user — the empty-space issue from the screenshot is gone (steps + pills now use the card's full width), and there's zero horizontal overflow on mobile where the step grid collapses to a single column.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
