@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
 import {
   Plus, Pencil, Trash2, Loader2,
-  CheckCircle2, XCircle, Boxes, X,
+  CheckCircle2, XCircle, Boxes, Search,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface HeroStat { label: string; value: string; }
 interface Feature { title: string; description: string; icon: string; }
@@ -118,8 +128,18 @@ const emptyForm = {
 
 type FormState = typeof emptyForm;
 
+const selectClass = "h-8 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none cursor-pointer";
+const monoTextareaClass = "font-mono text-xs";
+
+const fieldLabel = (text: string, hint?: string) => (
+  <Label className="mb-1.25 block text-xs text-muted-foreground">
+    {text} {hint && <span className="text-muted-foreground/70">({hint})</span>}
+  </Label>
+);
+
+const TABS = ["basic", "pipeline", "content", "pricing", "testimonials", "arabic"] as const;
+
 export function AdminModules() {
-  const { colors } = useTheme();
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -127,7 +147,8 @@ export function AdminModules() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"basic" | "pipeline" | "content" | "pricing" | "testimonials" | "arabic">("basic");
+  const [deleteTarget, setDeleteTarget] = useState<Module | null>(null);
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>("basic");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -290,10 +311,10 @@ export function AdminModules() {
 
       if (editingId) {
         await api.patch(`/modules/${editingId}`, payload);
-        toast.success("Module updated ✅");
+        toast.success("Module updated");
       } else {
         await api.post("/modules", payload);
-        toast.success("Module created ✅");
+        toast.success("Module created");
       }
       setShowForm(false);
       fetchModules();
@@ -303,15 +324,18 @@ export function AdminModules() {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this module?")) return;
-    setDeleteLoading(id);
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(deleteTarget._id);
     try {
-      await api.delete(`/modules/${id}`);
+      await api.delete(`/modules/${deleteTarget._id}`);
       toast.success("Deleted");
       fetchModules();
-    } catch {}
+    } catch {
+      toast.error("Failed to delete module");
+    }
     setDeleteLoading(null);
+    setDeleteTarget(null);
   };
 
   const toggleCountry = (c: string) => {
@@ -343,704 +367,513 @@ export function AdminModules() {
     return matchSearch && matchType && matchCat;
   });
 
-  const inp = {
-    width: "100%", padding: "9px 12px", borderRadius: "8px",
-    fontSize: "13px", border: `1px solid ${colors.border}`,
-    background: colors.bg, color: colors.text,
-    boxSizing: "border-box" as const, outline: "none",
-  };
-
-  const selectStyle = {
-    padding: "8px 12px", borderRadius: "8px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none", cursor: "pointer",
-  };
-
-  const lbl = (text: string, hint?: string) => (
-    <label style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginBottom: "5px" }}>
-      {text} {hint && <span style={{ color: colors.textSubtle }}>({hint})</span>}
-    </label>
-  );
-
-  const fld = (content: React.ReactNode, fullWidth = false) => (
-    <div style={{ marginBottom: "14px", ...(fullWidth ? { gridColumn: "1/-1" } : {}) }}>
-      {content}
-    </div>
-  );
-
-  const TABS = ["basic", "pipeline", "content", "pricing", "testimonials", "arabic"] as const;
-
   return (
     <div>
       {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: "16px", flexWrap: "wrap", gap: "12px",
-      }}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Modules</h1>
-          <p style={{ fontSize: "14px", color: colors.textMuted }}>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Modules</h1>
+          <p className="text-sm text-muted-foreground">
             {filteredModules.length} of {modules.length} agents & automations
           </p>
         </div>
-        <button onClick={openCreate} style={{
-          display: "flex", alignItems: "center", gap: "8px",
-          padding: "9px 18px", borderRadius: "8px",
-          background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-          color: "white", border: "none", cursor: "pointer",
-          fontSize: "14px", fontWeight: 600,
-        }}>
+        <Button onClick={openCreate} className="gap-2">
           <Plus size={15} /> New module
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-          <span style={{
-            position: "absolute", left: "10px", top: "50%",
-            transform: "translateY(-50%)", color: colors.textMuted,
-            fontSize: "13px", pointerEvents: "none",
-          }}>🔍</span>
-          <input
+      <div className="mb-5 flex flex-wrap gap-2.5">
+        <div className="relative min-w-[200px] flex-1">
+          <Search size={13} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
             placeholder="Search by name, slug or description..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{
-              width: "100%", padding: "8px 12px 8px 32px",
-              borderRadius: "8px", fontSize: "13px",
-              border: `1px solid ${colors.border}`,
-              background: colors.bg, color: colors.text,
-              boxSizing: "border-box" as const, outline: "none",
-            }}
+            className="pl-7.5"
           />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={selectStyle}>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className={cn(selectClass, "w-auto min-w-[130px]")}>
           <option value="">All types</option>
           <option value="agent">Agent</option>
           <option value="automation">Automation</option>
         </select>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={selectStyle}>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={cn(selectClass, "w-auto min-w-[150px]")}>
           <option value="">All categories</option>
           {CATEGORY_OPTIONS.map(c => (
             <option key={c} value={c}>{formatLabel(c)}</option>
           ))}
         </select>
         {(search || filterType || filterCategory) && (
-          <button
-            onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}
-            style={{
-              padding: "8px 12px", borderRadius: "8px", fontSize: "13px",
-              border: `1px solid ${colors.border}`, background: colors.bg,
-              color: colors.textMuted, cursor: "pointer",
-            }}
-          >
+          <Button variant="outline" onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}>
             Clear
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Modal */}
-      {showForm && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 400,
-          background: "rgba(0,0,0,0.8)",
-          display: "flex", alignItems: "flex-start",
-          justifyContent: "center", padding: "24px",
-          overflowY: "auto",
-        }}>
-          <div style={{
-            background: colors.bgCard, border: `1px solid ${colors.border}`,
-            borderRadius: "16px", width: "100%", maxWidth: "800px",
-            marginTop: "20px", marginBottom: "40px",
-          }}>
-            {/* Modal Header */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "20px 24px", borderBottom: `1px solid ${colors.border}`,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{
-                  width: "36px", height: "36px", borderRadius: "9px",
-                  background: `${form.color}15`, border: `1px solid ${form.color}30`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "18px",
-                }}>
-                  {form.icon || "🤖"}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-3xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg border text-lg"
+                style={{ background: `${form.color}15`, borderColor: `${form.color}30` }}
+              >
+                {form.icon || "🤖"}
+              </div>
+              <div>
+                <DialogTitle>{editingId ? `Edit: ${form.name || "module"}` : "Create module"}</DialogTitle>
+                <p className="text-xs text-muted-foreground">{form.slug || "no slug yet"}</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Tabs */}
+          <div className="-mt-2 flex overflow-x-auto border-b">
+            {TABS.map(t => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={cn(
+                  "-mb-px border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap capitalize",
+                  activeTab === t ? "border-primary font-semibold text-[#a78bfa]" : "border-transparent font-normal text-muted-foreground",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {/* Form Body */}
+          <div className="flex-1 overflow-y-auto">
+            {/* BASIC TAB */}
+            {activeTab === "basic" && (
+              <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                <div className="mb-3.5">{fieldLabel("Name *")}<Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="YouTube Agent" /></div>
+                <div className="mb-3.5">{fieldLabel("Slug *")}<Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="youtube-agent" /></div>
+                <div className="mb-3.5">{fieldLabel("Tagline")}<Input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Automate your YouTube channel" /></div>
+                <div className="mb-3.5">{fieldLabel("Icon", "emoji")}<Input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🤖" /></div>
+                <div className="mb-3.5">
+                  {fieldLabel("Color", "hex")}
+                  <div className="flex gap-2">
+                    <input
+                      type="color" value={form.color}
+                      onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                      className="h-9 w-11 cursor-pointer rounded-lg border p-0.5"
+                    />
+                    <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="flex-1" />
+                  </div>
                 </div>
-                <div>
-                  <h2 style={{ fontSize: "15px", fontWeight: 700, color: colors.text }}>
-                    {editingId ? `Edit: ${form.name || "module"}` : "Create module"}
-                  </h2>
-                  <p style={{ fontSize: "12px", color: colors.textMuted }}>{form.slug || "no slug yet"}</p>
+                <div className="mb-3.5">
+                  {fieldLabel("Badge")}
+                  <select value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} className={selectClass}>
+                    {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Module Type")}
+                  <select value={form.moduleType} onChange={e => setForm(f => ({ ...f, moduleType: e.target.value }))} className={selectClass}>
+                    <option value="agent">Agent</option>
+                    <option value="automation">Automation</option>
+                    <option value="chatbot">Chatbot</option>
+                  </select>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Category")}
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={selectClass}>
+                    {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{formatLabel(c)}</option>)}
+                  </select>
+                </div>
+                <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
+                <div className="mb-3.5">{fieldLabel("Est. Cost Per Run")}<Input value={form.estimatedCostPerRun} onChange={e => setForm(f => ({ ...f, estimatedCostPerRun: e.target.value }))} placeholder="$3-5 Per Video" /></div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Description")}
+                  <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Capabilities", "comma separated")}
+                  <Input value={form.capabilities} onChange={e => setForm(f => ({ ...f, capabilities: e.target.value }))} placeholder="Trend discovery, AI scriptwriting, Auto upload" />
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Platforms", "comma separated")}
+                  <Input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder="youtube, instagram, tiktok" />
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Demo Video URL")}
+                  <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="https://youtu.be/..." />
+                </div>
+                <div className="col-span-full flex gap-6">
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
+                    <Checkbox checked={form.isActive} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isActive: !!v }))} />
+                    Active (visible to users)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
+                    <Checkbox checked={form.isComingSoon} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isComingSoon: !!v }))} />
+                    Coming Soon
+                  </label>
                 </div>
               </div>
-              <button onClick={() => setShowForm(false)} style={{
-                background: "transparent", border: "none",
-                cursor: "pointer", color: colors.textMuted, padding: "4px",
-              }}>
-                <X size={18} />
-              </button>
-            </div>
+            )}
 
-            {/* Tabs */}
-            <div style={{
-              display: "flex", borderBottom: `1px solid ${colors.border}`,
-              padding: "0 24px", overflowX: "auto",
-            }}>
-              {TABS.map(t => (
-                <button key={t} onClick={() => setActiveTab(t)} style={{
-                  padding: "11px 16px", fontSize: "13px",
-                  fontWeight: activeTab === t ? 600 : 400,
-                  color: activeTab === t ? "#a78bfa" : colors.textMuted,
-                  background: "transparent", border: "none",
-                  borderBottom: `2px solid ${activeTab === t ? "#7c3aed" : "transparent"}`,
-                  cursor: "pointer", textTransform: "capitalize",
-                  whiteSpace: "nowrap",
-                }}>
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {/* Form Body */}
-            <div style={{ padding: "24px" }}>
-
-              {/* ── BASIC TAB ── */}
-              {activeTab === "basic" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                  {fld(<>{lbl("Name *")}<input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="YouTube Agent" style={inp} /></>)}
-                  {fld(<>{lbl("Slug *")}<input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="youtube-agent" style={inp} /></>)}
-                  {fld(<>{lbl("Tagline")}<input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Automate your YouTube channel" style={inp} /></>)}
-                  {fld(<>{lbl("Icon", "emoji")}<input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🤖" style={inp} /></>)}
-                  {fld(<>
-                    {lbl("Color", "hex")}
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input
-                        type="color" value={form.color}
-                        onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                        style={{ width: "44px", height: "36px", borderRadius: "8px", border: `1px solid ${colors.border}`, cursor: "pointer", padding: "2px" }}
-                      />
-                      <input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} style={{ ...inp, flex: 1 }} />
-                    </div>
-                  </>)}
-                  {fld(<>
-                    {lbl("Badge")}
-                    <select value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} style={inp}>
-                      {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </>)}
-                  {fld(<>
-                    {lbl("Module Type")}
-                    <select value={form.moduleType} onChange={e => setForm(f => ({ ...f, moduleType: e.target.value }))} style={inp}>
-                      <option value="agent">Agent</option>
-                      <option value="automation">Automation</option>
-                      <option value="chatbot">Chatbot</option>
-                    </select>
-                  </>)}
-                  {fld(<>
-                    {lbl("Category")}
-                    <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={inp}>
-                      {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{formatLabel(c)}</option>)}
-                    </select>
-                  </>)}
-                  {fld(<>{lbl("Sort Order")}<input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} style={inp} /></>)}
-                  {fld(<>{lbl("Est. Cost Per Run")}<input value={form.estimatedCostPerRun} onChange={e => setForm(f => ({ ...f, estimatedCostPerRun: e.target.value }))} placeholder="$3-5 Per Video" style={inp} /></>)}
-                  {fld(<>
-                    {lbl("Description")}
-                    <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} style={{ ...inp, resize: "vertical" as const }} />
-                  </>, true)}
-                  {fld(<>
-                    {lbl("Capabilities", "comma separated")}
-                    <input value={form.capabilities} onChange={e => setForm(f => ({ ...f, capabilities: e.target.value }))} placeholder="Trend discovery, AI scriptwriting, Auto upload" style={inp} />
-                  </>, true)}
-                  {fld(<>
-                    {lbl("Platforms", "comma separated")}
-                    <input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder="youtube, instagram, tiktok" style={inp} />
-                  </>, true)}
-                  {fld(<>
-                    {lbl("Demo Video URL")}
-                    <input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="https://youtu.be/..." style={inp} />
-                  </>, true)}
-                  <div style={{ gridColumn: "1/-1", display: "flex", gap: "24px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
-                      <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
-                      Active (visible to users)
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
-                      <input type="checkbox" checked={form.isComingSoon} onChange={e => setForm(f => ({ ...f, isComingSoon: e.target.checked }))} style={{ accentColor: "#7c3aed" }} />
-                      Coming Soon
-                    </label>
+            {/* PIPELINE TAB */}
+            {activeTab === "pipeline" && (
+              <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                <div className="mb-3.5">
+                  {fieldLabel("Pipeline Type", "how Python routes this")}
+                  <select value={form.pipelineType} onChange={e => setForm(f => ({ ...f, pipelineType: e.target.value }))} className={selectClass}>
+                    {PIPELINE_TYPES.map(p => <option key={p} value={p}>{formatLabel(p)}</option>)}
+                  </select>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Output Type")}
+                  <select value={form.outputType} onChange={e => setForm(f => ({ ...f, outputType: e.target.value }))} className={selectClass}>
+                    {OUTPUT_TYPES.map(o => <option key={o} value={o}>{formatLabel(o)}</option>)}
+                  </select>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Pipeline Category")}
+                  <select value={form.pipelineCategory} onChange={e => setForm(f => ({ ...f, pipelineCategory: e.target.value }))} className={selectClass}>
+                    <option value="standalone">Standalone Agent</option>
+                    <option value="niche_pipeline">Niche Pipeline</option>
+                  </select>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Niche")}
+                  <select value={form.nicheSlug} onChange={e => setForm(f => ({ ...f, nicheSlug: e.target.value }))} className={selectClass}>
+                    {NICHE_OPTIONS.map(n => <option key={n.slug} value={n.slug}>{n.name}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Available In", "select countries")}
+                  <div className="flex gap-3">
+                    {COUNTRY_OPTIONS.map(c => (
+                      <label key={c} className="flex cursor-pointer items-center gap-1.5 text-[13px] text-foreground">
+                        <Checkbox checked={form.availableIn.includes(c)} onCheckedChange={() => toggleCountry(c)} />
+                        {c}
+                      </label>
+                    ))}
                   </div>
                 </div>
-              )}
-
-              {/* ── PIPELINE TAB ── */}
-              {activeTab === "pipeline" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                  {fld(<>
-                    {lbl("Pipeline Type", "how Python routes this")}
-                    <select value={form.pipelineType} onChange={e => setForm(f => ({ ...f, pipelineType: e.target.value }))} style={inp}>
-                      {PIPELINE_TYPES.map(p => <option key={p} value={p}>{formatLabel(p)}</option>)}
-                    </select>
-                  </>)}
-                  {fld(<>
-                    {lbl("Output Type")}
-                    <select value={form.outputType} onChange={e => setForm(f => ({ ...f, outputType: e.target.value }))} style={inp}>
-                      {OUTPUT_TYPES.map(o => <option key={o} value={o}>{formatLabel(o)}</option>)}
-                    </select>
-                  </>)}
-                  {fld(<>
-                    {lbl("Pipeline Category")}
-                    <select value={form.pipelineCategory} onChange={e => setForm(f => ({ ...f, pipelineCategory: e.target.value }))} style={inp}>
-                      <option value="standalone">Standalone Agent</option>
-                      <option value="niche_pipeline">Niche Pipeline</option>
-                    </select>
-                  </>)}
-                  {fld(<>
-                    {lbl("Niche")}
-                    <select value={form.nicheSlug} onChange={e => setForm(f => ({ ...f, nicheSlug: e.target.value }))} style={inp}>
-                      {NICHE_OPTIONS.map(n => <option key={n.slug} value={n.slug}>{n.name}</option>)}
-                    </select>
-                  </>)}
-                  <div style={{ gridColumn: "1/-1", marginBottom: "14px" }}>
-                    {lbl("Available In", "select countries")}
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      {COUNTRY_OPTIONS.map(c => (
-                        <label key={c} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", color: colors.text }}>
-                          <input
-                            type="checkbox"
-                            checked={form.availableIn.includes(c)}
-                            onChange={() => toggleCountry(c)}
-                            style={{ accentColor: "#7c3aed" }}
-                          />
-                          {c}
-                        </label>
-                      ))}
-                    </div>
+                {form.pipelineCategory === "niche_pipeline" && (
+                  <div className="col-span-full mb-3.5">
+                    {fieldLabel("Pipeline Components", "one component slug per line — e.g. whatsapp_channel, leads_collector")}
+                    <Textarea
+                      value={form.components}
+                      onChange={e => setForm(f => ({ ...f, components: e.target.value }))}
+                      rows={4}
+                      placeholder={"whatsapp_channel\nleads_collector\nai_qualifier\ncrm_sync"}
+                      className={monoTextareaClass}
+                    />
                   </div>
-                  {form.pipelineCategory === "niche_pipeline" && (
-                    <div style={{ gridColumn: "1/-1", marginBottom: "14px" }}>
-                      {lbl("Pipeline Components", "one component slug per line — e.g. whatsapp_channel, leads_collector")}
-                      <textarea
-                        value={form.components}
-                        onChange={e => setForm(f => ({ ...f, components: e.target.value }))}
-                        rows={4}
-                        placeholder={"whatsapp_channel\nleads_collector\nai_qualifier\ncrm_sync"}
-                        style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                      />
-                    </div>
-                  )}
-                  <div style={{ gridColumn: "1/-1", marginBottom: "14px" }}>
-                    {lbl("Required API Keys", "click to toggle")}
-                    <div style={{
-                      display: "flex", flexWrap: "wrap", gap: "8px",
-                      padding: "12px", borderRadius: "8px",
-                      border: `1px solid ${colors.border}`, background: colors.bg,
-                    }}>
-                      {API_KEY_OPTIONS.map(key => {
-                        const selected = form.requiredApiKeys.includes(key);
-                        return (
-                          <button key={key} onClick={() => toggleApiKey(key)} style={{
-                            padding: "5px 12px", borderRadius: "6px",
-                            fontSize: "12px", fontWeight: selected ? 600 : 400,
-                            cursor: "pointer",
-                            background: selected ? "rgba(124,58,237,0.12)" : colors.bgCard,
-                            border: `1px solid ${selected ? "rgba(124,58,237,0.35)" : colors.border}`,
-                            color: selected ? "#a78bfa" : colors.textMuted,
-                            transition: "all 0.15s",
-                          }}>
-                            {selected ? "✓ " : ""}{key}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ gridColumn: "1/-1" }}>
-                    <div style={{
-                      background: "rgba(124,58,237,0.06)",
-                      border: "1px solid rgba(124,58,237,0.15)",
-                      borderRadius: "10px", padding: "14px",
-                    }}>
-                      <p style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 600, marginBottom: "8px" }}>
-                        Pipeline routing info
-                      </p>
-                      <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.8 }}>
-                        <strong style={{ color: colors.text }}>youtube</strong> → <code>pipelines/youtube/pipeline.py</code> ✅ Live<br />
-                        <strong style={{ color: colors.text }}>instagram</strong> → <code>pipelines/instagram/pipeline.py</code> ✅ Built, not connected yet<br />
-                        <strong style={{ color: colors.text }}>tiktok / arabic / podcast</strong> → pipeline files needed 🔧 Coming soon<br />
-                        <strong style={{ color: colors.text }}>whatsapp / real_estate / support</strong> → different architecture 📋 Planned
-                      </p>
-                    </div>
+                )}
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Required API Keys", "click to toggle")}
+                  <div className="flex flex-wrap gap-2 rounded-lg border bg-background p-3">
+                    {API_KEY_OPTIONS.map(key => {
+                      const selected = form.requiredApiKeys.includes(key);
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleApiKey(key)}
+                          className={cn(
+                            "rounded-md border px-3 py-1.25 text-xs transition-colors",
+                            selected ? "border-primary/35 bg-primary/[0.12] font-semibold text-[#a78bfa]" : "border-border bg-card font-normal text-muted-foreground",
+                          )}
+                        >
+                          {selected ? "✓ " : ""}{key}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
-
-              {/* ── CONTENT TAB ── */}
-              {activeTab === "content" && (
-                <div>
-                  {fld(<>
-                    {lbl("Hero Stats", "one per line: Label|Value")}
-                    <textarea
-                      value={form.heroStats}
-                      onChange={e => setForm(f => ({ ...f, heroStats: e.target.value }))}
-                      rows={5}
-                      placeholder={"Videos generated|20+\nCost per video|$3-5\nShorts per video|3\nSuccess rate|95%"}
-                      style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                    />
-                  </>)}
-                  {fld(<>
-                    {lbl("Features", "one per line: emoji|Title|Description")}
-                    <textarea
-                      value={form.features}
-                      onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
-                      rows={7}
-                      placeholder={"⚡|Viral hook generation|Generates psychological hooks...\n📝|AI scriptwriting|Full 8-12 minute scripts..."}
-                      style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                    />
-                  </>)}
-                  {fld(<>
-                    {lbl("How It Works", "one per line: StepNum|Title|Description")}
-                    <textarea
-                      value={form.howItWorks}
-                      onChange={e => setForm(f => ({ ...f, howItWorks: e.target.value }))}
-                      rows={5}
-                      placeholder={"1|Agent discovers trending topic|Every day the agent scans...\n2|Script generated|AI writes full script..."}
-                      style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                    />
-                  </>)}
-                  {fld(<>
-                    {lbl("FAQ", "one per line: Question|Answer")}
-                    <textarea
-                      value={form.faq}
-                      onChange={e => setForm(f => ({ ...f, faq: e.target.value }))}
-                      rows={5}
-                      placeholder={"How much does it cost?|Each video costs approximately $3-5...\nDo I need an account?|Yes you need..."}
-                      style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                    />
-                  </>)}
-                </div>
-              )}
-
-              {/* ── PRICING TAB ── */}
-              {activeTab === "pricing" && (
-                <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "14px" }}>
-                    {fld(<>{lbl("Monthly Price ($)")}<input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} style={inp} /></>)}
-                    {fld(<>{lbl("Annual Price ($/mo)")}<input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} style={inp} /></>)}
-                  </div>
-                  {fld(<>
-                    {lbl("Pricing Features", "one per line")}
-                    <textarea
-                      value={form.pricingFeatures}
-                      onChange={e => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
-                      rows={10}
-                      placeholder={"Unlimited pipeline runs\nDaily trend discovery\nFull script generation\nAuto YouTube upload\n3 Shorts per video\nAI thumbnail generation\nEmail notifications\nPriority support"}
-                      style={{ ...inp, resize: "vertical" as const }}
-                    />
-                  </>)}
-                  <div style={{
-                    background: colors.bg, border: `1px solid ${colors.border}`,
-                    borderRadius: "10px", padding: "14px", marginTop: "4px",
-                  }}>
-                    <p style={{ fontSize: "12px", color: colors.textMuted }}>
-                      Preview: <strong style={{ color: colors.text }}>${form.pricingMonthly}/mo</strong> or{" "}
-                      <strong style={{ color: "#22c55e" }}>${form.pricingAnnual}/mo annually</strong>{" "}
-                      — saves <strong style={{ color: "#22c55e" }}>${(Number(form.pricingMonthly) - Number(form.pricingAnnual)) * 12}/year</strong>
+                <div className="col-span-full">
+                  <div className="rounded-lg border border-primary/15 bg-primary/[0.06] p-3.5">
+                    <p className="mb-2 text-xs font-semibold text-[#a78bfa]">Pipeline routing info</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <strong className="text-foreground">youtube</strong> → <code>pipelines/youtube/pipeline.py</code> ✅ Live<br />
+                      <strong className="text-foreground">instagram</strong> → <code>pipelines/instagram/pipeline.py</code> ✅ Built, not connected yet<br />
+                      <strong className="text-foreground">tiktok / arabic / podcast</strong> → pipeline files needed 🔧 Coming soon<br />
+                      <strong className="text-foreground">whatsapp / real_estate / support</strong> → different architecture 📋 Planned
                     </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* ── TESTIMONIALS TAB ── */}
-              {activeTab === "testimonials" && (
-                <div>
-                  <div style={{
-                    background: "rgba(34,197,94,0.06)",
-                    border: "1px solid rgba(34,197,94,0.15)",
-                    borderRadius: "10px", padding: "14px", marginBottom: "16px",
-                  }}>
-                    <p style={{ fontSize: "12px", color: "#22c55e", fontWeight: 600, marginBottom: "6px" }}>
-                      How to add testimonials
-                    </p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.7 }}>
-                      Format: <code style={{ background: colors.bg, padding: "1px 6px", borderRadius: "4px" }}>Name|Role|Avatar Emoji|Rating (1-5)|Review text</code><br />
-                      Example: <code style={{ background: colors.bg, padding: "1px 6px", borderRadius: "4px" }}>Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week...</code><br />
-                      Only add real testimonials from actual users.
-                    </p>
-                  </div>
-                  {fld(<>
-                    {lbl("Testimonials", "one per line: Name|Role|Avatar|Rating|Text")}
-                    <textarea
-                      value={form.testimonials}
-                      onChange={e => setForm(f => ({ ...f, testimonials: e.target.value }))}
-                      rows={8}
-                      placeholder={"Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week.\nSarah Thompson|Marketing Manager, London|👩‍💼|5|Incredible quality."}
-                      style={{ ...inp, resize: "vertical" as const, fontFamily: "monospace", fontSize: "12px" }}
-                    />
-                  </>)}
-                  {form.testimonials.trim() && (
-                    <div style={{ marginTop: "16px" }}>
-                      <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "10px", fontWeight: 600 }}>
-                        Preview:
-                      </p>
-                      {form.testimonials.split("\n").filter(Boolean).map((line, i) => {
-                        const [name, role, avatar, rating, ...textParts] = line.split("|");
-                        return (
-                          <div key={i} style={{
-                            background: colors.bg, border: `1px solid ${colors.border}`,
-                            borderRadius: "10px", padding: "14px", marginBottom: "8px",
-                          }}>
-                            <div style={{ display: "flex", gap: "3px", marginBottom: "8px" }}>
-                              {Array.from({ length: Math.min(Number(rating) || 5, 5) }).map((_, j) => (
-                                <span key={j} style={{ color: "#f59e0b", fontSize: "13px" }}>★</span>
-                              ))}
-                            </div>
-                            <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "10px", lineHeight: 1.6 }}>
-                              "{textParts.join("|")}"
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ fontSize: "20px" }}>{avatar || "👤"}</span>
-                              <div>
-                                <p style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>{name}</p>
-                                <p style={{ fontSize: "11px", color: colors.textMuted }}>{role}</p>
-                              </div>
+            {/* CONTENT TAB */}
+            {activeTab === "content" && (
+              <div>
+                <div className="mb-3.5">
+                  {fieldLabel("Hero Stats", "one per line: Label|Value")}
+                  <Textarea
+                    value={form.heroStats}
+                    onChange={e => setForm(f => ({ ...f, heroStats: e.target.value }))}
+                    rows={5}
+                    placeholder={"Videos generated|20+\nCost per video|$3-5\nShorts per video|3\nSuccess rate|95%"}
+                    className={monoTextareaClass}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Features", "one per line: emoji|Title|Description")}
+                  <Textarea
+                    value={form.features}
+                    onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
+                    rows={7}
+                    placeholder={"⚡|Viral hook generation|Generates psychological hooks...\n📝|AI scriptwriting|Full 8-12 minute scripts..."}
+                    className={monoTextareaClass}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("How It Works", "one per line: StepNum|Title|Description")}
+                  <Textarea
+                    value={form.howItWorks}
+                    onChange={e => setForm(f => ({ ...f, howItWorks: e.target.value }))}
+                    rows={5}
+                    placeholder={"1|Agent discovers trending topic|Every day the agent scans...\n2|Script generated|AI writes full script..."}
+                    className={monoTextareaClass}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("FAQ", "one per line: Question|Answer")}
+                  <Textarea
+                    value={form.faq}
+                    onChange={e => setForm(f => ({ ...f, faq: e.target.value }))}
+                    rows={5}
+                    placeholder={"How much does it cost?|Each video costs approximately $3-5...\nDo I need an account?|Yes you need..."}
+                    className={monoTextareaClass}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* PRICING TAB */}
+            {activeTab === "pricing" && (
+              <div>
+                <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} /></div>
+                  <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} /></div>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Pricing Features", "one per line")}
+                  <Textarea
+                    value={form.pricingFeatures}
+                    onChange={e => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
+                    rows={10}
+                    placeholder={"Unlimited pipeline runs\nDaily trend discovery\nFull script generation\nAuto YouTube upload\n3 Shorts per video\nAI thumbnail generation\nEmail notifications\nPriority support"}
+                  />
+                </div>
+                <div className="rounded-lg border bg-background p-3.5">
+                  <p className="text-xs text-muted-foreground">
+                    Preview: <strong className="text-foreground">${form.pricingMonthly}/mo</strong> or{" "}
+                    <strong className="text-[#22c55e]">${form.pricingAnnual}/mo annually</strong>{" "}
+                    — saves <strong className="text-[#22c55e]">${(Number(form.pricingMonthly) - Number(form.pricingAnnual)) * 12}/year</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* TESTIMONIALS TAB */}
+            {activeTab === "testimonials" && (
+              <div>
+                <div className="mb-4 rounded-lg border border-[#22c55e]/15 bg-[#22c55e]/[0.06] p-3.5">
+                  <p className="mb-1.5 text-xs font-semibold text-[#22c55e]">How to add testimonials</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Format: <code className="rounded bg-background px-1.5 py-0.5">Name|Role|Avatar Emoji|Rating (1-5)|Review text</code><br />
+                    Example: <code className="rounded bg-background px-1.5 py-0.5">Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week...</code><br />
+                    Only add real testimonials from actual users.
+                  </p>
+                </div>
+                <div className="mb-3.5">
+                  {fieldLabel("Testimonials", "one per line: Name|Role|Avatar|Rating|Text")}
+                  <Textarea
+                    value={form.testimonials}
+                    onChange={e => setForm(f => ({ ...f, testimonials: e.target.value }))}
+                    rows={8}
+                    placeholder={"Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week.\nSarah Thompson|Marketing Manager, London|👩‍💼|5|Incredible quality."}
+                    className={monoTextareaClass}
+                  />
+                </div>
+                {form.testimonials.trim() && (
+                  <div className="mt-4">
+                    <p className="mb-2.5 text-xs font-semibold text-muted-foreground">Preview:</p>
+                    {form.testimonials.split("\n").filter(Boolean).map((line, i) => {
+                      const [name, role, avatar, rating, ...textParts] = line.split("|");
+                      return (
+                        <div key={i} className="mb-2 rounded-lg border bg-background p-3.5">
+                          <div className="mb-2 flex gap-0.75">
+                            {Array.from({ length: Math.min(Number(rating) || 5, 5) }).map((_, j) => (
+                              <span key={j} className="text-[13px] text-amber-500">★</span>
+                            ))}
+                          </div>
+                          <p className="mb-2.5 text-[13px] leading-relaxed text-muted-foreground">
+                            "{textParts.join("|")}"
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{avatar || "👤"}</span>
+                            <div>
+                              <p className="text-[13px] font-semibold text-foreground">{name}</p>
+                              <p className="text-[11px] text-muted-foreground">{role}</p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-              {/* ── ARABIC TAB ── */}
-              {activeTab === "arabic" && (
-                <div>
-                  <div style={{
-                    background: "rgba(124,58,237,0.06)",
-                    border: "1px solid rgba(124,58,237,0.2)",
-                    borderRadius: "10px", padding: "14px", marginBottom: "20px",
-                  }}>
-                    <p style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 600, marginBottom: "4px" }}>
-                      🇦🇪 Arabic (UAE) Content
-                    </p>
-                    <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.7 }}>
-                      Fill in the Arabic translations below. These will be shown when the user switches the portal language to Arabic (AR).
-                      Leave a field blank to fall back to the English version.
-                    </p>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                    {fld(<>
-                      {lbl("Name (AR) — الاسم")}
-                      <input
-                        value={form.name_ar}
-                        onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
-                        placeholder="مثال: وكيل يوتيوب"
-                        dir="rtl"
-                        style={{ ...inp, fontFamily: "inherit" }}
-                      />
-                    </>)}
-                    {fld(<>
-                      {lbl("Tagline (AR) — الشعار")}
-                      <input
-                        value={form.tagline_ar}
-                        onChange={e => setForm(f => ({ ...f, tagline_ar: e.target.value }))}
-                        placeholder="مثال: أتمتة قناتك على يوتيوب"
-                        dir="rtl"
-                        style={{ ...inp, fontFamily: "inherit" }}
-                      />
-                    </>)}
-                    {fld(<>
-                      {lbl("Description (AR) — الوصف")}
-                      <textarea
-                        value={form.description_ar}
-                        onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))}
-                        rows={4}
-                        placeholder="وصف بالعربية..."
-                        dir="rtl"
-                        style={{ ...inp, resize: "vertical" as const, fontFamily: "inherit" }}
-                      />
-                    </>, true)}
-                    {fld(<>
-                      {lbl("Capabilities (AR) — المميزات", "comma separated in Arabic")}
-                      <input
-                        value={form.capabilities_ar}
-                        onChange={e => setForm(f => ({ ...f, capabilities_ar: e.target.value }))}
-                        placeholder="اكتشاف الاتجاهات, كتابة السيناريو بالذكاء الاصطناعي, الرفع التلقائي"
-                        dir="rtl"
-                        style={{ ...inp, fontFamily: "inherit" }}
-                      />
-                    </>, true)}
-                    {fld(<>
-                      {lbl("Pricing Features (AR) — مميزات الخطة", "one per line in Arabic")}
-                      <textarea
-                        value={form.pricingFeatures_ar}
-                        onChange={e => setForm(f => ({ ...f, pricingFeatures_ar: e.target.value }))}
-                        rows={5}
-                        placeholder={"نشر غير محدود\nدعم اللغة العربية\nتحليلات الأداء"}
-                        dir="rtl"
-                        style={{ ...inp, resize: "vertical" as const, fontFamily: "inherit" }}
-                      />
-                    </>, true)}
+                )}
+              </div>
+            )}
+
+            {/* ARABIC TAB */}
+            {activeTab === "arabic" && (
+              <div>
+                <div className="mb-5 rounded-lg border border-primary/20 bg-primary/[0.06] p-3.5">
+                  <p className="mb-1 text-xs font-semibold text-[#a78bfa]">🇦🇪 Arabic (UAE) Content</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Fill in the Arabic translations below. These will be shown when the user switches the portal language to Arabic (AR).
+                    Leave a field blank to fall back to the English version.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                  <div className="mb-3.5">
+                    {fieldLabel("Name (AR) — الاسم")}
+                    <Input
+                      value={form.name_ar}
+                      onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
+                      placeholder="مثال: وكيل يوتيوب"
+                      dir="rtl"
+                    />
+                  </div>
+                  <div className="mb-3.5">
+                    {fieldLabel("Tagline (AR) — الشعار")}
+                    <Input
+                      value={form.tagline_ar}
+                      onChange={e => setForm(f => ({ ...f, tagline_ar: e.target.value }))}
+                      placeholder="مثال: أتمتة قناتك على يوتيوب"
+                      dir="rtl"
+                    />
+                  </div>
+                  <div className="col-span-full mb-3.5">
+                    {fieldLabel("Description (AR) — الوصف")}
+                    <Textarea
+                      value={form.description_ar}
+                      onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))}
+                      rows={4}
+                      placeholder="وصف بالعربية..."
+                      dir="rtl"
+                    />
+                  </div>
+                  <div className="col-span-full mb-3.5">
+                    {fieldLabel("Capabilities (AR) — المميزات", "comma separated in Arabic")}
+                    <Input
+                      value={form.capabilities_ar}
+                      onChange={e => setForm(f => ({ ...f, capabilities_ar: e.target.value }))}
+                      placeholder="اكتشاف الاتجاهات, كتابة السيناريو بالذكاء الاصطناعي, الرفع التلقائي"
+                      dir="rtl"
+                    />
+                  </div>
+                  <div className="col-span-full mb-3.5">
+                    {fieldLabel("Pricing Features (AR) — مميزات الخطة", "one per line in Arabic")}
+                    <Textarea
+                      value={form.pricingFeatures_ar}
+                      onChange={e => setForm(f => ({ ...f, pricingFeatures_ar: e.target.value }))}
+                      rows={5}
+                      placeholder={"نشر غير محدود\nدعم اللغة العربية\nتحليلات الأداء"}
+                      dir="rtl"
+                    />
                   </div>
                 </div>
-              )}
-
-            {/* Modal Footer */}
-            <div style={{
-              display: "flex", gap: "8px", padding: "16px 24px",
-              borderTop: `1px solid ${colors.border}`,
-              justifyContent: "space-between", alignItems: "center",
-            }}>
-              <div style={{ display: "flex", gap: "6px" }}>
-                {TABS.map(t => (
-                  <div
-                    key={t}
-                    onClick={() => setActiveTab(t)}
-                    style={{
-                      width: activeTab === t ? "18px" : "6px",
-                      height: "6px", borderRadius: "3px",
-                      background: activeTab === t ? "#7c3aed" : colors.border,
-                      transition: "all 0.2s", cursor: "pointer",
-                    }}
-                  />
-                ))}
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={() => setShowForm(false)} style={{
-                  padding: "10px 16px", borderRadius: "8px",
-                  border: `1px solid ${colors.border}`,
-                  background: "none", color: colors.textMuted,
-                  cursor: "pointer", fontSize: "13px",
-                }}>
-                  Cancel
-                </button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  padding: "10px 24px", borderRadius: "8px",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "white", border: "none",
-                  cursor: saving ? "not-allowed" : "pointer",
-                  fontSize: "14px", fontWeight: 600,
-                  display: "flex", alignItems: "center", gap: "6px",
-                  opacity: saving ? 0.7 : 1,
-                }}>
-                  {saving && <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />}
-                  {editingId ? "Update module" : "Create module"}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="!justify-between sm:!flex-row">
+            <div className="flex gap-1.5">
+              {TABS.map(t => (
+                <div
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  className={cn(
+                    "h-1.5 cursor-pointer rounded-full transition-all",
+                    activeTab === t ? "w-4.5 bg-primary" : "w-1.5 bg-border",
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+                {saving && <Loader2 size={14} className="animate-spin" />}
+                {editingId ? "Update module" : "Create module"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modules grid */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px" }}>
-          <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+        <div className="p-15 text-center">
+          <Loader2 size={24} className="mx-auto animate-spin text-primary" />
         </div>
       ) : modules.length === 0 ? (
-        <div style={{
-          background: colors.bgCard, border: `1px solid ${colors.border}`,
-          borderRadius: "12px", padding: "60px", textAlign: "center",
-        }}>
-          <Boxes size={36} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
-          <p style={{ color: colors.textMuted, marginBottom: "16px" }}>No modules yet</p>
-          <button onClick={openCreate} style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            padding: "9px 18px", borderRadius: "8px",
-            background: "#7c3aed", color: "white",
-            border: "none", cursor: "pointer",
-            fontSize: "13px", fontWeight: 600,
-          }}>
+        <div className="rounded-xl border bg-card p-15 text-center">
+          <Boxes size={36} className="mx-auto mb-4 text-muted-foreground" />
+          <p className="mb-4 text-muted-foreground">No modules yet</p>
+          <Button onClick={openCreate} className="gap-1.5">
             <Plus size={14} /> Create first module
-          </button>
+          </Button>
         </div>
       ) : filteredModules.length === 0 ? (
-        <div style={{
-          background: colors.bgCard, border: `1px solid ${colors.border}`,
-          borderRadius: "12px", padding: "40px", textAlign: "center",
-        }}>
-          <p style={{ color: colors.textMuted, fontSize: "14px", marginBottom: "10px" }}>
-            No modules match your filters
-          </p>
+        <div className="rounded-xl border bg-card p-10 text-center">
+          <p className="mb-2.5 text-sm text-muted-foreground">No modules match your filters</p>
           <button
             onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}
-            style={{
-              fontSize: "13px", color: "#a78bfa", background: "none",
-              border: "none", cursor: "pointer", textDecoration: "underline",
-            }}
+            className="border-none bg-transparent text-[13px] text-[#a78bfa] underline"
           >
             Clear filters
           </button>
         </div>
       ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: "16px",
-        }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
           {filteredModules.map((m) => (
-            <div key={m._id} style={{
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: "12px", padding: "20px",
-            }}>
+            <div key={m._id} className="rounded-xl border bg-card p-5">
               {/* Card header */}
-              <div style={{
-                display: "flex", alignItems: "flex-start",
-                justifyContent: "space-between", marginBottom: "12px",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{
-                    width: "38px", height: "38px", borderRadius: "10px",
-                    background: `${m.color || "#7c3aed"}15`,
-                    border: `1px solid ${m.color || "#7c3aed"}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "18px", flexShrink: 0,
-                  }}>
+              <div className="mb-3 flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="flex size-9.5 shrink-0 items-center justify-center rounded-lg border text-lg"
+                    style={{ background: `${m.color || "#7c3aed"}15`, borderColor: `${m.color || "#7c3aed"}30` }}
+                  >
                     {m.icon || "🤖"}
                   </div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                      <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>{m.name}</p>
+                    <div className="mb-0.5 flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-foreground">{m.name}</p>
                       {m.isActive
-                        ? <CheckCircle2 size={12} color="#22c55e" />
-                        : <XCircle size={12} color="#ef4444" />}
+                        ? <CheckCircle2 size={12} className="text-[#22c55e]" />
+                        : <XCircle size={12} className="text-destructive" />}
                     </div>
-                    <p style={{ fontSize: "11px", color: colors.textMuted, fontFamily: "monospace" }}>{m.slug}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">{m.slug}</p>
                   </div>
                 </div>
 
                 {/* Single badge — no overlap */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                  <span style={{
-                    fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px",
-                    background: m.isComingSoon
-                      ? "rgba(245,158,11,0.1)"
-                      : m.badge === "Live"
-                      ? "rgba(34,197,94,0.1)"
-                      : "rgba(124,58,237,0.08)",
-                    color: m.isComingSoon
-                      ? "#f59e0b"
-                      : m.badge === "Live"
-                      ? "#22c55e"
-                      : "#a78bfa",
-                  }}>
+                <div className="flex flex-col items-end gap-1">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{
+                      background: m.isComingSoon ? "rgba(245,158,11,0.1)" : m.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.08)",
+                      color: m.isComingSoon ? "#f59e0b" : m.badge === "Live" ? "#22c55e" : "#a78bfa",
+                    }}
+                  >
                     {m.isComingSoon ? "Coming Soon" : m.badge || "Active"}
                   </span>
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "9999px",
-                    background: colors.bgSecondary, color: colors.textMuted,
-                    border: `1px solid ${colors.border}`,
-                  }}>
+                  <span className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                     {formatLabel(m.moduleType || "agent")}
                   </span>
                   {!m.isActive && (
-                    <span style={{
-                      fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px",
-                      background: "rgba(239,68,68,0.1)", color: "#ef4444",
-                    }}>
+                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
                       Hidden
                     </span>
                   )}
@@ -1048,100 +881,81 @@ export function AdminModules() {
               </div>
 
               {/* Description */}
-              <p style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.6, marginBottom: "10px" }}>
+              <p className="mb-2.5 text-xs leading-relaxed text-muted-foreground">
                 {(m.description || "No description").slice(0, 90)}
                 {(m.description || "").length > 90 ? "..." : ""}
               </p>
 
               {/* Info badges */}
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
+              <div className="mb-3 flex flex-wrap gap-1.5">
                 {m.category && (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: colors.bgSecondary, color: colors.textMuted,
-                    border: `1px solid ${colors.border}`,
-                  }}>
+                  <span className="rounded-md border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                     {formatLabel(m.category)}
                   </span>
                 )}
                 {m.pipelineType && (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: "rgba(59,130,246,0.08)", color: "#60a5fa",
-                    border: "1px solid rgba(59,130,246,0.15)",
-                  }}>
+                  <span className="rounded-md border border-blue-500/15 bg-blue-500/[0.08] px-2 py-0.5 text-[10px] text-blue-400">
                     {formatLabel(m.pipelineType)}
                   </span>
                 )}
                 {m.estimatedCostPerRun && (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: "rgba(34,197,94,0.06)", color: "#22c55e",
-                    border: "1px solid rgba(34,197,94,0.15)",
-                  }}>
+                  <span className="rounded-md border border-[#22c55e]/15 bg-[#22c55e]/[0.06] px-2 py-0.5 text-[10px] text-[#22c55e]">
                     {m.estimatedCostPerRun}
                   </span>
                 )}
                 {m.pricing?.monthly ? (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: "rgba(124,58,237,0.08)", color: "#a78bfa",
-                  }}>
+                  <span className="rounded-md bg-primary/[0.08] px-2 py-0.5 text-[10px] text-[#a78bfa]">
                     ${m.pricing.monthly}/mo
                   </span>
                 ) : null}
                 {m.nicheSlug && (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: "rgba(234,179,8,0.08)", color: "#eab308",
-                    border: "1px solid rgba(234,179,8,0.2)",
-                  }}>
+                  <span className="rounded-md border border-yellow-500/20 bg-yellow-500/[0.08] px-2 py-0.5 text-[10px] text-yellow-600">
                     {formatLabel(m.nicheSlug)}
                   </span>
                 )}
                 {m.availableIn?.length ? (
-                  <span style={{
-                    fontSize: "10px", padding: "2px 8px", borderRadius: "6px",
-                    background: "rgba(6,182,212,0.08)", color: "#06b6d4",
-                    border: "1px solid rgba(6,182,212,0.2)",
-                  }}>
+                  <span className="rounded-md border border-cyan-500/20 bg-cyan-500/[0.08] px-2 py-0.5 text-[10px] text-cyan-600">
                     {m.availableIn.join(" · ")}
                   </span>
                 ) : null}
               </div>
 
               {/* Actions */}
-              <div style={{ display: "flex", gap: "6px" }}>
-                <button onClick={() => openEdit(m)} style={{
-                  flex: 1, padding: "7px", borderRadius: "7px",
-                  fontSize: "12px", fontWeight: 500, cursor: "pointer",
-                  border: `1px solid ${colors.border}`,
-                  background: colors.bg, color: colors.textMuted,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                }}>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" onClick={() => openEdit(m)} className="flex-1 gap-1">
                   <Pencil size={11} /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(m._id)}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDeleteTarget(m)}
                   disabled={deleteLoading === m._id}
-                  style={{
-                    width: "32px", height: "32px", borderRadius: "7px",
-                    border: "1px solid rgba(239,68,68,0.2)",
-                    background: "rgba(239,68,68,0.06)", color: "#ef4444",
-                    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                  }}
+                  className="border-destructive/20 bg-destructive/[0.06] text-destructive hover:bg-destructive/15 hover:text-destructive"
                 >
-                  {deleteLoading === m._id
-                    ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-                    : <Trash2 size={12} />}
-                </button>
+                  {deleteLoading === m._id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                </Button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this module?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && `"${deleteTarget.name}" will be permanently deleted. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
