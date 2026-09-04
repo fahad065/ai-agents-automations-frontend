@@ -1,15 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  Bot, Plus, Trash2, Loader2, X, Globe, Settings2, Check, User,
+  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 // ── Types ────────────────────────────────────────────────────
 interface Chatbot {
@@ -44,16 +53,10 @@ interface AdminUserOption {
   email: string;
 }
 
-const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
-  active: { color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
-  draft: { color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-  inactive: { color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  active: "Active",
-  draft: "Draft",
-  inactive: "Paused",
+const STATUS_CONFIG: Record<string, { className: string; label: string }> = {
+  active: { className: "bg-[#22c55e]/10 text-[#22c55e]", label: "Active" },
+  draft: { className: "bg-[#f59e0b]/10 text-[#f59e0b]", label: "Draft" },
+  inactive: { className: "bg-secondary text-muted-foreground", label: "Paused" },
 };
 
 interface Template {
@@ -81,8 +84,8 @@ const TEMPLATE_EMOJI: Record<string, string> = TEMPLATES.reduce((acc, t) => {
 }, {} as Record<string, string>);
 
 // ── Create Chatbot Modal ────────────────────────────────────────
-function CreateChatbotModal({ onClose, onCreated, colors, isDark, isAdmin }: {
-  onClose: () => void; onCreated: (id: string) => void; colors: any; isDark: boolean; isAdmin: boolean;
+function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
+  onClose: () => void; onCreated: (id: string) => void; isAdmin: boolean;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -103,21 +106,6 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark, isAdmin }: {
       setClients(res.data || []);
     }).catch(() => {});
   }, [isAdmin]);
-
-  const panelBg = isDark ? "#161616" : "#ffffff";
-  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)";
-
-  const inp = {
-    width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
-  };
-
-  const lbl = (text: string) => (
-    <label style={{ display: "block", fontSize: "12px", fontWeight: 500, color: colors.textMuted, marginBottom: "5px" }}>
-      {text}
-    </label>
-  );
 
   const handleCreate = async () => {
     if (!name.trim()) { setError("Chatbot name is required"); return; }
@@ -140,95 +128,79 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark, isAdmin }: {
   };
 
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.65)",
-      backdropFilter: "blur(6px)", display: "flex", alignItems: "center",
-      justifyContent: "center", padding: "24px",
-    }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        background: panelBg, border: `1px solid ${panelBorder}`,
-        borderRadius: "18px", width: "100%", maxWidth: "620px",
-        maxHeight: "90vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: "20px 24px", borderBottom: `1px solid ${panelBorder}`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div>
-            <p style={{ fontSize: "16px", fontWeight: 700, color: isDark ? "#e5e5e5" : "#111" }}>New Chatbot</p>
-            <p style={{ fontSize: "12px", color: isDark ? "#737373" : "#6b7280" }}>Pick a template and give it a name</p>
-          </div>
-          <button onClick={onClose} style={{
-            width: "28px", height: "28px", borderRadius: "7px",
-            border: `1px solid ${panelBorder}`, background: "transparent",
-            color: isDark ? "#737373" : "#6b7280", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}><X size={13} /></button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>New Chatbot</DialogTitle>
+          <p className="text-xs text-muted-foreground">Pick a template and give it a name</p>
+        </DialogHeader>
 
-        <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="flex flex-1 flex-col gap-4 overflow-auto">
           {isAdmin && (
             <div>
-              {lbl("Build for")}
-              <select value={clientId} onChange={(e) => setClientId(e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+              <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Build for</Label>
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
+              >
                 <option value="">Myself (admin account)</option>
                 {clients.map((c) => (
                   <option key={c._id} value={c._id}>{c.name || "Unnamed"} — {c.email}</option>
                 ))}
               </select>
-              <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "5px" }}>
+              <p className="mt-1.25 text-[11px] text-muted-foreground">
                 Pick a client to build and configure this bot under their account — they'll see it in their own dashboard right away.
               </p>
             </div>
           )}
 
           <div>
-            {lbl("Chatbot Name *")}
-            <input value={name} onChange={(e) => setName(e.target.value)} style={inp} placeholder="e.g. Sunset Cafe Assistant" />
+            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Chatbot Name *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunset Cafe Assistant" />
           </div>
 
           <div>
-            {lbl("Description")}
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
-              style={{ ...inp, resize: "vertical" as const }} placeholder="What does this bot do for your business?" />
+            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="What does this bot do for your business?" />
           </div>
 
           <div>
-            {lbl("Template")}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "8px" }}>
+            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Template</Label>
+            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
               {TEMPLATES.map((t) => (
-                <button key={t.key} onClick={() => setTemplate(t.key)} style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "10px 12px", borderRadius: "9px", cursor: "pointer",
-                  border: `1.5px solid ${template === t.key ? "#7c3aed" : colors.border}`,
-                  background: template === t.key ? "rgba(124,58,237,0.1)" : colors.bg,
-                  textAlign: "left" as const,
-                }}>
-                  <span style={{ fontSize: "18px" }}>{t.emoji}</span>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: template === t.key ? "#a78bfa" : colors.text }}>{t.name}</span>
-                  {template === t.key && <Check size={12} color="#a78bfa" style={{ marginLeft: "auto" }} />}
+                <button
+                  key={t.key}
+                  onClick={() => setTemplate(t.key)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-[9px] border-[1.5px] px-3 py-2.5 text-left",
+                    template === t.key ? "border-primary bg-primary/10" : "bg-background"
+                  )}
+                >
+                  <span className="text-lg">{t.emoji}</span>
+                  <span className={cn("text-xs font-semibold", template === t.key ? "text-[#a78bfa]" : "text-foreground")}>{t.name}</span>
+                  {template === t.key && <Check size={12} className="ml-auto text-[#a78bfa]" />}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            {lbl("Language")}
-            <div style={{ display: "flex", gap: "8px" }}>
+            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Language</Label>
+            <div className="flex gap-2">
               {([
                 { value: "en", label: "English" },
                 { value: "ar", label: "Arabic" },
                 { value: "both", label: "Both" },
               ] as const).map((l) => (
-                <button key={l.value} onClick={() => setLanguage(l.value)} style={{
-                  flex: 1, padding: "9px", borderRadius: "8px", cursor: "pointer",
-                  border: `1.5px solid ${language === l.value ? "#7c3aed" : colors.border}`,
-                  background: language === l.value ? "rgba(124,58,237,0.1)" : colors.bg,
-                  color: language === l.value ? "#a78bfa" : colors.text,
-                  fontSize: "13px", fontWeight: 600,
-                }}>
+                <button
+                  key={l.value}
+                  onClick={() => setLanguage(l.value)}
+                  className={cn(
+                    "flex-1 rounded-lg border-[1.5px] py-2.25 text-[13px] font-semibold",
+                    language === l.value ? "border-primary bg-primary/10 text-[#a78bfa]" : "bg-background text-foreground"
+                  )}
+                >
                   {l.label}
                 </button>
               ))}
@@ -236,36 +208,31 @@ function CreateChatbotModal({ onClose, onCreated, colors, isDark, isAdmin }: {
           </div>
 
           {error && (
-            <p style={{ fontSize: "12px", color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,0.08)", borderRadius: "7px" }}>{error}</p>
+            <p className="rounded-md bg-destructive/8 px-3 py-2 text-xs text-destructive">{error}</p>
           )}
         </div>
 
-        <div style={{ padding: "16px 24px", borderTop: `1px solid ${panelBorder}`, display: "flex", gap: "10px" }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: "8px", cursor: "pointer", border: `1px solid ${panelBorder}`, background: "transparent", color: isDark ? "#a3a3a3" : "#4b5563", fontSize: "13px" }}>Cancel</button>
-          <button onClick={handleCreate} disabled={saving} style={{
-            flex: 2, padding: "10px", borderRadius: "8px", cursor: saving ? "not-allowed" : "pointer",
-            background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none",
-            fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            opacity: saving ? 0.7 : 1,
-          }}>
-            {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Plus size={14} />}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+          <Button onClick={handleCreate} disabled={saving} className="flex-2 gap-2">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             {saving ? "Creating..." : "Create Chatbot"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────
 export function ChatbotsPage() {
-  const { colors, isDark } = useTheme();
   const router = useRouter();
   const { user } = useAuthStore();
   const isAdmin = (user as any)?.role === "admin";
   const [chatbots, setChatbots] = useState<Chatbot[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Chatbot | null>(null);
 
   useEffect(() => { fetchChatbots(); }, [isAdmin]);
 
@@ -282,15 +249,16 @@ export function ChatbotsPage() {
     setLoading(false);
   };
 
-  const deleteChatbot = async (id: string) => {
-    if (!confirm("Delete this chatbot? This cannot be undone.")) return;
+  const deleteChatbot = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/chatbots/${id}`);
+      await api.delete(`/chatbots/${deleteTarget._id}`);
       toast.success("Chatbot deleted");
       fetchChatbots();
     } catch {
       toast.error("Failed to delete chatbot");
     }
+    setDeleteTarget(null);
   };
 
   const handleCreated = (id: string) => {
@@ -301,54 +269,49 @@ export function ChatbotsPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Chatbots</h1>
-          <p style={{ fontSize: "14px", color: colors.textMuted }}>Build and deploy AI chatbots on your website, WhatsApp, and Instagram.</p>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Chatbots</h1>
+          <p className="text-sm text-muted-foreground">Build and deploy AI chatbots on your website, WhatsApp, and Instagram.</p>
         </div>
-        <button onClick={() => setShowCreate(true)} style={{
-          display: "flex", alignItems: "center", gap: "8px", padding: "9px 18px",
-          borderRadius: "8px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-          color: "white", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: 600,
-          boxShadow: "0 4px 12px rgba(124,58,237,0.3)",
-        }}>
+        <Button onClick={() => setShowCreate(true)} className="gap-2">
           <Plus size={15} /> New Chatbot
-        </button>
+        </Button>
       </div>
 
       {/* Grid */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px" }}>
-          <Loader2 size={28} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+        <div className="p-15 text-center">
+          <Loader2 size={28} className="mx-auto animate-spin text-primary" />
         </div>
       ) : chatbots.length === 0 ? (
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "60px 24px", textAlign: "center" }}>
-          <Bot size={40} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: colors.text, marginBottom: "8px" }}>No chatbots yet</h2>
-          <p style={{ color: colors.textMuted, fontSize: "14px", marginBottom: "20px" }}>Create your first chatbot to start answering customers 24/7.</p>
-          <button onClick={() => setShowCreate(true)} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "8px", background: "#7c3aed", color: "white", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>
+        <div className="rounded-xl border bg-card px-6 py-15 text-center">
+          <Bot size={40} className="mx-auto mb-4 text-muted-foreground" />
+          <h2 className="mb-2 text-base font-semibold text-foreground">No chatbots yet</h2>
+          <p className="mb-5 text-sm text-muted-foreground">Create your first chatbot to start answering customers 24/7.</p>
+          <Button onClick={() => setShowCreate(true)} className="gap-2">
             <Plus size={15} /> Create your first chatbot
-          </button>
+          </Button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
           {chatbots.map((bot) => {
-            const sc = STATUS_COLORS[bot.status] || STATUS_COLORS.draft;
+            const sc = STATUS_CONFIG[bot.status] || STATUS_CONFIG.draft;
             const emoji = (bot.template && TEMPLATE_EMOJI[bot.template]) || "🤖";
             const channels = bot.channels || {};
             return (
-              <div key={bot._id} style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px" }}>
+              <div key={bot._id} className="rounded-xl border bg-card p-4.5">
                 {/* Card header */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", fontSize: "20px", background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div className="mb-2.5 flex items-start justify-between">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/12 text-xl">
                       {emoji}
                     </div>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bot.name}</p>
-                      <p style={{ fontSize: "11px", color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div className="min-w-0">
+                      <p className="overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-foreground">{bot.name}</p>
+                      <p className="overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-muted-foreground">
                         {isAdmin && bot.userId && typeof bot.userId === "object" ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <span className="inline-flex items-center gap-1">
                             <User size={10} /> {bot.userId.name || bot.userId.email}
                           </span>
                         ) : (
@@ -357,21 +320,18 @@ export function ChatbotsPage() {
                       </p>
                     </div>
                   </div>
-                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px", background: sc.bg, color: sc.color, flexShrink: 0 }}>
-                    {STATUS_LABELS[bot.status] || bot.status}
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.75 text-[10px] font-semibold", sc.className)}>
+                    {sc.label}
                   </span>
                 </div>
 
                 {/* Description */}
-                <p style={{
-                  fontSize: "12px", color: colors.textMuted, marginBottom: "14px", lineHeight: 1.5,
-                  minHeight: "18px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden",
-                }}>
+                <p className="mb-3.5 line-clamp-2 min-h-[18px] text-xs leading-relaxed text-muted-foreground">
                   {bot.description || "No description added yet."}
                 </p>
 
                 {/* Channels row */}
-                <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
+                <div className="mb-3.5 flex gap-1.5">
                   {[
                     { key: "website", icon: Globe, color: "#7c3aed", enabled: !!channels.website?.enabled },
                     { key: "whatsapp", icon: FaWhatsapp, color: "#22c55e", enabled: !!channels.whatsapp?.enabled },
@@ -379,33 +339,32 @@ export function ChatbotsPage() {
                   ].map((ch) => {
                     const Icon = ch.icon;
                     return (
-                      <div key={ch.key} title={`${ch.key}${ch.enabled ? " enabled" : " disabled"}`} style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                        padding: "6px", borderRadius: "7px",
-                        background: ch.enabled ? `${ch.color}12` : colors.bg,
-                        border: `1px solid ${ch.enabled ? `${ch.color}30` : colors.border}`,
-                        opacity: ch.enabled ? 1 : 0.4,
-                      }}>
-                        <Icon size={13} color={ch.enabled ? ch.color : colors.textMuted} />
+                      <div
+                        key={ch.key}
+                        title={`${ch.key}${ch.enabled ? " enabled" : " disabled"}`}
+                        className={cn("flex flex-1 items-center justify-center rounded-md border p-1.5", !ch.enabled && "opacity-40")}
+                        style={ch.enabled ? { background: `${ch.color}12`, borderColor: `${ch.color}30` } : undefined}
+                      >
+                        <Icon size={13} color={ch.enabled ? ch.color : undefined} className={!ch.enabled ? "text-muted-foreground" : undefined} />
                       </div>
                     );
                   })}
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button onClick={() => router.push(`/dashboard/chatbots/${bot._id}`)} style={{
-                    flex: 1, padding: "9px 14px", borderRadius: "8px", cursor: "pointer",
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    color: "white", border: "none", fontSize: "12px", fontWeight: 600,
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                    boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
-                  }}>
+                <div className="flex gap-1.5">
+                  <Button onClick={() => router.push(`/dashboard/chatbots/${bot._id}`)} className="flex-1 gap-1.5 text-xs">
                     <Settings2 size={13} /> Configure
-                  </button>
-                  <button onClick={() => deleteChatbot(bot._id)} title="Delete" style={{ width: "36px", height: "36px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setDeleteTarget(bot)}
+                    title="Delete"
+                    className="border-destructive/20 bg-destructive/6 text-destructive"
+                  >
                     <Trash2 size={13} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -414,10 +373,25 @@ export function ChatbotsPage() {
       )}
 
       {showCreate && (
-        <CreateChatbotModal onClose={() => setShowCreate(false)} onCreated={handleCreated} colors={colors} isDark={isDark} isAdmin={isAdmin} />
+        <CreateChatbotModal onClose={() => setShowCreate(false)} onCreated={handleCreated} isAdmin={isAdmin} />
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this chatbot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && `"${deleteTarget.name}" will be permanently deleted. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteChatbot} className="bg-destructive text-white hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
