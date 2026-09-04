@@ -25,6 +25,7 @@ interface HowItWorksStep { step: string; title: string; description: string; }
 interface FaqItem { question: string; answer: string; }
 interface Testimonial { name: string; role: string; avatar: string; text: string; rating: number; }
 interface PricingData { monthly: number; annual: number; features: string[]; }
+interface PricingTier { key: "basic" | "pro"; monthly: number; annual: number; features: string[]; features_ar?: string[]; }
 
 interface Module {
   _id: string;
@@ -56,6 +57,7 @@ interface Module {
   faq: FaqItem[];
   testimonials: Testimonial[];
   pricing: PricingData;
+  pricingTiers?: PricingTier[];
   demoVideoUrl: string;
   createdAt: string;
 }
@@ -121,9 +123,13 @@ const emptyForm = {
   heroStats: "", features: "", howItWorks: "",
   faq: "", testimonials: "",
   pricingMonthly: "49", pricingAnnual: "39", pricingFeatures: "",
+  // Chatbot-only tiered pricing (Basic/Pro) — see backend CLAUDE.md "Tiered chatbot pricing"
+  tierBasicMonthly: "39", tierBasicAnnual: "31", tierBasicFeatures: "",
+  tierProMonthly: "79", tierProAnnual: "63", tierProFeatures: "",
   // Arabic fields
   name_ar: "", tagline_ar: "", description_ar: "",
   capabilities_ar: "", pricingFeatures_ar: "",
+  tierBasicFeatures_ar: "", tierProFeatures_ar: "",
 };
 
 type FormState = typeof emptyForm;
@@ -214,11 +220,19 @@ export function AdminModules() {
       pricingMonthly: String(m.pricing?.monthly || "49"),
       pricingAnnual: String(m.pricing?.annual || "39"),
       pricingFeatures: (m.pricing?.features || []).join("\n"),
+      tierBasicMonthly: String(m.pricingTiers?.find(t => t.key === "basic")?.monthly ?? m.pricing?.monthly ?? "39"),
+      tierBasicAnnual: String(m.pricingTiers?.find(t => t.key === "basic")?.annual ?? m.pricing?.annual ?? "31"),
+      tierBasicFeatures: (m.pricingTiers?.find(t => t.key === "basic")?.features ?? m.pricing?.features ?? []).join("\n"),
+      tierProMonthly: String(m.pricingTiers?.find(t => t.key === "pro")?.monthly ?? "79"),
+      tierProAnnual: String(m.pricingTiers?.find(t => t.key === "pro")?.annual ?? "63"),
+      tierProFeatures: (m.pricingTiers?.find(t => t.key === "pro")?.features ?? []).join("\n"),
       name_ar: (m as any).name_ar || "",
       tagline_ar: (m as any).tagline_ar || "",
       description_ar: (m as any).description_ar || "",
       capabilities_ar: ((m as any).capabilities_ar || []).join(", "),
       pricingFeatures_ar: ((m as any).pricing?.features_ar || []).join("\n"),
+      tierBasicFeatures_ar: (m.pricingTiers?.find(t => t.key === "basic")?.features_ar ?? []).join("\n"),
+      tierProFeatures_ar: (m.pricingTiers?.find(t => t.key === "pro")?.features_ar ?? []).join("\n"),
     });
     setEditingId(m._id);
     setActiveTab("basic");
@@ -297,17 +311,43 @@ export function AdminModules() {
         howItWorks: form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [],
         faq: form.faq.trim() ? parseFaq(form.faq) : [],
         testimonials: form.testimonials.trim() ? parseTestimonials(form.testimonials) : [],
-        pricing: {
-          monthly: Number(form.pricingMonthly),
-          annual: Number(form.pricingAnnual),
-          features: form.pricingFeatures.split("\n").map(f => f.trim()).filter(Boolean),
-          features_ar: form.pricingFeatures_ar.split("\n").map(f => f.trim()).filter(Boolean),
-        },
+        pricing: form.moduleType === "chatbot"
+          ? {
+              monthly: Number(form.tierBasicMonthly),
+              annual: Number(form.tierBasicAnnual),
+              features: form.tierBasicFeatures.split("\n").map(f => f.trim()).filter(Boolean),
+              features_ar: form.tierBasicFeatures_ar.split("\n").map(f => f.trim()).filter(Boolean),
+            }
+          : {
+              monthly: Number(form.pricingMonthly),
+              annual: Number(form.pricingAnnual),
+              features: form.pricingFeatures.split("\n").map(f => f.trim()).filter(Boolean),
+              features_ar: form.pricingFeatures_ar.split("\n").map(f => f.trim()).filter(Boolean),
+            },
         name_ar: form.name_ar.trim() || undefined,
         tagline_ar: form.tagline_ar.trim() || undefined,
         description_ar: form.description_ar.trim() || undefined,
         capabilities_ar: form.capabilities_ar.split(",").map(c => c.trim()).filter(Boolean),
       };
+
+      if (form.moduleType === "chatbot") {
+        payload.pricingTiers = [
+          {
+            key: "basic",
+            monthly: Number(form.tierBasicMonthly),
+            annual: Number(form.tierBasicAnnual),
+            features: form.tierBasicFeatures.split("\n").map(f => f.trim()).filter(Boolean),
+            features_ar: form.tierBasicFeatures_ar.split("\n").map(f => f.trim()).filter(Boolean),
+          },
+          {
+            key: "pro",
+            monthly: Number(form.tierProMonthly),
+            annual: Number(form.tierProAnnual),
+            features: form.tierProFeatures.split("\n").map(f => f.trim()).filter(Boolean),
+            features_ar: form.tierProFeatures_ar.split("\n").map(f => f.trim()).filter(Boolean),
+          },
+        ];
+      }
 
       if (editingId) {
         await api.patch(`/modules/${editingId}`, payload);
@@ -649,28 +689,87 @@ export function AdminModules() {
 
             {/* PRICING TAB */}
             {activeTab === "pricing" && (
-              <div>
-                <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} /></div>
-                  <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} /></div>
+              form.moduleType === "chatbot" ? (
+                <div>
+                  <div className="mb-4 rounded-lg border border-primary/15 bg-primary/[0.06] p-3.5">
+                    <p className="mb-1 text-xs font-semibold text-[#a78bfa]">Basic / Pro tiered pricing</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Chatbots price as Basic + Pro tiers (Pro adds WhatsApp, Instagram &amp; Analytics — enforced server-side, not just hidden in the UI).
+                      Basic's numbers below also populate this module&apos;s legacy single-plan price shown on the /pricing page card.
+                      Custom/Enterprise has no fixed price — it&apos;s always a &quot;Contact us&quot; card, nothing to configure here.
+                    </p>
+                  </div>
+
+                  {/* Basic tier */}
+                  <div className="mb-4 rounded-lg border p-3.5">
+                    <p className="mb-3 text-sm font-semibold text-foreground">Basic tier</p>
+                    <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierBasicMonthly} onChange={e => setForm(f => ({ ...f, tierBasicMonthly: e.target.value }))} /></div>
+                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierBasicAnnual} onChange={e => setForm(f => ({ ...f, tierBasicAnnual: e.target.value }))} /></div>
+                    </div>
+                    <div>
+                      {fieldLabel("Basic Features", "one per line")}
+                      <Textarea
+                        value={form.tierBasicFeatures}
+                        onChange={e => setForm(f => ({ ...f, tierBasicFeatures: e.target.value }))}
+                        rows={5}
+                        placeholder={"Website chat widget\nKnowledge base\nEmail notifications"}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pro tier */}
+                  <div className="mb-4 rounded-lg border p-3.5">
+                    <p className="mb-3 text-sm font-semibold text-foreground">Pro tier</p>
+                    <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierProMonthly} onChange={e => setForm(f => ({ ...f, tierProMonthly: e.target.value }))} /></div>
+                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierProAnnual} onChange={e => setForm(f => ({ ...f, tierProAnnual: e.target.value }))} /></div>
+                    </div>
+                    <div>
+                      {fieldLabel("Pro Features", "one per line")}
+                      <Textarea
+                        value={form.tierProFeatures}
+                        onChange={e => setForm(f => ({ ...f, tierProFeatures: e.target.value }))}
+                        rows={6}
+                        placeholder={"Everything in Basic\nWhatsApp integration\nInstagram integration\nAnalytics & insights\nPriority support"}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border bg-background p-3.5">
+                    <p className="text-xs text-muted-foreground">
+                      Basic: <strong className="text-foreground">${form.tierBasicMonthly}/mo</strong> or{" "}
+                      <strong className="text-[#22c55e]">${form.tierBasicAnnual}/mo annually</strong>
+                      <br />
+                      Pro: <strong className="text-foreground">${form.tierProMonthly}/mo</strong> or{" "}
+                      <strong className="text-[#22c55e]">${form.tierProAnnual}/mo annually</strong>
+                    </p>
+                  </div>
                 </div>
-                <div className="mb-3.5">
-                  {fieldLabel("Pricing Features", "one per line")}
-                  <Textarea
-                    value={form.pricingFeatures}
-                    onChange={e => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
-                    rows={10}
-                    placeholder={"Unlimited pipeline runs\nDaily trend discovery\nFull script generation\nAuto YouTube upload\n3 Shorts per video\nAI thumbnail generation\nEmail notifications\nPriority support"}
-                  />
+              ) : (
+                <div>
+                  <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} /></div>
+                    <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} /></div>
+                  </div>
+                  <div className="mb-3.5">
+                    {fieldLabel("Pricing Features", "one per line")}
+                    <Textarea
+                      value={form.pricingFeatures}
+                      onChange={e => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
+                      rows={10}
+                      placeholder={"Unlimited pipeline runs\nDaily trend discovery\nFull script generation\nAuto YouTube upload\n3 Shorts per video\nAI thumbnail generation\nEmail notifications\nPriority support"}
+                    />
+                  </div>
+                  <div className="rounded-lg border bg-background p-3.5">
+                    <p className="text-xs text-muted-foreground">
+                      Preview: <strong className="text-foreground">${form.pricingMonthly}/mo</strong> or{" "}
+                      <strong className="text-[#22c55e]">${form.pricingAnnual}/mo annually</strong>{" "}
+                      — saves <strong className="text-[#22c55e]">${(Number(form.pricingMonthly) - Number(form.pricingAnnual)) * 12}/year</strong>
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-lg border bg-background p-3.5">
-                  <p className="text-xs text-muted-foreground">
-                    Preview: <strong className="text-foreground">${form.pricingMonthly}/mo</strong> or{" "}
-                    <strong className="text-[#22c55e]">${form.pricingAnnual}/mo annually</strong>{" "}
-                    — saves <strong className="text-[#22c55e]">${(Number(form.pricingMonthly) - Number(form.pricingAnnual)) * 12}/year</strong>
-                  </p>
-                </div>
-              </div>
+              )
             )}
 
             {/* TESTIMONIALS TAB */}
@@ -772,16 +871,41 @@ export function AdminModules() {
                       dir="rtl"
                     />
                   </div>
-                  <div className="col-span-full mb-3.5">
-                    {fieldLabel("Pricing Features (AR) — مميزات الخطة", "one per line in Arabic")}
-                    <Textarea
-                      value={form.pricingFeatures_ar}
-                      onChange={e => setForm(f => ({ ...f, pricingFeatures_ar: e.target.value }))}
-                      rows={5}
-                      placeholder={"نشر غير محدود\nدعم اللغة العربية\nتحليلات الأداء"}
-                      dir="rtl"
-                    />
-                  </div>
+                  {form.moduleType === "chatbot" ? (
+                    <>
+                      <div className="col-span-full mb-3.5">
+                        {fieldLabel("Basic Features (AR)", "one per line in Arabic")}
+                        <Textarea
+                          value={form.tierBasicFeatures_ar}
+                          onChange={e => setForm(f => ({ ...f, tierBasicFeatures_ar: e.target.value }))}
+                          rows={4}
+                          placeholder={"واجهة الدردشة على الموقع\nقاعدة المعرفة\nإشعارات البريد الإلكتروني"}
+                          dir="rtl"
+                        />
+                      </div>
+                      <div className="col-span-full mb-3.5">
+                        {fieldLabel("Pro Features (AR)", "one per line in Arabic")}
+                        <Textarea
+                          value={form.tierProFeatures_ar}
+                          onChange={e => setForm(f => ({ ...f, tierProFeatures_ar: e.target.value }))}
+                          rows={5}
+                          placeholder={"كل ما في الباقة الأساسية\nتكامل واتساب\nتكامل انستغرام\nتحليلات ورؤى"}
+                          dir="rtl"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-full mb-3.5">
+                      {fieldLabel("Pricing Features (AR) — مميزات الخطة", "one per line in Arabic")}
+                      <Textarea
+                        value={form.pricingFeatures_ar}
+                        onChange={e => setForm(f => ({ ...f, pricingFeatures_ar: e.target.value }))}
+                        rows={5}
+                        placeholder={"نشر غير محدود\nدعم اللغة العربية\nتحليلات الأداء"}
+                        dir="rtl"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
