@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import {
   Plus, Pencil, Trash2, Loader2,
   CheckCircle2, XCircle, Boxes, Search,
+  Info, Workflow, FileText, DollarSign, MessageSquare, Languages,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -143,7 +144,15 @@ const fieldLabel = (text: string, hint?: string) => (
   </Label>
 );
 
-const TABS = ["basic", "pipeline", "content", "pricing", "testimonials", "arabic"] as const;
+const TAB_CONFIG = [
+  { key: "basic", label: "Basic", icon: Info },
+  { key: "pipeline", label: "Pipeline", icon: Workflow },
+  { key: "content", label: "Content", icon: FileText },
+  { key: "pricing", label: "Pricing", icon: DollarSign },
+  { key: "testimonials", label: "Testimonials", icon: MessageSquare },
+  { key: "arabic", label: "Arabic", icon: Languages },
+] as const;
+const TABS = TAB_CONFIG.map((t) => t.key);
 
 export function AdminModules() {
   const [modules, setModules] = useState<Module[]>([]);
@@ -414,7 +423,7 @@ export function AdminModules() {
         <div>
           <h1 className="mb-1 text-xl font-bold text-foreground">Modules</h1>
           <p className="text-sm text-muted-foreground">
-            {filteredModules.length} of {modules.length} agents & automations
+            {filteredModules.length} of {modules.length} modules
           </p>
         </div>
         <Button onClick={openCreate} className="gap-2">
@@ -437,6 +446,7 @@ export function AdminModules() {
           <option value="">All types</option>
           <option value="agent">Agent</option>
           <option value="automation">Automation</option>
+          <option value="chatbot">Chatbot</option>
         </select>
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={cn(selectClass, "w-auto min-w-[150px]")}>
           <option value="">All categories</option>
@@ -453,7 +463,7 @@ export function AdminModules() {
 
       {/* Modal */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-3xl">
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-4xl">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div
@@ -469,24 +479,27 @@ export function AdminModules() {
             </div>
           </DialogHeader>
 
-          {/* Tabs */}
-          <div className="-mt-2 flex overflow-x-auto border-b">
-            {TABS.map(t => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                className={cn(
-                  "-mb-px border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap capitalize",
-                  activeTab === t ? "border-primary font-semibold text-[#a78bfa]" : "border-transparent font-normal text-muted-foreground",
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {/* Nav + Form Body */}
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[190px_1fr]">
+            <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
+              {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                    activeTab === key
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
+            </nav>
 
-          {/* Form Body */}
-          <div className="flex-1 overflow-y-auto">
+            <div className="overflow-y-auto pr-1">
             {/* BASIC TAB */}
             {activeTab === "basic" && (
               <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
@@ -909,28 +922,15 @@ export function AdminModules() {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
-          <DialogFooter className="!justify-between sm:!flex-row">
-            <div className="flex gap-1.5">
-              {TABS.map(t => (
-                <div
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={cn(
-                    "h-1.5 cursor-pointer rounded-full transition-all",
-                    activeTab === t ? "w-4.5 bg-primary" : "w-1.5 bg-border",
-                  )}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-                {saving && <Loader2 size={14} className="animate-spin" />}
-                {editingId ? "Update module" : "Create module"}
-              </Button>
-            </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              {editingId ? "Update module" : "Create module"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
