@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
 import { Bell, Loader2, CheckCircle2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   _id: string;
@@ -29,13 +35,13 @@ const NOTIF_COLORS: Record<string, string> = {
 };
 
 export function NotificationsPage() {
-  const { colors, isDark } = useTheme();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [clearOpen, setClearOpen] = useState(false);
   const limit = 15;
 
   useEffect(() => { fetchNotifications(); }, [page]);
@@ -62,7 +68,10 @@ export function NotificationsPage() {
     try {
       await api.patch("/notifications/read-all");
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    } catch {}
+      toast.success("All notifications marked as read");
+    } catch {
+      toast.error("Failed to mark notifications as read");
+    }
   };
 
   const deleteNotif = async (id: string) => {
@@ -70,16 +79,21 @@ export function NotificationsPage() {
       await api.delete(`/notifications/${id}`);
       setNotifications((prev) => prev.filter((n) => n._id !== id));
       setTotal((t) => t - 1);
-    } catch {}
+    } catch {
+      toast.error("Failed to delete notification");
+    }
   };
 
   const clearAll = async () => {
-    if (!confirm("Clear all notifications?")) return;
     try {
       await api.delete("/notifications/clear-all");
       setNotifications([]);
       setTotal(0);
-    } catch {}
+      toast.success("All notifications cleared");
+    } catch {
+      toast.error("Failed to clear notifications");
+    }
+    setClearOpen(false);
   };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -87,48 +101,44 @@ export function NotificationsPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Notifications</h1>
-          <p style={{ fontSize: "14px", color: colors.textMuted }}>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Notifications</h1>
+          <p className="text-sm text-muted-foreground">
             {total} total · {unreadCount} unread
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="flex gap-2">
           {unreadCount > 0 && (
-            <button onClick={markAllRead} style={{
-              padding: "8px 16px", borderRadius: "8px", cursor: "pointer",
-              border: `1px solid ${colors.border}`, background: colors.bgCard,
-              color: "#a78bfa", fontSize: "13px", fontWeight: 500,
-            }}>
+            <Button variant="outline" onClick={markAllRead} className="text-[#a78bfa]">
               Mark all read
-            </button>
+            </Button>
           )}
           {total > 0 && (
-            <button onClick={clearAll} style={{
-              padding: "8px 16px", borderRadius: "8px", cursor: "pointer",
-              border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)",
-              color: "#ef4444", fontSize: "13px", fontWeight: 500,
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => setClearOpen(true)}
+              className="border-destructive/20 bg-destructive/6 text-destructive"
+            >
               Clear all
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Notifications list */}
-      <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
+      <div className="overflow-hidden rounded-xl border bg-card">
         {loading ? (
-          <div style={{ padding: "60px", textAlign: "center" }}>
-            <Loader2 size={24} color="#7c3aed" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+          <div className="p-15 text-center">
+            <Loader2 size={24} className="mx-auto animate-spin text-primary" />
           </div>
         ) : notifications.length === 0 ? (
-          <div style={{ padding: "60px 24px", textAlign: "center" }}>
-            <Bell size={36} color={colors.textMuted} style={{ margin: "0 auto 16px" }} />
-            <p style={{ fontSize: "15px", fontWeight: 500, color: colors.text, marginBottom: "6px" }}>
+          <div className="px-6 py-15 text-center">
+            <Bell size={36} className="mx-auto mb-4 text-muted-foreground" />
+            <p className="mb-1.5 text-[15px] font-medium text-foreground">
               No notifications
             </p>
-            <p style={{ fontSize: "13px", color: colors.textMuted }}>
+            <p className="text-[13px] text-muted-foreground">
               Pipeline events, API changes and system alerts appear here.
             </p>
           </div>
@@ -136,48 +146,43 @@ export function NotificationsPage() {
           notifications.map((notif, i) => {
             const accent = NOTIF_COLORS[notif.type] || "#7c3aed";
             return (
-              <div key={notif._id} style={{
-                display: "flex", gap: "14px", padding: "16px 20px",
-                borderBottom: i < notifications.length - 1 ? `1px solid ${colors.border}` : "none",
-                background: notif.isRead ? "transparent"
-                  : isDark ? "rgba(124,58,237,0.06)" : "rgba(124,58,237,0.03)",
-                cursor: notif.actionUrl ? "pointer" : "default",
-                transition: "background 0.15s",
-              }}
+              <div
+                key={notif._id}
+                className={cn(
+                  "flex gap-3.5 border-b px-5 py-4 transition-colors last:border-b-0",
+                  !notif.isRead && "bg-primary/[0.04]",
+                  notif.actionUrl ? "cursor-pointer" : "cursor-default"
+                )}
                 onClick={() => {
                   if (!notif.isRead) markAsRead(notif._id);
                   if (notif.actionUrl) router.push(notif.actionUrl);
                 }}
               >
                 {/* Icon */}
-                <div style={{
-                  width: "42px", height: "42px", borderRadius: "10px", flexShrink: 0,
-                  background: notif.isRead
-                    ? isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"
-                    : `${accent}15`,
-                  border: `1px solid ${notif.isRead
-                    ? isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"
-                    : `${accent}25`}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "20px",
-                }}>
+                <div
+                  className={cn(
+                    "flex size-10.5 shrink-0 items-center justify-center rounded-[10px] border text-xl",
+                    notif.isRead && "bg-secondary"
+                  )}
+                  style={!notif.isRead ? { background: `${accent}15`, borderColor: `${accent}25` } : undefined}
+                >
                   {notif.icon || NOTIF_ICONS[notif.type] || "🔔"}
                 </div>
 
                 {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
-                    <p style={{ fontSize: "14px", fontWeight: notif.isRead ? 400 : 600, color: colors.text, marginBottom: "4px", lineHeight: 1.4 }}>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={cn("mb-1 text-sm leading-tight text-foreground", !notif.isRead && "font-semibold")}>
                       {notif.title}
                     </p>
                     {!notif.isRead && (
-                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#7c3aed", flexShrink: 0, marginTop: "5px" }} />
+                      <div className="mt-1.25 size-2 shrink-0 rounded-full bg-primary" />
                     )}
                   </div>
-                  <p style={{ fontSize: "13px", color: colors.textMuted, lineHeight: 1.5, marginBottom: "6px" }}>
+                  <p className="mb-1.5 text-[13px] leading-normal text-muted-foreground">
                     {notif.message}
                   </p>
-                  <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                  <p className="text-[11px] text-muted-foreground">
                     {new Date(notif.createdAt).toLocaleString("en-GB", {
                       day: "numeric", month: "short", year: "numeric",
                       hour: "2-digit", minute: "2-digit",
@@ -186,21 +191,19 @@ export function NotificationsPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: "6px", alignItems: "flex-start", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                <div className="flex shrink-0 items-start gap-1.5" onClick={(e) => e.stopPropagation()}>
                   {!notif.isRead && (
-                    <button onClick={() => markAsRead(notif._id)} style={{
-                      width: "28px", height: "28px", borderRadius: "6px", cursor: "pointer",
-                      border: `1px solid ${colors.border}`, background: colors.bg,
-                      color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                    <button
+                      onClick={() => markAsRead(notif._id)}
+                      className="flex size-7 items-center justify-center rounded-md border bg-background text-[#22c55e]"
+                    >
                       <CheckCircle2 size={13} />
                     </button>
                   )}
-                  <button onClick={() => deleteNotif(notif._id)} style={{
-                    width: "28px", height: "28px", borderRadius: "6px", cursor: "pointer",
-                    border: "1px solid rgba(239,68,68,0.15)", background: "transparent",
-                    color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
+                  <button
+                    onClick={() => deleteNotif(notif._id)}
+                    className="flex size-7 items-center justify-center rounded-md border border-destructive/15 bg-transparent text-destructive"
+                  >
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -212,34 +215,37 @@ export function NotificationsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px" }}>
-          <p style={{ fontSize: "13px", color: colors.textMuted }}>
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-[13px] text-muted-foreground">
             Showing {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
           </p>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{
-              width: "32px", height: "32px", borderRadius: "7px",
-              border: `1px solid ${colors.border}`, background: colors.bgCard,
-              color: colors.text, cursor: page === 1 ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              opacity: page === 1 ? 0.5 : 1,
-            }}>
+          <div className="flex gap-1.5">
+            <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
               <ChevronLeft size={14} />
-            </button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{
-              width: "32px", height: "32px", borderRadius: "7px",
-              border: `1px solid ${colors.border}`, background: colors.bgCard,
-              color: colors.text, cursor: page === totalPages ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              opacity: page === totalPages ? 0.5 : 1,
-            }}>
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
               <ChevronRight size={14} />
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes all {total} notification{total !== 1 ? "s" : ""}. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={clearAll} className="bg-destructive text-white hover:bg-destructive/90">
+              Clear all
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

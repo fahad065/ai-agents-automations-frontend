@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   DollarSign, TrendingUp, TrendingDown, Zap,
   ChevronLeft, ChevronRight, Loader2, Filter,
-  BarChart3, Users, CreditCard, Package,
+  BarChart3,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface BillingRecord {
   _id: string;
@@ -41,23 +43,40 @@ interface ApiCosts {
 
 // ── Mini Bar Chart ────────────────────────────────────────────
 function MiniBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  const { colors } = useTheme();
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
-    <div style={{ marginBottom: "12px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-        <span style={{ fontSize: "12px", color: colors.textMuted }}>{label}</span>
-        <span style={{ fontSize: "12px", fontWeight: 600, color: colors.text }}>${value.toFixed(2)}</span>
+    <div className="mb-3">
+      <div className="mb-1.25 flex justify-between">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs font-semibold text-foreground">${value.toFixed(2)}</span>
       </div>
-      <div style={{ height: "6px", borderRadius: "3px", background: colors.border, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: "3px", transition: "width 0.5s ease" }} />
+      <div className="h-1.5 overflow-hidden rounded-sm bg-border">
+        <div className="h-full rounded-sm transition-[width] duration-500 ease-out" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
   );
 }
 
+function StatCard({ label, value, sub, icon: Icon, color, loading }: { label: string; value: string; sub?: string; icon: any; color: string; loading: boolean }) {
+  return (
+    <div className="rounded-xl border bg-card px-5 py-4.5">
+      <div className="mb-2.5 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="flex size-8 items-center justify-center rounded-lg border" style={{ background: `${color}15`, borderColor: `${color}25` }}>
+          <Icon size={15} color={color} />
+        </div>
+      </div>
+      {loading ? (
+        <div className="h-7 w-1/2 animate-pulse rounded-md bg-border" />
+      ) : (
+        <p className="text-[22px] font-bold text-foreground">{value}</p>
+      )}
+      {sub && <p className="mt-1 text-[11px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
 export function PaymentsPage() {
-  const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
   const router = useRouter();
 
@@ -123,102 +142,86 @@ export function PaymentsPage() {
     apiCosts?.totalAtlas || 0,
   );
 
-  const inputStyle = {
-    padding: "7px 10px", borderRadius: "7px", fontSize: "12px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none",
-  };
-
-  const StatCard = ({ label, value, sub, icon: Icon, color, positive }: any) => (
-    <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-        <p style={{ fontSize: "12px", color: colors.textMuted }}>{label}</p>
-        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `${color}15`, border: `1px solid ${color}25`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={15} color={color} />
-        </div>
-      </div>
-      {loading ? (
-        <div style={{ height: "28px", background: colors.border, borderRadius: "6px", width: "50%", animation: "pulse 1.5s ease infinite" }} />
-      ) : (
-        <p style={{ fontSize: "22px", fontWeight: 700, color: positive === false ? "#ef4444" : positive === true ? "#22c55e" : colors.text }}>
-          {value}
-        </p>
-      )}
-      {sub && <p style={{ fontSize: "11px", color: colors.textMuted, marginTop: "4px" }}>{sub}</p>}
-    </div>
-  );
-
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: colors.text, marginBottom: "4px" }}>Payment Dashboard</h1>
-          <p style={{ fontSize: "14px", color: colors.textMuted }}>Platform-wide billing, API costs and profit/loss.</p>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Payment Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Platform-wide billing, API costs and profit/loss.</p>
         </div>
 
         {/* Date range filter */}
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-          <Filter size={13} color={colors.textMuted} />
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
-          <span style={{ fontSize: "12px", color: colors.textMuted }}>to</span>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter size={13} className="text-muted-foreground" />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="rounded-md border bg-background px-2.5 py-1.75 text-xs text-foreground outline-none"
+          />
+          <span className="text-xs text-muted-foreground">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="rounded-md border bg-background px-2.5 py-1.75 text-xs text-foreground outline-none"
+          />
         </div>
       </div>
 
       {/* Stats cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Total Revenue" value={`$${(profitLoss?.revenue || 0).toFixed(2)}`}
-          sub="From subscriptions" icon={DollarSign} color="#22c55e" positive={true} />
+          sub="From subscriptions" icon={DollarSign} color="#22c55e" loading={loading} />
         <StatCard label="Total API Costs" value={`$${(apiCosts?.totalAmount || 0).toFixed(2)}`}
-          sub={`${apiCosts?.count || 0} transactions`} icon={Zap} color="#f59e0b" positive={false} />
+          sub={`${apiCosts?.count || 0} transactions`} icon={Zap} color="#f59e0b" loading={loading} />
         <StatCard
           label="Net Profit/Loss"
           value={`${(profitLoss?.profit || 0) >= 0 ? "+" : ""}$${(profitLoss?.profit || 0).toFixed(2)}`}
           sub="Revenue minus costs" icon={(profitLoss?.profit ?? 0) >= 0 ? TrendingUp : TrendingDown}
           color={(profitLoss?.profit ?? 0) >= 0 ? "#22c55e" : "#ef4444"}
-          positive={(profitLoss?.profit ?? 0) >= 0} />
+          loading={loading} />
         <StatCard label="This Month" value={`$${(summary?.grandTotal || 0).toFixed(2)}`}
-          sub={summary?.month || "—"} icon={BarChart3} color="#7c3aed" />
+          sub={summary?.month || "—"} icon={BarChart3} color="#7c3aed" loading={loading} />
       </div>
 
       {/* Two column — API costs + top modules */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
-
+      <div className="mb-5 grid grid-cols-1 gap-3.5 md:grid-cols-2">
         {/* API Cost Breakdown */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "16px" }}>API Cost Breakdown</h2>
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">API Cost Breakdown</h2>
           {loading ? (
-            <Loader2 size={20} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
+            <Loader2 size={20} className="animate-spin text-primary" />
           ) : (
             <>
               <MiniBar label="OpenAI" value={apiCosts?.totalOpenAI || 0} max={maxApiCost} color="#22c55e" />
               <MiniBar label="Seedance (Atlas)" value={apiCosts?.totalSeedance || 0} max={maxApiCost} color="#7c3aed" />
               <MiniBar label="Atlas Cloud" value={apiCosts?.totalAtlas || 0} max={maxApiCost} color="#f59e0b" />
-              <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: "12px", marginTop: "4px", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Total</span>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "#f59e0b" }}>${(apiCosts?.totalAmount || 0).toFixed(2)}</span>
+              <div className="mt-1 flex justify-between border-t pt-3">
+                <span className="text-[13px] font-semibold text-foreground">Total</span>
+                <span className="text-[13px] font-bold text-[#f59e0b]">${(apiCosts?.totalAmount || 0).toFixed(2)}</span>
               </div>
             </>
           )}
         </div>
 
         {/* Top modules by revenue */}
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "18px 20px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "16px" }}>Revenue by Module</h2>
+        <div className="rounded-xl border bg-card px-5 py-4.5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Revenue by Module</h2>
           {loading ? (
-            <Loader2 size={20} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
+            <Loader2 size={20} className="animate-spin text-primary" />
           ) : !summary?.byModule?.length ? (
-            <p style={{ fontSize: "13px", color: colors.textMuted }}>No revenue data yet</p>
+            <p className="text-[13px] text-muted-foreground">No revenue data yet</p>
           ) : (
             <>
               {summary.byModule.map((m: any, i: number) => (
                 <MiniBar key={i} label={m.moduleName} value={m.total}
                   max={summary.byModule[0]?.total || 1} color="#a78bfa" />
               ))}
-              <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: "12px", marginTop: "4px", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: colors.text }}>Total</span>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "#22c55e" }}>${(summary?.grandTotal || 0).toFixed(2)}</span>
+              <div className="mt-1 flex justify-between border-t pt-3">
+                <span className="text-[13px] font-semibold text-foreground">Total</span>
+                <span className="text-[13px] font-bold text-[#22c55e]">${(summary?.grandTotal || 0).toFixed(2)}</span>
               </div>
             </>
           )}
@@ -226,99 +229,81 @@ export function PaymentsPage() {
       </div>
 
       {/* Recent transactions table */}
-      <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-          <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Recent Transactions</h2>
-        </div>
-
-        {/* Column headers */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "2fr 1fr 100px 80px 100px 100px",
-          gap: "10px", padding: "10px 18px",
-          background: colors.bg, borderBottom: `1px solid ${colors.border}`,
-        }}>
-          {["Description", "User", "Module", "Type", "Amount", "Status"].map((h) => (
-            <span key={h} style={{ fontSize: "11px", fontWeight: 600, color: colors.textMuted }}>{h}</span>
-          ))}
+      <div className="overflow-hidden rounded-xl border bg-card">
+        <div className="border-b px-4.5 py-3.5">
+          <h2 className="text-sm font-semibold text-foreground">Recent Transactions</h2>
         </div>
 
         {records.length === 0 ? (
-          <div style={{ padding: "40px", textAlign: "center" }}>
-            <p style={{ fontSize: "13px", color: colors.textMuted }}>No transactions found for this period</p>
+          <div className="p-10 text-center">
+            <p className="text-[13px] text-muted-foreground">No transactions found for this period</p>
           </div>
         ) : (
-          records.map((r, i) => (
-            <div key={r._id} style={{
-              display: "grid", gridTemplateColumns: "2fr 1fr 100px 80px 100px 100px",
-              gap: "10px", padding: "12px 18px", alignItems: "center",
-              borderBottom: i < records.length - 1 ? `1px solid ${colors.border}` : "none",
-            }}>
-              <div>
-                <p style={{ fontSize: "13px", color: colors.text, fontWeight: 500 }}>{r.description}</p>
-                <p style={{ fontSize: "11px", color: colors.textMuted }}>
-                  {new Date(r.billingDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                </p>
-              </div>
-              <p style={{ fontSize: "12px", color: colors.textMuted }}>
-                {(r.userId as any)?.name || "—"}
-              </p>
-              <p style={{ fontSize: "12px", color: colors.textMuted }}>{r.moduleName}</p>
-              <span style={{
-                fontSize: "11px", fontWeight: 600, padding: "3px 7px", borderRadius: "6px",
-                background: "rgba(124,58,237,0.08)", color: "#a78bfa",
-                display: "inline-block", textTransform: "capitalize",
-              }}>
-                {r.type}
-              </span>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: r.type === "refund" ? "#22c55e" : colors.text }}>
-                {r.type === "refund" ? "+" : ""}${r.amount.toFixed(2)}
-              </p>
-              <span style={{
-                fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "9999px",
-                background: (r.status === "paid" ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)"),
-                color: (r.status === "paid" ? "#22c55e" : "#f59e0b"),
-                display: "inline-block",
-              }}>
-                {r.status}
-              </span>
-            </div>
-          ))
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Module</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((r) => (
+                <TableRow key={r._id}>
+                  <TableCell className="whitespace-normal">
+                    <p className="text-[13px] font-medium text-foreground">{r.description}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(r.billingDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {(r.userId as any)?.name || "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.moduleName}</TableCell>
+                  <TableCell>
+                    <span className="inline-block rounded-md bg-primary/8 px-1.75 py-0.75 text-[11px] font-semibold text-[#a78bfa] capitalize">
+                      {r.type}
+                    </span>
+                  </TableCell>
+                  <TableCell className={cn("text-[13px] font-bold", r.type === "refund" ? "text-[#22c55e]" : "text-foreground")}>
+                    {r.type === "refund" ? "+" : ""}${r.amount.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-block rounded-full px-2 py-0.75 text-[11px] font-semibold",
+                        r.status === "paid" ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#f59e0b]/10 text-[#f59e0b]"
+                      )}
+                    >
+                      {r.status}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderTop: `1px solid ${colors.border}` }}>
-            <p style={{ fontSize: "12px", color: colors.textMuted }}>
+          <div className="flex items-center justify-between border-t px-4.5 py-3">
+            <p className="text-xs text-muted-foreground">
               {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
             </p>
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{
-                width: "30px", height: "30px", borderRadius: "7px", cursor: page === 1 ? "not-allowed" : "pointer",
-                border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-                display: "flex", alignItems: "center", justifyContent: "center", opacity: page === 1 ? 0.4 : 1,
-              }}>
+            <div className="flex gap-1">
+              <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                 <ChevronLeft size={13} />
-              </button>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{
-                width: "30px", height: "30px", borderRadius: "7px", cursor: page === totalPages ? "not-allowed" : "pointer",
-                border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.text,
-                display: "flex", alignItems: "center", justifyContent: "center", opacity: page === totalPages ? 0.4 : 1,
-              }}>
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                 <ChevronRight size={13} />
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        @media (max-width: 900px) {
-          .two-col { grid-template-columns: 1fr !important; }
-          .four-col { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-      `}</style>
     </div>
   );
 }
