@@ -649,6 +649,17 @@ User signed up as a fresh test account, verified their email, and disliked the u
 
 Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and Playwright at 1440px/390px against a mocked unverified user — the empty-space issue from the screenshot is gone (steps + pills now use the card's full width), and there's zero horizontal overflow on mobile where the step grid collapses to a single column.
 
+## Chatbot lead capture — pinned name/phone/email on the Conversations tab (implemented, 2026-09)
+Companion to the backend's lead-capture feature (see backend CLAUDE.md — the chatbot now naturally asks for and extracts a customer's name/phone/email mid-conversation, on every pricing tier, and notifies the owner). This is the one piece of UI it needed: making captured contact details actually visible without reading through a transcript.
+
+`chatbot-config-page.tsx`'s `Conversation` interface gained `visitorName?`/`visitorEmail?`/`visitorPhone?`. `ConversationsTab` now renders, per conversation row:
+- A small "🛈 Lead" badge next to the status pill whenever `visitorPhone` or `visitorEmail` is present — scannable across the whole list without expanding anything.
+- A pinned "Lead captured" strip directly under the row header, shown even while the row is **collapsed** (that's the "pin it" part of the ask) — name, a `wa.me/<phone>` link (opens the owner's own WhatsApp, no Meta API involved), and a `mailto:` link, each `stopPropagation()`-guarded so clicking them doesn't also toggle the row open/closed.
+
+**Real mobile bug found and fixed while verifying, not shipped as-is:** the row header's name+status+badge row had no `flex-wrap`, so on a 390px viewport the "Lead" badge visually overlapped the message-count text on the right — confirmed via `getBoundingClientRect()` showing the two elements' x-ranges genuinely intersecting (a screenshot alone showed garbled overlapping text, which is what caught it). Fixed by adding `flex-wrap` + `shrink-0` on the status/lead badges so they wrap onto their own line instead of overflowing into the sibling's space. Re-verified at 390px: `scrollWidth === clientWidth`, and the badge/message-count elements no longer share any x-range.
+
+Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and Playwright at 1200px/390px with a mocked conversation carrying full lead data alongside one without — the badge and pinned strip render correctly on the lead conversation and are absent on the other, with zero overflow at either width.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow

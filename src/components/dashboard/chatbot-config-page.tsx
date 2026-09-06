@@ -8,7 +8,7 @@ import {
   ArrowLeft, Loader2, Save, Settings, BookOpen, Radio, MessageSquare,
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
-  DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock,
+  DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -145,6 +145,9 @@ interface Conversation {
   messages: ConvMessage[];
   status: string;
   createdAt: string;
+  visitorName?: string;
+  visitorEmail?: string;
+  visitorPhone?: string;
 }
 
 interface Analytics {
@@ -1310,11 +1313,16 @@ function ConversationsTab({ conversations, loading, expandedConvo, setExpandedCo
                     <Icon size={13} color={chColor} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="mb-0.5 flex items-center gap-2">
+                    <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <p className="font-mono text-xs font-semibold text-foreground">
                         {c.sessionId?.slice(0, 12)}…
                       </p>
-                      <span className="rounded-full px-1.75 py-0.5 text-[10px] font-semibold" style={{ background: sc.bg, color: sc.color }}>{c.status}</span>
+                      <span className="shrink-0 rounded-full px-1.75 py-0.5 text-[10px] font-semibold" style={{ background: sc.bg, color: sc.color }}>{c.status}</span>
+                      {(c.visitorPhone || c.visitorEmail) && (
+                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.75 py-0.5 text-[10px] font-semibold text-primary">
+                          <Info size={9} /> Lead
+                        </span>
+                      )}
                     </div>
                     <p className="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted-foreground">
                       {lastMsg?.content || "No messages"}
@@ -1326,6 +1334,39 @@ function ConversationsTab({ conversations, loading, expandedConvo, setExpandedCo
                   </div>
                   {isOpen ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
                 </div>
+
+                {(c.visitorName || c.visitorEmail || c.visitorPhone) && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-primary/15 bg-primary/[0.06] px-3.5 py-2">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
+                      <Info size={12} /> Lead captured
+                    </span>
+                    {c.visitorName && (
+                      <span className="flex items-center gap-1.5 text-[11px] text-foreground">
+                        <UserIcon size={11} className="text-muted-foreground" /> {c.visitorName}
+                      </span>
+                    )}
+                    {c.visitorPhone && (
+                      <a
+                        href={`https://wa.me/${c.visitorPhone.replace(/[^\d]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 text-[11px] text-foreground hover:text-primary hover:underline"
+                      >
+                        <Phone size={11} className="text-muted-foreground" /> {c.visitorPhone}
+                      </a>
+                    )}
+                    {c.visitorEmail && (
+                      <a
+                        href={`mailto:${c.visitorEmail}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 text-[11px] text-foreground hover:text-primary hover:underline"
+                      >
+                        <Mail size={11} className="text-muted-foreground" /> {c.visitorEmail}
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {isOpen && (
                   <div className="flex max-h-[360px] flex-col gap-2 overflow-auto bg-card p-3.5">
