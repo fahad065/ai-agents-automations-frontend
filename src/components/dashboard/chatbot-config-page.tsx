@@ -8,7 +8,7 @@ import {
   ArrowLeft, Loader2, Save, Settings, BookOpen, Radio, MessageSquare,
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
-  DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone,
+  DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone, LayoutGrid,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -166,13 +166,13 @@ const EMPTY_CHANNELS: Channels = {
 };
 
 const TABS = [
+  { key: "guide", label: "Guide to Setup", icon: HelpCircle },
   { key: "overview", label: "Overview", icon: Settings },
   { key: "knowledge", label: "Knowledge Base", icon: BookOpen },
   { key: "channels", label: "Channels", icon: Radio },
   { key: "conversations", label: "Conversations", icon: MessageSquare },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "billing", label: "Billing", icon: DollarSign },
-  { key: "guide", label: "Guide to Setup", icon: HelpCircle },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -889,7 +889,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
       {/* ── GUIDE TO SETUP ── */}
       {tab === "guide" && (
-        <GuideTab isAdmin={isAdmin} isOwnBot={chatbot.userId === (user as any)?._id} />
+        <GuideTab isAdmin={isAdmin} isOwnBot={chatbot.userId === (user as any)?._id} isProOrAbove={isProOrAbove} />
       )}
         </div>
       </div>
@@ -1763,7 +1763,7 @@ function GuideStep({ n, title, children }: { n: number; title: string; children:
   );
 }
 
-function GuideTab({ isAdmin, isOwnBot }: { isAdmin: boolean; isOwnBot: boolean }) {
+function GuideTab({ isAdmin, isOwnBot, isProOrAbove }: { isAdmin: boolean; isOwnBot: boolean; isProOrAbove: boolean }) {
   const viewerIsClient = !isAdmin || isOwnBot;
   return (
     <>
@@ -1783,23 +1783,70 @@ function GuideTab({ isAdmin, isOwnBot }: { isAdmin: boolean; isOwnBot: boolean }
         </GuideStep>
       </Section>
 
-      <Section title="What our team handles for you" icon={Wrench}>
+      <Section title="What each tab does" icon={LayoutGrid}>
         <p className="mb-3.5 text-xs text-muted-foreground">
-          These steps involve Meta's platform with real technical setup — {viewerIsClient ? "the LogicMate team takes care of this so you don't have to." : "handle these on the client's behalf."}
+          A quick tour of everything in this dashboard, tab by tab.
         </p>
-        <GuideStep n={1} title="WhatsApp connection">
-          Requires a Meta Business App and secure access credentials — real technical setup on Meta's platform.
-          {viewerIsClient
-            ? " Reply to your welcome email with the WhatsApp number you'd like connected, and we'll handle the entire setup."
-            : " Once the client sends the number they'd like connected, paste the Phone Number ID + Access Token into the Channels tab."}
+        <GuideStep n={1} title="Overview — your bot's identity">
+          Name, description, persona (how it should sound), the language(s) it replies in, and the fallback message it sends when it doesn't know an answer — in English and Arabic. The status switch (draft / active / inactive) controls whether it's actually live; going live requires a verified email on the account. There's also an optional Booking Link (e.g. Calendly, OpenTable) — set it and the bot shares that link whenever someone wants to book; leave it blank and the bot collects their name, phone and email instead so you can follow up directly.
         </GuideStep>
-        <GuideStep n={2} title="Instagram connection">
-          Same idea as WhatsApp. Note: Instagram DM automation also requires a review from Meta before it goes fully live, which can take a few days on their end.
+        <GuideStep n={2} title="Knowledge Base — what it's allowed to answer">
+          Add entries as FAQs, plain text, or a URL to pull from. The bot only ever answers from what's here — nothing is invented, and nothing outside this list gets answered beyond the fallback message.
         </GuideStep>
-        <div className="mt-1 flex gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3.5 py-3">
+        <GuideStep n={3} title="Channels — where customers can reach it">
+          The Website widget needs no Meta account at all — enable it and copy a ready-made code snippet onto your site. WhatsApp and Instagram
+          {isProOrAbove
+            ? " are included on your current plan — see \"Connecting WhatsApp & Instagram\" below for exactly how that setup works."
+            : " are included from the Pro plan and up; this bot is currently on Basic, so those two cards stay locked until it's upgraded."}
+        </GuideStep>
+        <GuideStep n={4} title="Conversations — real chats, with leads pinned">
+          Every conversation the bot has, expandable into the full back-and-forth. The moment a customer shares their name, phone, or email, it's automatically pinned to the top of that conversation with a 🛈 Lead badge plus one-tap WhatsApp/email links — so following up never means re-reading a whole transcript.
+        </GuideStep>
+        <GuideStep n={5} title="Analytics — how the bot is performing">
+          {isProOrAbove
+            ? "Total conversations, total messages, a breakdown by channel, and how often a chat needed a human handoff."
+            : "Included from the Pro plan and up — shows total conversations, messages, and a per-channel breakdown once unlocked."}
+        </GuideStep>
+        <GuideStep n={6} title="Billing — plan, trial and payments">
+          Current tier and trial countdown, plus payment history.
+          {!viewerIsClient
+            ? " As admin, this is also where the price and tier get set, and where a received payment is confirmed."
+            : " If a payment is due, you'll see bank details and a simple \"I've paid\" form right here."}
+        </GuideStep>
+      </Section>
+
+      <Section title="Connecting WhatsApp & Instagram" icon={Wrench}>
+        {isProOrAbove ? (
+          <>
+            <p className="mb-3.5 text-xs text-muted-foreground">
+              Both need a real Meta Business App behind them — there are two ways to get there, pick whichever's easier:
+            </p>
+            <GuideStep n={1} title="Option A — set up your own Meta Business (recommended)">
+              {viewerIsClient
+                ? "You create a free Meta Business Portfolio and app under your own business, then grant our team Partner/Admin access — never your password, and you can revoke it any time from the same screen. We then configure WhatsApp and Instagram inside your own app and hand the credentials back for the Channels tab. This keeps your setup entirely your own, with no shared limits from anyone else's account."
+                : "The client creates their own Meta Business Portfolio and app, then grants you Partner/Admin access (Business Settings → Users → invite by email, Admin role — never their password). Walk them through it on a call or over WhatsApp if they're not confident doing it solo. Once you accept the invite, their app shows up in your own developers.facebook.com list — configure WhatsApp/Instagram there exactly as you would on your own app, then paste the resulting Phone Number ID / Access Token / Account ID into their Channels tab."}
+            </GuideStep>
+            <GuideStep n={2} title="Option B — we handle the whole thing for you">
+              {viewerIsClient
+                ? "Not comfortable with Option A? Reply to your welcome email or write to hello@logicmate.io — we'll do the entire Meta setup for you on a call, under our own account. All we need from you is the WhatsApp number and Instagram account you'd like connected."
+                : "If the client would rather not create their own Meta Business, do the setup on a call under your own shared Meta app instead, then paste the resulting credentials into their Channels tab. Either option ends the same way — real credentials pasted into their Channels tab — the only difference is whose Meta account the setup lives under."}
+            </GuideStep>
+            <GuideStep n={3} title="Instagram takes a bit longer either way">
+              Instagram DM automation additionally needs a review from Meta before it goes fully live — typically a few days, on Meta's side, not something either setup path can speed up.
+            </GuideStep>
+          </>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">
+            WhatsApp and Instagram are included from the Pro plan and up.{" "}
+            {viewerIsClient
+              ? <>Interested in adding them? Write to <a href="mailto:hello@logicmate.io" className="font-medium text-primary underline-offset-2 hover:underline">hello@logicmate.io</a> and we'll walk you through upgrading.</>
+              : "Upgrade the client's tier from the Billing tab to unlock these, then this section explains exactly how the Meta setup itself works."}
+          </p>
+        )}
+        <div className="mt-3 flex gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3.5 py-3">
           <Globe size={16} className="mt-0.5 shrink-0 text-blue-500" />
           <div>
-            <p className="mb-0.5 text-[13px] font-semibold text-foreground">Website widget — the easy one</p>
+            <p className="mb-0.5 text-[13px] font-semibold text-foreground">Website widget — the easy one, on every plan</p>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Unlike WhatsApp/Instagram, adding this chatbot to a website needs no Meta account at all — just enable it in the Channels tab and copy the ready-made code snippet.
             </p>
