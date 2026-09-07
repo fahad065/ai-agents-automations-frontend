@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
@@ -318,12 +318,27 @@ function AddOpenAiKeyDialog({ ownerId, forOtherUser, onClose, onSaved }: {
 // ── Main ──────────────────────────────────────────────────────
 export function ChatbotConfigPage({ id }: { id: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const isAdmin = (user as any)?.role === "admin";
 
   const [chatbot, setChatbot] = useState<Chatbot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<TabKey>("overview");
+  // Deep-link support (e.g. the lead-capture notification's "?tab=conversations",
+  // or the trial-billing reminder email's "?tab=billing") — snapshotted once at
+  // mount so it doesn't fight the URL cleanup effect below. Falls back to
+  // "overview" for a missing/invalid value, same default as before this existed.
+  const [tab, setTab] = useState<TabKey>(() => {
+    const requested = searchParams.get("tab");
+    return (TABS.some((t) => t.key === requested) ? requested : "overview") as TabKey;
+  });
+
+  useEffect(() => {
+    if (searchParams.get("tab")) {
+      router.replace(`/dashboard/chatbots/${id}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Overview form
   const [overview, setOverview] = useState({
