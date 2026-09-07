@@ -57,6 +57,7 @@ interface Chatbot {
   name: string;
   description?: string;
   persona?: string;
+  bookingUrl?: string;
   language: "en" | "ar" | "both";
   template?: string;
   status: "draft" | "active" | "inactive";
@@ -326,7 +327,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
   // Overview form
   const [overview, setOverview] = useState({
-    name: "", description: "", persona: "", language: "en" as "en" | "ar" | "both",
+    name: "", description: "", persona: "", bookingUrl: "", language: "en" as "en" | "ar" | "both",
     fallbackMessage: "", fallbackMessage_ar: "", humanHandoff: false,
   });
   const [overviewSaving, setOverviewSaving] = useState(false);
@@ -425,6 +426,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         name: bot.name || "",
         description: bot.description || "",
         persona: bot.persona || "",
+        bookingUrl: bot.bookingUrl || "",
         language: bot.language || "en",
         fallbackMessage: bot.fallbackMessage || "",
         fallbackMessage_ar: bot.fallbackMessage_ar || "",
@@ -566,6 +568,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         name: overview.name,
         description: overview.description,
         persona: overview.persona,
+        bookingUrl: overview.bookingUrl,
         language: overview.language,
         fallbackMessage: overview.fallbackMessage,
         fallbackMessage_ar: overview.fallbackMessage_ar,
@@ -764,10 +767,18 @@ export function ChatbotConfigPage({ id }: { id: string }) {
               {fieldLabel("Description")}
               <Textarea value={overview.description} onChange={(e) => setOverview((o) => ({ ...o, description: e.target.value }))} rows={2} />
             </div>
-            <div>
+            <div className="mb-3.5">
               {fieldLabel("Persona — how should the bot sound and behave?")}
               <Textarea value={overview.persona} onChange={(e) => setOverview((o) => ({ ...o, persona: e.target.value }))} rows={3}
                 placeholder="e.g. Friendly, concise, always offers to book a call if the user seems unsure." />
+            </div>
+            <div>
+              {fieldLabel("Booking Link (optional)")}
+              <Input value={overview.bookingUrl} onChange={(e) => setOverview((o) => ({ ...o, bookingUrl: e.target.value }))}
+                placeholder="https://calendly.com/your-business or an OpenTable/Resy link" />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                If a customer wants to book, the bot shares this link. Leave blank and it'll still take their name/phone/date & time in the conversation instead — your team just confirms manually.
+              </p>
             </div>
             <SaveBtn onClick={saveOverview} saving={overviewSaving} />
           </Section>

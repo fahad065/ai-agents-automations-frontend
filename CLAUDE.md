@@ -660,6 +660,15 @@ Companion to the backend's lead-capture feature (see backend CLAUDE.md — the c
 
 Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and Playwright at 1200px/390px with a mocked conversation carrying full lead data alongside one without — the badge and pinned strip render correctly on the lead conversation and are absent on the other, with zero overflow at either width.
 
+**Basic vs Pro tested end-to-end on a restaurant bot (2026-09)** — user asked to actually verify the tier gating with dummy WhatsApp/Instagram credentials before onboarding real clients. Confirmed via Playwright against a mocked Basic-tier and a mocked Pro-tier restaurant bot: Basic's Channels tab shows locked "Pro feature" cards for WhatsApp/Instagram (no Analytics tab in the nav at all); Pro shows real, editable fields that accept and persist dummy credentials, plus the Analytics tab. Matches what the backend's own test suite (see backend CLAUDE.md) confirms at the service level — this was the UI-level half of the same verification pass.
+
+## Booking link on the Overview tab (implemented, 2026-09)
+Companion to the backend's booking-link feature (see backend CLAUDE.md's "Booking link" section — a restaurant reservation isn't really Calendly's calendar-slot shape, so this ships the cheap universally-useful piece: a link the bot shares when asked, falling back to the existing lead-capture flow when there isn't one).
+
+`chatbot-config-page.tsx`'s `Chatbot` interface and the `overview` form state both gained `bookingUrl?: string`, wired through the existing `fetchChatbot()`/`saveOverview()` round trip — no new API call, it rides along in the same `PUT /chatbots/:id` the rest of the Overview tab already uses. New field added to the "Basic Info" `Section`, directly under Persona: an `Input` labeled "Booking Link (optional)" with a placeholder suggesting Calendly/OpenTable/Resy, and a helper line explaining the fallback-to-lead-capture behavior so the owner understands leaving it blank is a real, supported choice, not a broken state.
+
+Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and a Playwright screenshot confirming the field renders in the right place and round-trips a real value correctly.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
