@@ -51,7 +51,10 @@ const fieldLabel = (text: string, className?: string) => (
   <Label className={cn("mb-1.25 block text-xs font-medium text-muted-foreground", className)}>{text}</Label>
 );
 
-// ── Language tab selector — shared by PageEditModal & BlogModal ──
+// ── Language nav — shared by PageEditModal & BlogModal. Vertical nav-card
+// convention (same classes as settings-page.tsx / admin-modules.tsx's tab
+// dialog) rather than the old horizontal border-b pill bar — see frontend
+// CLAUDE.md's "platform-wide tab UI convention" section.
 function LangTabs({ lang, setLang, subs }: {
   lang: "en" | "ar"; setLang: (l: "en" | "ar") => void; subs: { en: string; ar: string };
 }) {
@@ -60,33 +63,28 @@ function LangTabs({ lang, setLang, subs }: {
     { key: "ar" as const, icon: "🇦🇪", label: "العربية", sub: subs.ar },
   ];
   return (
-    <div className="-mt-2 flex border-b">
+    <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
       {items.map((l) => (
         <button
           key={l.key}
           onClick={() => setLang(l.key)}
           className={cn(
-            "flex flex-1 items-center gap-2.5 border-b-2 px-5 py-3 transition-colors",
+            "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
             lang === l.key
               ? l.key === "ar"
-                ? "border-amber-500 bg-amber-500/[0.08]"
-                : "border-primary bg-primary/[0.06]"
-              : "border-transparent bg-transparent",
+                ? "bg-amber-500/10 text-amber-600"
+                : "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
           )}
         >
-          <span className="text-lg">{l.icon}</span>
-          <div className="text-left">
-            <p className={cn("mb-0.25 text-[13px] font-semibold", lang === l.key ? "text-foreground" : "text-muted-foreground")}>
-              {l.label}
-            </p>
-            <p className="text-[10px] text-muted-foreground/70">{l.sub}</p>
+          <span className="text-base">{l.icon}</span>
+          <div className="min-w-0">
+            <p className="truncate">{l.label}</p>
+            <p className="truncate text-[10px] font-normal text-muted-foreground/70">{l.sub}</p>
           </div>
-          {lang === l.key && (
-            <div className={cn("ml-auto size-1.75 rounded-full", l.key === "ar" ? "bg-amber-500" : "bg-primary")} />
-          )}
         </button>
       ))}
-    </div>
+    </nav>
   );
 }
 
@@ -139,24 +137,24 @@ function PageEditModal({ page, onClose, onSave }: {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit Page — <span className="text-[#a78bfa]">/{page.slug}</span></DialogTitle>
         </DialogHeader>
         <p className="-mt-3 text-xs text-muted-foreground">
-          Select a language tab to edit the English or Arabic content
+          Select a language to edit the English or Arabic content
         </p>
 
-        <LangTabs
-          lang={lang}
-          setLang={setLang}
-          subs={{ en: "Default content", ar: "UAE dialect · اللهجة الإماراتية" }}
-        />
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[190px_1fr]">
+          <LangTabs
+            lang={lang}
+            setLang={setLang}
+            subs={{ en: "Default content", ar: "UAE dialect · اللهجة الإماراتية" }}
+          />
 
-        {isAr && <ArabicActiveBanner note="you are editing Arabic (UAE dialect) content. All changes save to the _ar fields." />}
-
-        {/* Form body */}
-        <div className="flex-1 overflow-auto">
+          {/* Form body */}
+          <div className="flex min-h-0 flex-col overflow-y-auto pr-1">
+          {isAr && <ArabicActiveBanner note="you are editing Arabic (UAE dialect) content. All changes save to the _ar fields." />}
           {fetching ? (
             <div className="p-12 text-center">
               <Loader2 size={24} className="mx-auto animate-spin text-primary" />
@@ -257,6 +255,7 @@ function PageEditModal({ page, onClose, onSave }: {
               )}
             </div>
           )}
+          </div>
         </div>
 
         <DialogFooter>
@@ -359,24 +358,24 @@ function BlogModal({ post, onClose, onSave }: {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{post ? "Edit Blog Post" : "New Blog Post"}</DialogTitle>
         </DialogHeader>
         <p className="-mt-3 text-xs text-muted-foreground">
-          Select a language tab to edit the English or Arabic content
+          Select a language to edit the English or Arabic content
         </p>
 
-        <LangTabs
-          lang={lang}
-          setLang={setLang}
-          subs={{ en: "Title · excerpt · content · settings", ar: "UAE dialect · عنوان · مقتطف · محتوى" }}
-        />
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[190px_1fr]">
+          <LangTabs
+            lang={lang}
+            setLang={setLang}
+            subs={{ en: "Title · excerpt · content · settings", ar: "UAE dialect · عنوان · مقتطف · محتوى" }}
+          />
 
-        {isAr && <ArabicActiveBanner note="editing Arabic (UAE dialect). Changes save to title_ar, excerpt_ar, content_ar." />}
-
-        {/* Form body */}
-        <div className="flex-1 overflow-auto" dir={isAr ? "rtl" : "ltr"}>
+          {/* Form body */}
+          <div className="flex min-h-0 flex-col overflow-y-auto pr-1" dir={isAr ? "rtl" : "ltr"}>
+          {isAr && <ArabicActiveBanner note="editing Arabic (UAE dialect). Changes save to title_ar, excerpt_ar, content_ar." />}
           {fetching ? (
             <div className="p-12 text-center">
               <Loader2 size={24} className="mx-auto animate-spin text-primary" />
@@ -480,6 +479,7 @@ function BlogModal({ post, onClose, onSave }: {
               )}
             </div>
           )}
+          </div>
         </div>
 
         <DialogFooter>
@@ -584,21 +584,28 @@ export function CmsPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="mb-4 flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-lg border bg-card p-1">
-        {(["blog", "pages"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setPage(1); }}
-            className={cn(
-              "rounded-md border-none px-5 py-1.75 text-[13px] whitespace-nowrap",
-              tab === t ? "bg-background font-semibold text-foreground shadow-sm" : "bg-transparent font-normal text-muted-foreground",
-            )}
-          >
-            {t === "blog" ? "📝 Blog Posts" : "📄 Pages"}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[220px_1fr]">
+        {/* Left vertical nav — same convention as settings-page.tsx */}
+        <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
+          {([
+            { key: "blog" as const, label: "Blog Posts", icon: BookOpen },
+            { key: "pages" as const, label: "Pages", icon: Globe },
+          ]).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => { setTab(key); setPage(1); }}
+              className={cn(
+                "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                tab === key ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0">
 
       {/* ── BLOG TAB ── */}
       {tab === "blog" && (
@@ -759,6 +766,9 @@ export function CmsPage() {
           )}
         </div>
       )}
+
+        </div>
+      </div>
 
       {/* Blog modal */}
       {showBlogModal && (

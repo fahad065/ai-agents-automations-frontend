@@ -13,7 +13,7 @@ import {
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
 import { ChatbotTrialBanner } from "./chatbot-trial-banner";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -552,15 +552,15 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     setNotifySending(false);
   };
 
-  const confirmPayment = async (kind: "setup" | "monthly") => {
+  const confirmPayment = async (kind: "setup" | "monthly" | "upgrade") => {
     setConfirming(kind);
     try {
       const res = await api.post(`/chatbots/${id}/confirm-payment`, { kind });
       setChatbot((c) => c ? { ...c, billing: res.data?.data?.billing || res.data.billing } : c);
-      toast.success(`${kind === "setup" ? "Setup" : "Monthly"} payment confirmed`);
+      toast.success(kind === "setup" ? "Setup payment confirmed" : kind === "upgrade" ? "Upgraded to Pro" : "Monthly payment confirmed");
       fetchBilling();
-    } catch {
-      toast.error("Failed to confirm payment");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to confirm payment");
     }
     setConfirming(null);
   };
@@ -880,6 +880,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       {/* ── BILLING ── */}
       {tab === "billing" && (
         <BillingTab
+          id={id}
           billing={chatbot.billing}
           history={billingHistory}
           loading={billingLoading}
@@ -1507,12 +1508,13 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
 
 // ── Billing Tab ──────────────────────────────────────────────
 function BillingTab({
-  billing, history, loading, isAdmin,
+  id, billing, history, loading, isAdmin,
   pricingForm, setPricingForm, savePricing, pricingSaving,
   payKind, setPayKind, transactionRef, setTransactionRef, payNotes, setPayNotes,
   notifySending, notifySent, submitNotifyPayment,
   confirming, confirmPayment,
 }: {
+  id: string;
   billing: Billing; history: BillingRecord[]; loading: boolean; isAdmin: boolean;
   pricingForm: { setupFee: string; monthlyFee: string; currency: string; trialEndsAt: string; notes: string; tier: "basic" | "pro" | "custom" };
   setPricingForm: (fn: any) => void;
@@ -1521,8 +1523,34 @@ function BillingTab({
   transactionRef: string; setTransactionRef: (v: string) => void;
   payNotes: string; setPayNotes: (v: string) => void;
   notifySending: boolean; notifySent: boolean; submitNotifyPayment: () => void;
-  confirming: string | null; confirmPayment: (kind: "setup" | "monthly") => void;
+  confirming: string | null; confirmPayment: (kind: "setup" | "monthly" | "upgrade") => void;
 }) {
+  // Self-serve Basic->Pro upgrade request (client-facing) — local to this
+  // tab since, unlike setup/monthly payment, it doesn't need to be lifted
+  // to the parent: it just files a request (POST /notify-payment kind:
+  // 'upgrade') and shows a confirmation, no chatbot state changes until an
+  // admin actually confirms it via confirmPayment('upgrade') below. See
+  // backend CLAUDE.md's "Self-serve Basic->Pro upgrade" section.
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeRef, setUpgradeRef] = useState("");
+  const [upgradeNotes, setUpgradeNotes] = useState("");
+  const [upgradeSending, setUpgradeSending] = useState(false);
+  const [upgradeSent, setUpgradeSent] = useState(false);
+
+  const submitUpgradeRequest = async () => {
+    if (!upgradeRef.trim()) { toast.error("Enter your transaction reference"); return; }
+    setUpgradeSending(true);
+    try {
+      await api.post(`/chatbots/${id}/notify-payment`, {
+        kind: "upgrade", transactionRef: upgradeRef, notes: upgradeNotes,
+      });
+      setUpgradeSent(true);
+      toast.success("Upgrade request sent — we'll confirm and switch you to Pro within 24 hours");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to send. Email hello@logicmate.io directly.");
+    }
+    setUpgradeSending(false);
+  };
   if (loading) {
     return (
       <div className="p-15 text-center">
@@ -1564,20 +1592,55 @@ function BillingTab({
         </div>
       </div>
 
-      {/* Client-facing: nudge to upgrade if still on Basic */}
+      {/* Client-facing: self-serve upgrade request if still on Basic */}
       {!isAdmin && billing?.tier === "basic" && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-5 py-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Want WhatsApp, Instagram & Analytics?</p>
-            <p className="text-xs text-muted-foreground">Upgrade to Pro to unlock every channel and full conversation analytics.</p>
-          </div>
-          <a
-            href="mailto:hello@logicmate.io?subject=Upgrade%20to%20Pro"
-            className={cn(buttonVariants({ size: "sm" }), "shrink-0 no-underline")}
-          >
-            Ask about upgrading
-          </a>
-        </div>
+        <Section title="Upgrade to Pro" icon={DollarSign}>
+          {upgradeSent ? (
+            <div className="rounded-lg border border-[#22c55e]/20 bg-[#22c55e]/[0.08] p-6 text-center">
+              <CheckCircle2 size={28} className="mx-auto mb-2.5 text-[#22c55e]" />
+              <p className="mb-1 text-sm font-semibold text-[#22c55e]">Upgrade request sent</p>
+              <p className="text-xs text-muted-foreground">We'll verify and switch you to Pro within 24 hours.</p>
+            </div>
+          ) : !upgradeOpen ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Unlock WhatsApp, Instagram and full conversation analytics. Same manual bank-transfer flow as your
+                monthly fee — pay, tell us the reference, we confirm and switch your plan.
+              </p>
+              <Button size="sm" onClick={() => setUpgradeOpen(true)} className="shrink-0">
+                Request upgrade
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              <div className="mb-1 flex flex-col gap-2">
+                {Object.entries(BANK_DETAILS).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between rounded-md border bg-background px-3 py-2.25">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</p>
+                      <p className="font-mono text-[13px] font-semibold text-foreground">{value}</p>
+                    </div>
+                    <button onClick={() => copyText(value, key)} className="flex size-7 items-center justify-center rounded-md border text-muted-foreground">
+                      <Copy size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div>
+                {fieldLabel("Transaction Reference *")}
+                <Input value={upgradeRef} onChange={(e) => setUpgradeRef(e.target.value)} placeholder="e.g. TXN123456789" />
+              </div>
+              <div>
+                {fieldLabel("Notes (optional)")}
+                <Textarea rows={2} value={upgradeNotes} onChange={(e) => setUpgradeNotes(e.target.value)} />
+              </div>
+              <Button onClick={submitUpgradeRequest} disabled={upgradeSending} className="gap-2">
+                <Mail size={14} />
+                {upgradeSending ? "Sending..." : "Notify us — I've paid for the upgrade"}
+              </Button>
+            </div>
+          )}
+        </Section>
       )}
 
       {/* Admin: pricing editor */}
@@ -1652,6 +1715,17 @@ function BillingTab({
               {confirming === "monthly" ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
               Confirm Monthly Payment Received
             </Button>
+            {billing?.tier === "basic" && (
+              <Button
+                variant="outline"
+                onClick={() => confirmPayment("upgrade")}
+                disabled={confirming === "upgrade"}
+                className="flex-1 gap-1.5 whitespace-normal border-primary/30 bg-primary/[0.08] text-[#a78bfa] hover:bg-primary/[0.15] hover:text-[#a78bfa]"
+              >
+                {confirming === "upgrade" ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                Confirm Pro Upgrade
+              </Button>
+            )}
           </div>
         </Section>
       )}
