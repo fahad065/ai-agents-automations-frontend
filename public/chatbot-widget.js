@@ -53,6 +53,8 @@
     + ".lm-cb-msg{max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word;}"
     + ".lm-cb-msg.user{align-self:" + (isAr ? "flex-start" : "flex-end") + ";background:" + COLOR + ";color:#fff;border-bottom-" + (isAr ? "left" : "right") + "-radius:4px;}"
     + ".lm-cb-msg.bot{align-self:" + (isAr ? "flex-end" : "flex-start") + ";background:#fff;color:#111;border:1px solid #e5e5e5;border-bottom-" + (isAr ? "right" : "left") + "-radius:4px;}"
+    + ".lm-cb-msg.handoff{background:#fff7ed;border-color:#fdba74;}"
+    + ".lm-cb-handoff-tag{display:block;font-size:10px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}"
     + ".lm-cb-typing{align-self:" + (isAr ? "flex-end" : "flex-start") + ";display:flex;gap:4px;padding:10px 13px;background:#fff;border:1px solid #e5e5e5;border-radius:14px;}"
     + ".lm-cb-dot{width:6px;height:6px;border-radius:50%;background:#999;animation:lmcbBlink 1.2s infinite;}"
     + ".lm-cb-dot:nth-child(2){animation-delay:.2s;} .lm-cb-dot:nth-child(3){animation-delay:.4s;}"
@@ -104,10 +106,16 @@
     return div.innerHTML;
   }
 
-  function addMessage(role, text) {
+  function addMessage(role, text, isHandoff) {
     var el = document.createElement("div");
-    el.className = "lm-cb-msg " + (role === "user" ? "user" : "bot");
-    el.textContent = text;
+    el.className = "lm-cb-msg " + (role === "user" ? "user" : "bot") + (isHandoff ? " handoff" : "");
+    if (isHandoff) {
+      var tag = document.createElement("span");
+      tag.className = "lm-cb-handoff-tag";
+      tag.textContent = isAr ? "تم التحويل لفريقنا" : "Connecting you with our team";
+      el.appendChild(tag);
+    }
+    el.appendChild(document.createTextNode(text));
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
@@ -163,7 +171,7 @@
       .then(function (res) { return res.json(); })
       .then(function (data) {
         hideTyping();
-        addMessage("bot", data.reply || (isAr ? "عذراً، صار خطأ. حاول مرة ثانية." : "Sorry, something went wrong. Please try again."));
+        addMessage("bot", data.reply || (isAr ? "عذراً، صار خطأ. حاول مرة ثانية." : "Sorry, something went wrong. Please try again."), data.handoff);
       })
       .catch(function () {
         hideTyping();

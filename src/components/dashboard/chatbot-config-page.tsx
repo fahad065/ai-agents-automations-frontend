@@ -9,6 +9,7 @@ import {
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
   DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone, LayoutGrid,
+  Pencil,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -934,10 +935,25 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
   const [sourceUrl, setSourceUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
+  const [editTarget, setEditTarget] = useState<KnowledgeEntry | null>(null);
 
-  const reset = () => { setType("faq"); setQuestion(""); setAnswer(""); setContent(""); setSourceUrl(""); };
+  const reset = () => { setType("faq"); setQuestion(""); setAnswer(""); setContent(""); setSourceUrl(""); setEditTarget(null); };
 
-  const addEntry = async () => {
+  const startEdit = (entry: KnowledgeEntry) => {
+    setEditTarget(entry);
+    setType(entry.type);
+    setQuestion(entry.question || "");
+    setAnswer(entry.answer || "");
+    setContent(entry.content || "");
+    setSourceUrl(entry.sourceUrl || "");
+    setShowAdd(true);
+  };
+
+  // Handles both add and edit — same validation, same body shape, only the
+  // HTTP method + endpoint differ. Editing re-embeds server-side so the
+  // change is searchable immediately (see ChatbotsService.updateKnowledge),
+  // which is what makes "edit an FAQ, then ask the widget" work live.
+  const saveEntry = async () => {
     if (type === "faq" && (!question.trim() || !answer.trim())) { toast.error("Question and answer are required"); return; }
     if (type === "text" && !content.trim()) { toast.error("Content is required"); return; }
     if (type === "url" && !sourceUrl.trim()) { toast.error("URL is required"); return; }
@@ -947,13 +963,18 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       if (type === "faq") { body.question = question.trim(); body.answer = answer.trim(); }
       if (type === "text") { body.content = content.trim(); }
       if (type === "url") { body.sourceUrl = sourceUrl.trim(); }
-      await api.post(`/chatbots/${botId}/knowledge`, body);
-      toast.success("Knowledge entry added");
+      if (editTarget) {
+        await api.put(`/chatbots/${botId}/knowledge/${editTarget._id}`, body);
+        toast.success("Knowledge entry updated");
+      } else {
+        await api.post(`/chatbots/${botId}/knowledge`, body);
+        toast.success("Knowledge entry added");
+      }
       reset();
       setShowAdd(false);
       refresh();
     } catch {
-      toast.error("Failed to add entry");
+      toast.error(editTarget ? "Failed to update entry" : "Failed to add entry");
     }
     setSaving(false);
   };
@@ -978,7 +999,7 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       title="Knowledge Base"
       icon={BookOpen}
       right={
-        <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="gap-1.5">
+        <Button size="sm" onClick={() => { if (showAdd) reset(); setShowAdd(!showAdd); }} className="gap-1.5">
           {showAdd ? <X size={12} /> : <Plus size={12} />} {showAdd ? "Cancel" : "Add Knowledge"}
         </Button>
       }
@@ -989,6 +1010,9 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
 
       {showAdd && (
         <div className="mb-4 rounded-lg border bg-background p-4">
+          {editTarget && (
+            <p className="mb-3 text-xs font-semibold text-[#a78bfa]">Editing entry</p>
+          )}
           <div className="mb-3.5 flex gap-2">
             {([
               { value: "faq", label: "FAQ" },
@@ -1038,9 +1062,9 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
           )}
 
           <div className="mt-3.5 flex justify-end">
-            <Button onClick={addEntry} disabled={saving} className="gap-2">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              {saving ? "Adding..." : "Add Entry"}
+            <Button onClick={saveEntry} disabled={saving} className="gap-2">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : editTarget ? <Save size={14} /> : <Plus size={14} />}
+              {saving ? "Saving..." : editTarget ? "Save Changes" : "Add Entry"}
             </Button>
           </div>
         </div>
@@ -1085,13 +1109,22 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
                     </a>
                   )}
                 </div>
-                <button
-                  onClick={() => setDeleteTarget(k)}
-                  title="Delete"
-                  className="flex size-6.5 shrink-0 items-center justify-center rounded-md border border-destructive/20 bg-destructive/[0.06] text-destructive"
-                >
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex shrink-0 gap-1.5">
+                  <button
+                    onClick={() => startEdit(k)}
+                    title="Edit"
+                    className="flex size-6.5 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.06] text-[#a78bfa]"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(k)}
+                    title="Delete"
+                    className="flex size-6.5 shrink-0 items-center justify-center rounded-md border border-destructive/20 bg-destructive/[0.06] text-destructive"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             );
           })}

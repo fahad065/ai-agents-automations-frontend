@@ -706,6 +706,19 @@ User asked to close out three of the four items still open on the chatbot produc
 
 Verified via `tsc --noEmit` + `npm run build` (both clean, all 41 routes) and a Playwright pass against a mocked Basic-tier chatbot and a mocked admin session: confirmed the "Upgrade to Pro" request card renders, filling in a transaction reference and submitting posts `{kind:'upgrade', transactionRef, notes}` and shows the success state, the admin's "Confirm Pro Upgrade" button renders and is enabled whenever `tier === "basic"`; separately confirmed the CMS page's new vertical Blog Posts/Pages nav renders and switches tabs, the `PageEditModal`'s language nav renders and switching to Arabic shows the active-mode banner, and the `BlogModal`'s language nav renders identically — zero horizontal overflow at 1280px or 390px on either page, zero console/page errors.
 
+## Knowledge-base editing + human escalation visual — built for the Wok On Fire demo (implemented, 2026-09)
+Companion to the backend's matching section (see backend CLAUDE.md for the two real gaps this closes and why — a prospective client's demo checklist surfaced that knowledge-base entries could only be added/deleted, never edited, and that the `humanHandoff` toggle had never actually done anything).
+
+**`chatbot-config-page.tsx`'s `KnowledgeTab`** — gained a real edit flow instead of delete-and-recreate:
+- New `editTarget` state + `startEdit(entry)` — pre-fills the existing Add-entry form (type/question/answer/content/sourceUrl) from the clicked entry and opens it, same form, no separate UI to build.
+- `addEntry` renamed `saveEntry` — branches to `PUT /chatbots/:id/knowledge/:kId` when `editTarget` is set, `POST` otherwise; same validation, same body shape either way. Button label/icon and a small "Editing entry" caption reflect which mode is active.
+- Each knowledge-base row gained a `Pencil` icon button next to the existing Delete button.
+- Cancelling the form (or reopening "Add Knowledge" fresh) resets `editTarget` via the existing `reset()` helper.
+
+**`public/chatbot-widget.js`** — the `chat()` response has returned a `handoff` boolean since the feature was first built, but the widget never read it. Now: `addMessage(role, text, isHandoff)` gained a third param — when true, the bot bubble gets a small amber-tinted treatment (`.lm-cb-msg.handoff`) plus a small uppercase tag above the text ("Connecting you with our team" / Arabic equivalent), so a customer can visually tell an escalation happened rather than it reading as just another reply. The `fetch(...).then()` call site now passes `data.handoff` straight through.
+
+Verified via `tsc --noEmit` + `npm run build` (both clean, all 41 routes) and a Playwright pass against a mocked chatbot with a real knowledge entry: confirmed the Edit button opens the form pre-filled with the existing answer, submitting sends a correctly-shaped `PUT` request, and the updated text renders in the list immediately — zero horizontal overflow at 1280px or 390px, zero console errors.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
