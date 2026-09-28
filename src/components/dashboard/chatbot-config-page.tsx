@@ -9,7 +9,7 @@ import {
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
   DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone, LayoutGrid,
-  Pencil,
+  Pencil, MapPin,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -52,6 +52,21 @@ interface Channels {
   instagram: InstagramChannel;
 }
 
+interface Outlet {
+  _id?: string;
+  name: string;
+  city: string;
+  country: string;
+  address?: string;
+  areaTags?: string[];
+  phone?: string;
+  hours?: string;
+  deliveryPlatforms?: string[];
+  mapUrl?: string;
+  isOnlineOnly?: boolean;
+  notes?: string;
+}
+
 interface Chatbot {
   _id: string;
   userId: string;
@@ -67,6 +82,7 @@ interface Chatbot {
   humanHandoff?: boolean;
   embedKey: string;
   channels: Channels;
+  outlets?: Outlet[];
   billing: Billing;
   createdAt: string;
   updatedAt?: string;
@@ -169,6 +185,7 @@ const EMPTY_CHANNELS: Channels = {
 const TABS = [
   { key: "guide", label: "Guide to Setup", icon: HelpCircle },
   { key: "overview", label: "Overview", icon: Settings },
+  { key: "locations", label: "Locations", icon: MapPin },
   { key: "knowledge", label: "Knowledge Base", icon: BookOpen },
   { key: "channels", label: "Channels", icon: Radio },
   { key: "conversations", label: "Conversations", icon: MessageSquare },
@@ -355,6 +372,10 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [showAddKnowledge, setShowAddKnowledge] = useState(false);
 
+  // Locations (multi-branch businesses only — empty for most chatbots)
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [outletsSaving, setOutletsSaving] = useState(false);
+
   // Channels
   const [channels, setChannels] = useState<Channels>(EMPTY_CHANNELS);
   const [savingChannel, setSavingChannel] = useState<string | null>(null);
@@ -448,6 +469,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage_ar: bot.fallbackMessage_ar || "",
         humanHandoff: !!bot.humanHandoff,
       });
+      setOutlets(bot.outlets || []);
       setChannels({
         website: { ...EMPTY_CHANNELS.website, ...(bot.channels?.website || {}) },
         whatsapp: { ...EMPTY_CHANNELS.whatsapp, ...(bot.channels?.whatsapp || {}) },
@@ -596,6 +618,21 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       toast.error("Failed to save changes");
     }
     setOverviewSaving(false);
+  };
+
+  // Locations aren't a separate resource with their own endpoint — like
+  // bookingUrl, they're just another field on the chatbot, saved as one
+  // array via the same PUT /chatbots/:id every other Overview field uses.
+  const saveOutlets = async () => {
+    setOutletsSaving(true);
+    try {
+      await api.put(`/chatbots/${id}`, { outlets });
+      toast.success("Locations saved");
+      fetchChatbot();
+    } catch {
+      toast.error("Failed to save locations");
+    }
+    setOutletsSaving(false);
   };
 
   const updateStatus = async (status: "draft" | "active" | "inactive") => {
@@ -827,6 +864,11 @@ export function ChatbotConfigPage({ id }: { id: string }) {
             <SaveBtn onClick={saveOverview} saving={overviewSaving} />
           </Section>
         </>
+      )}
+
+      {/* ── LOCATIONS ── */}
+      {tab === "locations" && (
+        <LocationsTab outlets={outlets} setOutlets={setOutlets} saveOutlets={saveOutlets} saving={outletsSaving} />
       )}
 
       {/* ── KNOWLEDGE ── */}
@@ -1141,6 +1183,190 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={deleteEntry} className="bg-destructive text-white hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Section>
+  );
+}
+
+// ── Locations Tab ────────────────────────────────────────────
+// Generic multi-branch support — not tied to any template, since any
+// business type could have more than one physical/delivery location.
+// Outlets aren't their own API resource: they're just an array field on
+// the chatbot (like bookingUrl), so edits happen locally and one "Save
+// Locations" button PUTs the whole array — see saveOutlets() above.
+interface OutletForm {
+  name: string; city: string; country: string; address: string;
+  areaTagsStr: string; phone: string; hours: string; deliveryPlatformsStr: string;
+  mapUrl: string; isOnlineOnly: boolean; notes: string;
+}
+const EMPTY_OUTLET_FORM: OutletForm = {
+  name: "", city: "", country: "", address: "", areaTagsStr: "", phone: "",
+  hours: "", deliveryPlatformsStr: "", mapUrl: "", isOnlineOnly: false, notes: "",
+};
+function outletToForm(o: Outlet): OutletForm {
+  return {
+    name: o.name, city: o.city, country: o.country, address: o.address || "",
+    areaTagsStr: (o.areaTags || []).join(", "), phone: o.phone || "", hours: o.hours || "",
+    deliveryPlatformsStr: (o.deliveryPlatforms || []).join(", "), mapUrl: o.mapUrl || "",
+    isOnlineOnly: !!o.isOnlineOnly, notes: o.notes || "",
+  };
+}
+function formToOutlet(f: OutletForm): Outlet {
+  return {
+    name: f.name.trim(), city: f.city.trim(), country: f.country.trim(),
+    address: f.address.trim() || undefined,
+    areaTags: f.areaTagsStr.split(",").map((s) => s.trim()).filter(Boolean),
+    phone: f.phone.trim() || undefined,
+    hours: f.hours.trim() || undefined,
+    deliveryPlatforms: f.deliveryPlatformsStr.split(",").map((s) => s.trim()).filter(Boolean),
+    mapUrl: f.mapUrl.trim() || undefined,
+    isOnlineOnly: f.isOnlineOnly,
+    notes: f.notes.trim() || undefined,
+  };
+}
+
+function LocationsTab({ outlets, setOutlets, saveOutlets, saving }: {
+  outlets: Outlet[]; setOutlets: (fn: (o: Outlet[]) => Outlet[]) => void;
+  saveOutlets: () => void; saving: boolean;
+}) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [form, setForm] = useState<OutletForm>(EMPTY_OUTLET_FORM);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+
+  const cancelForm = () => { setShowAdd(false); setEditIndex(null); setForm(EMPTY_OUTLET_FORM); };
+  const startEdit = (i: number) => { setForm(outletToForm(outlets[i])); setEditIndex(i); setShowAdd(true); };
+
+  const submitForm = () => {
+    if (!form.name.trim() || !form.city.trim() || !form.country.trim()) {
+      toast.error("Name, city and country are required");
+      return;
+    }
+    const outlet = formToOutlet(form);
+    if (editIndex !== null) {
+      setOutlets((prev) => prev.map((o, i) => (i === editIndex ? outlet : o)));
+    } else {
+      setOutlets((prev) => [...prev, outlet]);
+    }
+    cancelForm();
+  };
+
+  const confirmDelete = () => {
+    if (deleteIndex === null) return;
+    setOutlets((prev) => prev.filter((_, i) => i !== deleteIndex));
+    setDeleteIndex(null);
+  };
+
+  return (
+    <Section
+      title="Locations"
+      icon={MapPin}
+      right={
+        <Button size="sm" onClick={() => { if (showAdd) cancelForm(); setShowAdd(!showAdd); }} className="gap-1.5">
+          {showAdd ? <X size={12} /> : <Plus size={12} />} {showAdd ? "Cancel" : "Add Location"}
+        </Button>
+      }
+    >
+      <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+        Add every branch or delivery-coverage area this business has — the chatbot uses all of them together to
+        answer "which location is near me" or "do you deliver to X." Leave this empty for a single-location business.
+      </p>
+
+      {showAdd && (
+        <div className="mb-4 rounded-lg border bg-background p-4">
+          {editIndex !== null && <p className="mb-3 text-xs font-semibold text-[#a78bfa]">Editing location</p>}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div>{fieldLabel("Name *")}<Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Downtown Branch" /></div>
+            <div>{fieldLabel("City *")}<Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Dubai" /></div>
+            <div>{fieldLabel("Country *")}<Input value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} placeholder="UAE" /></div>
+            <div>{fieldLabel("Address")}<Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Al Wasl Road, near..." /></div>
+            <div>{fieldLabel("Phone")}<Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+971 4 000 0000" /></div>
+            <div>{fieldLabel("Hours")}<Input value={form.hours} onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))} placeholder="11am - 1am daily" /></div>
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel("Also covers / known as (comma separated)")}
+            <Input value={form.areaTagsStr} onChange={(e) => setForm((f) => ({ ...f, areaTagsStr: e.target.value }))} placeholder="Al Barsha, Business Bay, Al Quoz" />
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel("Order/delivery platforms (comma separated)")}
+            <Input value={form.deliveryPlatformsStr} onChange={(e) => setForm((f) => ({ ...f, deliveryPlatformsStr: e.target.value }))} placeholder="Talabat, Noon Food, Smiles" />
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel("Directions / map link")}
+            <Input value={form.mapUrl} onChange={(e) => setForm((f) => ({ ...f, mapUrl: e.target.value }))} placeholder="https://maps.google.com/..." />
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel("Internal notes")}
+            <Textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="e.g. Ground floor, food court" />
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5">
+            <div>
+              <p className="text-[13px] font-medium text-foreground">Delivery/online-only</p>
+              <p className="text-[11px] text-muted-foreground">No dine-in at this location.</p>
+            </div>
+            <Switch checked={form.isOnlineOnly} onCheckedChange={() => setForm((f) => ({ ...f, isOnlineOnly: !f.isOnlineOnly }))} />
+          </div>
+          <div className="mt-3.5 flex justify-end">
+            <Button onClick={submitForm} className="gap-2">
+              {editIndex !== null ? <Save size={14} /> : <Plus size={14} />}
+              {editIndex !== null ? "Save Location" : "Add Location"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {outlets.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <MapPin size={28} className="mx-auto mb-2.5 text-muted-foreground" />
+          <p className="text-[13px] text-muted-foreground">No locations added — this chatbot is treated as single-location.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {outlets.map((o, i) => (
+            <div key={o._id || i} className="flex items-start gap-2.5 rounded-lg border bg-background p-3">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.06]">
+                <MapPin size={13} className="text-[#a78bfa]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="text-[13px] font-semibold text-foreground">{o.name}</p>
+                  {o.isOnlineOnly && (
+                    <span className="rounded-full bg-amber-500/[0.12] px-1.5 py-0.25 text-[9px] font-bold text-amber-500">DELIVERY ONLY</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{o.city}, {o.country}{o.address ? ` — ${o.address}` : ""}</p>
+                {!!o.areaTags?.length && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Also serves: {o.areaTags.join(", ")}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                <button onClick={() => startEdit(i)} title="Edit" className="flex size-6.5 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.06] text-[#a78bfa]">
+                  <Pencil size={12} />
+                </button>
+                <button onClick={() => setDeleteIndex(i)} title="Delete" className="flex size-6.5 shrink-0 items-center justify-center rounded-md border border-destructive/20 bg-destructive/[0.06] text-destructive">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <SaveBtn onClick={saveOutlets} saving={saving} label="Save Locations" />
+
+      <AlertDialog open={deleteIndex !== null} onOpenChange={(open) => !open && setDeleteIndex(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this location?</AlertDialogTitle>
+            <AlertDialogDescription>You'll still need to click "Save Locations" for this to take effect.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -719,6 +719,17 @@ Companion to the backend's matching section (see backend CLAUDE.md for the two r
 
 Verified via `tsc --noEmit` + `npm run build` (both clean, all 41 routes) and a Playwright pass against a mocked chatbot with a real knowledge entry: confirmed the Edit button opens the form pre-filled with the existing answer, submitting sends a correctly-shaped `PUT` request, and the updated text renders in the list immediately — zero horizontal overflow at 1280px or 390px, zero console errors.
 
+## Generic multi-location ("Locations" tab) support (implemented, 2026-09)
+Companion to the backend's matching section — a client (Wok On Fire) turned out to have 13+ real locations across Dubai and Gujarat, India, and the ask was for a real reusable "global branch" feature, not something specific to this one client. See backend CLAUDE.md for the `Outlet` schema and how `buildSystemPrompt()` uses it.
+
+`chatbot-config-page.tsx` gained a new **"Locations"** tab (`MapPin` icon), positioned right after Overview in the nav — visible on every tier, since this is a business-identity fact like Overview, not a paid feature:
+- Same CRUD-list pattern as the Knowledge Base tab (list + inline add/edit form + `AlertDialog` delete-confirm, `Pencil`/`Trash2` row actions), but outlets aren't their own API resource — they're just an array field on the chatbot, edited entirely client-side and saved in one shot via the existing `PUT /chatbots/:id` (same pattern `bookingUrl` already uses), not a dedicated add/edit/delete endpoint per entry the way knowledge-base entries have.
+- Form fields: Name/City/Country (required), Address, Phone, Hours, "Also covers / known as" (comma-separated area tags — this is what lets a delivery-only kitchen answer "do you deliver to X" for a neighborhood it doesn't physically sit in), "Order/delivery platforms" (comma-separated), a map/directions link, an internal notes field, and a Delivery/online-only `Switch`. The comma-separated fields are kept as plain strings in the form's local state and only split into arrays on submit — same pattern `cms-page.tsx`'s `BlogModal` tags field already uses, not parsed on every keystroke.
+- Each location row shows a "DELIVERY ONLY" badge when relevant and an "Also serves: ..." line when area tags are set, so the list itself communicates the delivery-coverage story at a glance.
+- Empty state ("No locations added — this chatbot is treated as single-location") for the common case — most chatbots will never touch this tab at all.
+
+Verified via `tsc --noEmit` + `npm run build` (clean, all 41 routes) and a Playwright pass against a mocked bot with an existing delivery-only Dubai outlet: confirmed the tab renders the existing outlet (including its area tags and badge), adding a second outlet (Surat, India) works, and clicking "Save Locations" sends both outlets in a single `PUT` body — zero horizontal overflow at 1280px or 390px, zero console errors.
+
 ## What is next to build
 1. ~~Dashboard chatbot module~~ ✅ done — creation, knowledge base, channels, conversations, analytics all live
 2. ~~Chatbot pricing/billing~~ ✅ done — Billing tab, admin-set per-deal pricing, manual bank-transfer flow
