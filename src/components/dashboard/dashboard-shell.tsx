@@ -7,10 +7,12 @@ import { CommandPaletteProvider } from "./command-palette-provider";
 import { CommandPalette } from "./command-palette";
 import { VerifyEmailBanner } from "./verify-email-banner";
 import { ProfileCompletionBanner } from "./profile-completion-banner";
+import { SentryUserSync } from "./sentry-user-sync";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <CommandPaletteProvider>
+      <SentryUserSync />
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>

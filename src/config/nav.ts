@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Bot, FileText, Key, CreditCard, Bell, Settings,
-  Package, Users, BarChart3, BookOpen, Shield, Mail, User,
+  Package, Users, BarChart3, BookOpen, Shield, Mail, User, Activity,
 } from "lucide-react";
 
 export interface NavItem {
@@ -53,6 +53,7 @@ export const navSections: NavSection[] = [
       { title: "Industries", url: "/dashboard/industries", icon: Package, adminOnly: true },
       { title: "Modules", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
+      { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },
       { title: "Content (CMS)", url: "/dashboard/cms", icon: BookOpen, adminOnly: true },
     ],
   },

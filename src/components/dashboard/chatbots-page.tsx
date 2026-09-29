@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import {
-  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User, Mail, AlertTriangle,
+  Bot, Plus, Trash2, Loader2, Globe, Settings2, Check, User, Mail, AlertTriangle, MessageCircle,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
@@ -50,6 +50,10 @@ interface Chatbot {
   // See backend CLAUDE.md's "Admin needs-setup queue" section.
   needsSetup?: boolean;
   setupFlags?: { noOpenAiKey: boolean; whatsappPending: boolean; instagramPending: boolean };
+  // Admin-listing-only, per backend CLAUDE.md's "Per-tenant usage/error
+  // monitoring" — message/conversation volume for this specific bot, not
+  // a global total.
+  usage?: { totalConversations: number; totalMessages: number; conversations30d: number; messages30d: number };
 }
 
 interface AdminUserOption {
@@ -434,6 +438,19 @@ export function ChatbotsPage() {
                     );
                   })}
                 </div>
+
+                {/* Usage — admin-only, per-bot message volume (see backend
+                    CLAUDE.md's "Per-tenant usage/error monitoring") */}
+                {isAdmin && bot.usage && (
+                  <div className="mb-3.5 flex items-center gap-1.5 rounded-md border bg-muted/40 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                    <MessageCircle size={12} />
+                    <span className="font-medium text-foreground">{bot.usage.messages30d}</span> msgs / 30d
+                    <span className="text-muted-foreground/60">·</span>
+                    <span className="font-medium text-foreground">{bot.usage.totalMessages}</span> total
+                    <span className="text-muted-foreground/60">·</span>
+                    {bot.usage.conversations30d} conversations / 30d
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-1.5">
