@@ -152,6 +152,13 @@
     opened = false;
   }
 
+  function removeWidget() {
+    if (opened) closePanel();
+    bubble.remove();
+    panel.remove();
+    styleEl.remove();
+  }
+
   bubble.addEventListener("click", function () {
     if (opened) closePanel(); else openPanel();
   });
@@ -198,11 +205,28 @@
   // as an instant first-paint fallback, but a dashboard edit later
   // (e.g. the color picker) would otherwise never reach an
   // already-embedded site. Fetch the bot's current values on every
-  // load and apply them; if this fails for any reason (network
-  // hiccup, bot briefly inactive), the widget just keeps using the
-  // fallback values above — nothing breaks either way.
+  // load and apply them.
+  //
+  // A 404 here specifically means the owner switched the bot's status
+  // away from "active" — a deliberate turn-it-off action — so the
+  // widget removes itself rather than leaving a bubble on the page
+  // that would only fail once someone clicked it. This is distinct
+  // from a billing lapse (trial expired / suspended), which is a
+  // separate, intentional "keep showing but stop replying" design so
+  // the widget still nags the owner's customers to prompt renewal —
+  // that case returns 200 here and never reaches this branch. Any
+  // other failure (network hiccup, transient 5xx) is not treated as
+  // an authoritative "turn it off" signal, so the widget just keeps
+  // using its fallback values instead of risking disappearing for a
+  // reason that might not even be real.
   fetch(API_URL + "/chat/" + EMBED_KEY + "/config")
-    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (res) {
+      if (res.status === 404) {
+        removeWidget();
+        return null;
+      }
+      return res.ok ? res.json() : null;
+    })
     .then(function (data) {
       if (!data) return;
       if (data.color) {
