@@ -39,19 +39,23 @@
   var isAr = (navigator.language || "").toLowerCase().indexOf("ar") === 0;
 
   // ── Styles ───────────────────────────────────────────────────
+  // Color is a CSS custom property, not baked directly into each rule,
+  // so a live config fetch (below) can update it after the stylesheet
+  // is already injected — just by setting the variable, no rebuild.
   var css = ""
-    + ".lm-cb-bubble{position:fixed;bottom:20px;" + (isAr ? "left:20px" : "right:20px") + ";width:58px;height:58px;border-radius:50%;background:" + COLOR + ";box-shadow:0 6px 24px rgba(0,0,0,0.25);cursor:pointer;z-index:999999;display:flex;align-items:center;justify-content:center;transition:transform .2s ease;border:none;}"
+    + ":root{--lm-cb-color:" + COLOR + ";}"
+    + ".lm-cb-bubble{position:fixed;bottom:20px;" + (isAr ? "left:20px" : "right:20px") + ";width:58px;height:58px;border-radius:50%;background:var(--lm-cb-color);box-shadow:0 6px 24px rgba(0,0,0,0.25);cursor:pointer;z-index:999999;display:flex;align-items:center;justify-content:center;transition:transform .2s ease;border:none;}"
     + ".lm-cb-bubble:hover{transform:scale(1.06);}"
     + ".lm-cb-bubble svg{width:26px;height:26px;}"
     + ".lm-cb-panel{position:fixed;bottom:90px;" + (isAr ? "left:20px" : "right:20px") + ";width:360px;max-width:calc(100vw - 40px);height:520px;max-height:calc(100vh - 140px);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.25);z-index:999999;display:none;flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}"
     + ".lm-cb-panel.open{display:flex;}"
-    + ".lm-cb-header{background:" + COLOR + ";color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}"
+    + ".lm-cb-header{background:var(--lm-cb-color);color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}"
     + ".lm-cb-header-title{font-size:14px;font-weight:700;}"
     + ".lm-cb-header-sub{font-size:11px;opacity:.85;margin-top:2px;}"
     + ".lm-cb-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;}"
     + ".lm-cb-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f7f7f9;}"
     + ".lm-cb-msg{max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word;}"
-    + ".lm-cb-msg.user{align-self:" + (isAr ? "flex-start" : "flex-end") + ";background:" + COLOR + ";color:#fff;border-bottom-" + (isAr ? "left" : "right") + "-radius:4px;}"
+    + ".lm-cb-msg.user{align-self:" + (isAr ? "flex-start" : "flex-end") + ";background:var(--lm-cb-color);color:#fff;border-bottom-" + (isAr ? "left" : "right") + "-radius:4px;}"
     + ".lm-cb-msg.bot{align-self:" + (isAr ? "flex-end" : "flex-start") + ";background:#fff;color:#111;border:1px solid #e5e5e5;border-bottom-" + (isAr ? "right" : "left") + "-radius:4px;}"
     + ".lm-cb-msg.handoff{background:#fff7ed;border-color:#fdba74;}"
     + ".lm-cb-handoff-tag{display:block;font-size:10px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}"
@@ -61,8 +65,8 @@
     + "@keyframes lmcbBlink{0%,80%,100%{opacity:.3;}40%{opacity:1;}}"
     + ".lm-cb-inputbar{display:flex;align-items:center;gap:8px;padding:12px;border-top:1px solid #eee;background:#fff;flex-shrink:0;}"
     + ".lm-cb-input{flex:1;border:1px solid #ddd;border-radius:9999px;padding:9px 14px;font-size:13px;outline:none;font-family:inherit;}"
-    + ".lm-cb-input:focus{border-color:" + COLOR + ";}"
-    + ".lm-cb-send{background:" + COLOR + ";border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}"
+    + ".lm-cb-input:focus{border-color:var(--lm-cb-color);}"
+    + ".lm-cb-send{background:var(--lm-cb-color);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}"
     + ".lm-cb-send svg{width:15px;height:15px;fill:#fff;}"
     + ".lm-cb-footer{text-align:center;padding:5px;font-size:10px;color:#aaa;background:#fff;}"
     + ".lm-cb-footer a{color:#aaa;text-decoration:none;}";
@@ -187,4 +191,30 @@
   inputEl.addEventListener("keydown", function (e) {
     if (e.key === "Enter") send();
   });
+
+  // ── Live config ──────────────────────────────────────────────
+  // The pasted <script> tag's color/name/welcome message are a
+  // one-time snapshot from whenever the embed code was copied — fine
+  // as an instant first-paint fallback, but a dashboard edit later
+  // (e.g. the color picker) would otherwise never reach an
+  // already-embedded site. Fetch the bot's current values on every
+  // load and apply them; if this fails for any reason (network
+  // hiccup, bot briefly inactive), the widget just keeps using the
+  // fallback values above — nothing breaks either way.
+  fetch(API_URL + "/chat/" + EMBED_KEY + "/config")
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (data) {
+      if (!data) return;
+      if (data.color) {
+        document.documentElement.style.setProperty("--lm-cb-color", data.color);
+      }
+      if (data.name) {
+        BOT_NAME = data.name;
+        var titleEl = panel.querySelector(".lm-cb-header-title");
+        if (titleEl) titleEl.textContent = BOT_NAME;
+      }
+      if (data.welcomeMessage) WELCOME = data.welcomeMessage;
+      if (data.welcomeMessageAr) WELCOME_AR = data.welcomeMessageAr;
+    })
+    .catch(function () {});
 })();
