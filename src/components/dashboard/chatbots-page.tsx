@@ -92,6 +92,11 @@ const TEMPLATE_EMOJI: Record<string, string> = TEMPLATES.reduce((acc, t) => {
   return acc;
 }, {} as Record<string, string>);
 
+const TEMPLATE_NAME: Record<string, string> = TEMPLATES.reduce((acc, t) => {
+  acc[t.key] = t.name;
+  return acc;
+}, {} as Record<string, string>);
+
 // ── Create Chatbot Modal ────────────────────────────────────────
 function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
   onClose: () => void; onCreated: (id: string) => void; isAdmin: boolean;
@@ -275,16 +280,23 @@ export function ChatbotsPage() {
   // Admin-only queue filter — see backend CLAUDE.md's needs-setup flags.
   const [showNeedsSetupOnly, setShowNeedsSetupOnly] = useState(false);
   const needsSetupCount = chatbots.filter((b) => b.needsSetup).length;
+
+  // Type filter — server-side via ?template=, same API call as the
+  // unfiltered fetch (just with/without the query param), not a
+  // fetch-everything-then-filter-in-JS. The needs-setup pill above stays a
+  // client-side filter on top of whatever this fetch already returned.
+  const [templateFilter, setTemplateFilter] = useState<string>("all");
   const visibleChatbots = isAdmin && showNeedsSetupOnly ? chatbots.filter((b) => b.needsSetup) : chatbots;
 
-  useEffect(() => { fetchChatbots(); }, [isAdmin]);
+  useEffect(() => { fetchChatbots(); }, [isAdmin, templateFilter]);
 
   // Admin sees every client's chatbot (so they can open and configure any of
   // them — see admin bypass in ChatbotsService), not just their own.
   const fetchChatbots = async () => {
     setLoading(true);
     try {
-      const res = await api.get(isAdmin ? "/chatbots/admin/all" : "/chatbots");
+      const params = templateFilter !== "all" ? { template: templateFilter } : undefined;
+      const res = await api.get(isAdmin ? "/chatbots/admin/all" : "/chatbots", { params });
       setChatbots(res.data?.data || res.data || []);
     } catch {
       toast.error("Failed to load chatbots");
@@ -322,35 +334,56 @@ export function ChatbotsPage() {
         </Button>
       </div>
 
-      {/* Admin needs-setup queue filter */}
-      {isAdmin && !loading && chatbots.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <button
-            onClick={() => setShowNeedsSetupOnly(false)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-semibold",
-              !showNeedsSetupOnly ? "border-primary bg-primary/10 text-[#a78bfa]" : "text-muted-foreground",
-            )}
-          >
-            All ({chatbots.length})
-          </button>
-          <button
-            onClick={() => setShowNeedsSetupOnly(true)}
-            disabled={needsSetupCount === 0}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-40",
-              showNeedsSetupOnly ? "border-amber-500 bg-amber-500/10 text-amber-600" : "text-muted-foreground",
-            )}
-          >
-            <AlertTriangle size={12} /> Needs setup ({needsSetupCount})
-          </button>
-        </div>
-      )}
+      {/* Filters: type dropdown (anyone with 2+ templates in use) + admin
+          needs-setup queue pills */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <select
+          value={templateFilter}
+          onChange={(e) => setTemplateFilter(e.target.value)}
+          className="h-8 cursor-pointer rounded-lg border bg-background px-3 text-xs font-medium text-foreground outline-none"
+        >
+          <option value="all">All Types</option>
+          {TEMPLATES.map((t) => (
+            <option key={t.key} value={t.key}>{t.emoji} {t.name}</option>
+          ))}
+        </select>
+
+        {isAdmin && !loading && chatbots.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowNeedsSetupOnly(false)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-semibold",
+                !showNeedsSetupOnly ? "border-primary bg-primary/10 text-[#a78bfa]" : "text-muted-foreground",
+              )}
+            >
+              All ({chatbots.length})
+            </button>
+            <button
+              onClick={() => setShowNeedsSetupOnly(true)}
+              disabled={needsSetupCount === 0}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-40",
+                showNeedsSetupOnly ? "border-amber-500 bg-amber-500/10 text-amber-600" : "text-muted-foreground",
+              )}
+            >
+              <AlertTriangle size={12} /> Needs setup ({needsSetupCount})
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Grid */}
       {loading ? (
         <div className="p-15 text-center">
           <Loader2 size={28} className="mx-auto animate-spin text-primary" />
+        </div>
+      ) : chatbots.length === 0 && templateFilter !== "all" ? (
+        <div className="rounded-xl border bg-card px-6 py-15 text-center">
+          <Bot size={40} className="mx-auto mb-4 text-muted-foreground" />
+          <h2 className="mb-2 text-base font-semibold text-foreground">No {TEMPLATES.find((t) => t.key === templateFilter)?.name} chatbots</h2>
+          <p className="mb-5 text-sm text-muted-foreground">Nothing matches this type filter — try &quot;All Types&quot; instead.</p>
+          <Button variant="outline" onClick={() => setTemplateFilter("all")}>Clear filter</Button>
         </div>
       ) : chatbots.length === 0 ? (
         <div className="rounded-xl border bg-card px-6 py-15 text-center">
@@ -372,17 +405,21 @@ export function ChatbotsPage() {
           {visibleChatbots.map((bot) => {
             const sc = STATUS_CONFIG[bot.status] || STATUS_CONFIG.draft;
             const emoji = (bot.template && TEMPLATE_EMOJI[bot.template]) || "🤖";
+            const typeName = (bot.template && TEMPLATE_NAME[bot.template]) || "Custom / Blank";
             const channels = bot.channels || {};
             return (
               <div key={bot._id} className="rounded-xl border bg-card p-4.5">
                 {/* Card header */}
                 <div className="mb-2.5 flex items-start justify-between">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/12 text-xl">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/12 text-xl" title={typeName}>
                       {emoji}
                     </div>
                     <div className="min-w-0">
-                      <p className="overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-foreground">{bot.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-foreground">{bot.name}</p>
+                        <span className="shrink-0 rounded-full bg-muted px-1.75 py-0.25 text-[10px] font-medium text-muted-foreground">{typeName}</span>
+                      </div>
                       <p className="overflow-hidden text-[11px] text-ellipsis whitespace-nowrap text-muted-foreground">
                         {isAdmin && bot.userId && typeof bot.userId === "object" ? (
                           <span className="inline-flex items-center gap-1">
