@@ -1442,6 +1442,90 @@ function ColorField({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
+// Pulls the two pieces out of the backend's raw HTML snippet — the inline
+// config script's JS body, and the widget loader's src — so each platform
+// variant below can re-template them without needing a second API call.
+function parseEmbedCode(raw: string): { inlineScript: string | null; widgetSrc: string | null } {
+  const inlineMatch = raw.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/i);
+  const srcMatch = raw.match(/<script[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
+  return {
+    inlineScript: inlineMatch ? inlineMatch[1].trim() : null,
+    widgetSrc: srcMatch ? srcMatch[1] : null,
+  };
+}
+
+type EmbedPlatform = "standard" | "nextjs" | "react" | "vue";
+
+const EMBED_PLATFORMS: { value: EmbedPlatform; label: string }[] = [
+  { value: "standard", label: "Plain HTML / WordPress / Shopify / Wix / Squarespace" },
+  { value: "nextjs", label: "Next.js" },
+  { value: "react", label: "React (Create React App, Vite, etc.)" },
+  { value: "vue", label: "Vue" },
+];
+
+// Same underlying config, different wrapper — only how a page's platform
+// expects a third-party <script> to be added changes. Plain-HTML platforms
+// (the vast majority of real sites) need the raw snippet verbatim, same as
+// always. Next.js, React and Vue all compile JSX/templates, where a literal
+// <script>{...}</script> with a JS object body doesn't work as written —
+// not a quirk of this widget specifically, true of any inline third-party
+// script (Google Analytics, Intercom, ...) pasted the same way.
+function buildPlatformCode(platform: EmbedPlatform, raw: string): string {
+  const { inlineScript, widgetSrc } = parseEmbedCode(raw);
+  if (!inlineScript || !widgetSrc) return raw;
+
+  if (platform === "standard") return raw;
+
+  if (platform === "nextjs") {
+    return `import Script from "next/script";
+
+// Add inside your root layout's <head> (or anywhere rendered on every page):
+<Script
+  id="lmchatbot-config"
+  strategy="afterInteractive"
+  dangerouslySetInnerHTML={{
+    __html: \`${inlineScript}\`,
+  }}
+/>
+<Script src="${widgetSrc}" strategy="afterInteractive" />`;
+  }
+
+  if (platform === "react") {
+    return `import { useEffect } from "react";
+
+// Add inside your root App component (runs once, on mount):
+useEffect(() => {
+  ${inlineScript.split("\n").join("\n  ")}
+
+  const script = document.createElement("script");
+  script.src = "${widgetSrc}";
+  script.async = true;
+  document.head.appendChild(script);
+}, []);`;
+  }
+
+  // vue
+  return `<script setup>
+import { onMounted } from "vue";
+
+onMounted(() => {
+  ${inlineScript.split("\n").join("\n  ")}
+
+  const script = document.createElement("script");
+  script.src = "${widgetSrc}";
+  script.async = true;
+  document.head.appendChild(script);
+});
+</script>`;
+}
+
+const EMBED_PLATFORM_NOTE: Record<EmbedPlatform, string> = {
+  standard: "Paste this directly into your site's <head> — works as-is, no changes needed.",
+  nextjs: "Next.js server-renders this into literal HTML, so dangerouslySetInnerHTML here works correctly — this is Next's own recommended pattern for third-party scripts.",
+  react: "Without server rendering, setting a <script> tag's content via dangerouslySetInnerHTML won't actually execute it — this useEffect + document.createElement pattern is the reliable way to add any third-party script in plain React.",
+  vue: "Same idea as React: a v-html-style assignment won't execute a <script> tag's content, so this creates and appends it directly once the component mounts.",
+};
+
 function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin }: {
   embedKey: string; channels: Channels; setChannels: (fn: (c: Channels) => Channels) => void;
   savingChannel: string | null; saveChannel: (key: "website" | "whatsapp" | "instagram") => void;
@@ -1450,6 +1534,8 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
   const whatsappWebhook = `${apiUrl}/webhooks/whatsapp/${embedKey}`;
   const instagramWebhook = `${apiUrl}/webhooks/instagram/${embedKey}`;
+  const [embedPlatform, setEmbedPlatform] = useState<EmbedPlatform>("standard");
+  const platformCode = embedCode ? buildPlatformCode(embedPlatform, embedCode) : "";
 
   return (
     <>
@@ -1499,24 +1585,36 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
                 <Loader2 size={16} className="animate-spin text-primary" />
               </div>
             ) : embedCode ? (
-              <div className="relative">
-                <pre className="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg border bg-background p-3.5 text-[11px] text-foreground">
-                  {embedCode}
-                </pre>
-                <button
-                  onClick={() => copyText(embedCode, "Embed code")}
-                  className="absolute top-2 right-2 flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground"
-                >
-                  <Copy size={11} /> Copy
-                </button>
-              </div>
+              <>
+                <div className="mb-2">
+                  <Label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+                    What&apos;s your website built with?
+                  </Label>
+                  <select
+                    value={embedPlatform}
+                    onChange={(e) => setEmbedPlatform(e.target.value as EmbedPlatform)}
+                    className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
+                  >
+                    {EMBED_PLATFORMS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <pre className="m-0 max-h-56 overflow-auto whitespace-pre-wrap break-all rounded-lg border bg-background p-3.5 text-[11px] text-foreground">
+                    {platformCode}
+                  </pre>
+                  <button
+                    onClick={() => copyText(platformCode, "Embed code")}
+                    className="absolute top-2 right-2 flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground"
+                  >
+                    <Copy size={11} /> Copy
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">{EMBED_PLATFORM_NOTE[embedPlatform]}</p>
+              </>
             ) : (
               <p className="text-xs text-muted-foreground">Save with the website channel enabled to generate the embed code.</p>
-            )}
-            {embedCode && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Paste this directly into your site&apos;s <code className="rounded bg-muted px-1 py-0.5">&lt;head&gt;</code> — works as-is on WordPress, Shopify, Wix, Squarespace, or plain HTML. Building your own site in React, Next.js, or Vue? Paste it exactly where you&apos;d add any other third-party script tag (Google Analytics, Intercom, etc.) — those frameworks need the inline <code className="rounded bg-muted px-1 py-0.5">&lt;script&gt;</code> wrapped in their raw-HTML mechanism (e.g. React&apos;s <code className="rounded bg-muted px-1 py-0.5">dangerouslySetInnerHTML</code> or Next&apos;s <code className="rounded bg-muted px-1 py-0.5">next/script</code>) — that&apos;s a property of how those frameworks handle any inline script, not specific to this one.
-              </p>
             )}
           </div>
         )}
