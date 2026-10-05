@@ -80,6 +80,10 @@
   bubble.className = "lm-cb-bubble";
   bubble.setAttribute("aria-label", "Open chat");
   bubble.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>';
+  // Stays invisible until the live-config fetch below resolves (or times
+  // out) — avoids a visible flash of the pasted snippet's fallback color
+  // before the current dashboard color swaps in a moment later.
+  bubble.style.visibility = "hidden";
 
   // ── Panel ────────────────────────────────────────────────────
   var panel = document.createElement("div");
@@ -159,6 +163,13 @@
     styleEl.remove();
   }
 
+  var revealed = false;
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    bubble.style.visibility = "";
+  }
+
   bubble.addEventListener("click", function () {
     if (opened) closePanel(); else openPanel();
   });
@@ -207,6 +218,17 @@
   // already-embedded site. Fetch the bot's current values on every
   // load and apply them.
   //
+  // The bubble stays hidden (see "visibility: hidden" above) until this
+  // settles, so a visitor never sees the fallback color for a moment
+  // before it's swapped for the real one — that flash was confusing in
+  // practice ("why did it just change color?"). Bounded by a short
+  // timeout so a slow or dead network can't leave the widget invisible
+  // indefinitely: reveal() fires on whichever comes first, the real
+  // response or the timeout, and if the real response arrives after a
+  // timeout-triggered reveal, its values still get applied — just
+  // possibly a moment later rather than before first paint.
+  var revealTimer = setTimeout(reveal, 800);
+
   // A 404 here specifically means the owner switched the bot's status
   // away from "active" — a deliberate turn-it-off action — so the
   // widget removes itself rather than leaving a bubble on the page
@@ -222,23 +244,30 @@
   fetch(API_URL + "/chat/" + EMBED_KEY + "/config")
     .then(function (res) {
       if (res.status === 404) {
+        clearTimeout(revealTimer);
         removeWidget();
         return null;
       }
       return res.ok ? res.json() : null;
     })
     .then(function (data) {
-      if (!data) return;
-      if (data.color) {
-        document.documentElement.style.setProperty("--lm-cb-color", data.color);
+      if (data) {
+        if (data.color) {
+          document.documentElement.style.setProperty("--lm-cb-color", data.color);
+        }
+        if (data.name) {
+          BOT_NAME = data.name;
+          var titleEl = panel.querySelector(".lm-cb-header-title");
+          if (titleEl) titleEl.textContent = BOT_NAME;
+        }
+        if (data.welcomeMessage) WELCOME = data.welcomeMessage;
+        if (data.welcomeMessageAr) WELCOME_AR = data.welcomeMessageAr;
       }
-      if (data.name) {
-        BOT_NAME = data.name;
-        var titleEl = panel.querySelector(".lm-cb-header-title");
-        if (titleEl) titleEl.textContent = BOT_NAME;
-      }
-      if (data.welcomeMessage) WELCOME = data.welcomeMessage;
-      if (data.welcomeMessageAr) WELCOME_AR = data.welcomeMessageAr;
+      clearTimeout(revealTimer);
+      reveal();
     })
-    .catch(function () {});
+    .catch(function () {
+      clearTimeout(revealTimer);
+      reveal();
+    });
 })();

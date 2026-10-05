@@ -1376,6 +1376,72 @@ function LocationsTab({ outlets, setOutlets, saveOutlets, saving }: {
 }
 
 // ── Channels Tab ─────────────────────────────────────────────
+// Quick-pick swatches next to the custom color field — the brand purple
+// default plus a handful of common, high-contrast choices.
+const COLOR_PRESETS = ["#7c3aed", "#e07a3f", "#0e7a5c", "#2563eb", "#dc2626", "#111827"];
+
+function isValidCssColor(value: string): boolean {
+  if (!value) return false;
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value)) return true;
+  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*(0|1|0?\.\d+)\s*)?\)$/i.test(value)) return true;
+  return false;
+}
+
+// Simple widget-color picker: a swatch that opens the native OS color
+// picker (hex only, like before), a text field that accepts hex OR
+// rgba() directly (typed or pasted), and a few one-click presets. The
+// swatch and text field aren't forced to stay in sync — rgba can't be
+// represented by the native color input, so typing one just leaves the
+// swatch showing its own best-effort preview via the live color below it.
+function ColorField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const hexForPicker = /^#[0-9a-f]{6}$/i.test(value) ? value : "#7c3aed";
+  const valid = isValidCssColor(value);
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <label
+          className="relative flex size-[38px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border"
+          style={{ background: valid ? value : "#e5e7eb" }}
+          title="Pick a color"
+        >
+          <input
+            type="color"
+            value={hexForPicker}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+        </label>
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#7c3aed or rgba(124,58,237,1)"
+          className="flex-1 font-mono text-xs"
+        />
+      </div>
+      {value && !valid && (
+        <p className="mt-1 text-[11px] text-destructive">
+          Doesn&apos;t look like a valid color — try a hex code (#7c3aed) or rgba(r, g, b, a).
+        </p>
+      )}
+      <div className="mt-2 flex items-center gap-1.5">
+        {COLOR_PRESETS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onChange(c)}
+            title={c}
+            className={cn(
+              "size-5 rounded-full border-2",
+              value.toLowerCase() === c ? "border-foreground" : "border-transparent",
+            )}
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin }: {
   embedKey: string; channels: Channels; setChannels: (fn: (c: Channels) => Channels) => void;
   savingChannel: string | null; saveChannel: (key: "website" | "whatsapp" | "instagram") => void;
@@ -1396,11 +1462,9 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
         <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
           <div>
             {fieldLabel("Widget Color")}
-            <input
-              type="color"
+            <ColorField
               value={channels.website.customColor || "#7c3aed"}
-              onChange={(e) => setChannels((c) => ({ ...c, website: { ...c.website, customColor: e.target.value } }))}
-              className="h-[38px] w-full cursor-pointer rounded-lg border bg-background p-[3px]"
+              onChange={(v) => setChannels((c) => ({ ...c, website: { ...c.website, customColor: v } }))}
             />
           </div>
         </div>
@@ -1448,6 +1512,11 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">Save with the website channel enabled to generate the embed code.</p>
+            )}
+            {embedCode && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Paste this directly into your site&apos;s <code className="rounded bg-muted px-1 py-0.5">&lt;head&gt;</code> — works as-is on WordPress, Shopify, Wix, Squarespace, or plain HTML. Building your own site in React, Next.js, or Vue? Paste it exactly where you&apos;d add any other third-party script tag (Google Analytics, Intercom, etc.) — those frameworks need the inline <code className="rounded bg-muted px-1 py-0.5">&lt;script&gt;</code> wrapped in their raw-HTML mechanism (e.g. React&apos;s <code className="rounded bg-muted px-1 py-0.5">dangerouslySetInnerHTML</code> or Next&apos;s <code className="rounded bg-muted px-1 py-0.5">next/script</code>) — that&apos;s a property of how those frameworks handle any inline script, not specific to this one.
+              </p>
             )}
           </div>
         )}
