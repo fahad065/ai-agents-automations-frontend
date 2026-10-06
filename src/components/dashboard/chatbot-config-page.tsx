@@ -840,19 +840,26 @@ export function ChatbotConfigPage({ id }: { id: string }) {
             <p className="mb-3.5 text-xs text-muted-foreground">
               Shown when the bot can't answer a question from its knowledge base.
             </p>
-            <div className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
-              <div>
-                {fieldLabel("Fallback Message (English)")}
-                <Textarea value={overview.fallbackMessage} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage: e.target.value }))} rows={2}
-                  placeholder="Sorry, I don't have that information. Let me connect you with our team." />
-              </div>
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
-                <Label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-500">
-                  Fallback Message (Arabic)
-                </Label>
-                <Textarea value={overview.fallbackMessage_ar} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage_ar: e.target.value }))} rows={2}
-                  dir="rtl" className="text-right" placeholder="عذراً، ما عندي هالمعلومة. راح أوصلك بفريقنا." />
-              </div>
+            <div className={cn(
+              "mb-4 grid grid-cols-1 gap-3.5",
+              overview.language === "both" && "sm:grid-cols-2 sm:gap-x-5",
+            )}>
+              {overview.language !== "ar" && (
+                <div>
+                  {fieldLabel("Fallback Message (English)")}
+                  <Textarea value={overview.fallbackMessage} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage: e.target.value }))} rows={2}
+                    placeholder="Sorry, I don't have that information. Let me connect you with our team." />
+                </div>
+              )}
+              {overview.language !== "en" && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
+                  <Label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-500">
+                    Fallback Message (Arabic)
+                  </Label>
+                  <Textarea value={overview.fallbackMessage_ar} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage_ar: e.target.value }))} rows={2}
+                    dir="rtl" className="text-right" placeholder="عذراً، ما عندي هالمعلومة. راح أوصلك بفريقنا." />
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between rounded-lg border bg-background px-4 py-3.5">
               <div>
@@ -895,6 +902,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           embedLoading={embedLoading}
           isProOrAbove={isProOrAbove}
           isAdmin={isAdmin}
+          language={overview.language}
         />
       )}
 
@@ -1122,11 +1130,11 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
           <p className="text-[13px] text-muted-foreground">No knowledge added yet. Add your first FAQ, text, or URL.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="scroll-area-hover flex h-[420px] flex-col gap-2 overflow-y-auto pr-1">
           {knowledge.map((k) => {
             const Icon = typeIcon[k.type] || FileText;
             return (
-              <div key={k._id} className="flex items-start gap-2.5 rounded-lg border bg-background p-3">
+              <div key={k._id} className="flex shrink-0 items-start gap-2.5 rounded-lg border bg-background p-3">
                 <div
                   className="flex size-7 shrink-0 items-center justify-center rounded-md border"
                   style={{ background: `${typeColor[k.type]}12`, borderColor: `${typeColor[k.type]}25` }}
@@ -1442,10 +1450,11 @@ function ColorField({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
-function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin }: {
+function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin, language }: {
   embedKey: string; channels: Channels; setChannels: (fn: (c: Channels) => Channels) => void;
   savingChannel: string | null; saveChannel: (key: "website" | "whatsapp" | "instagram") => void;
   embedCode: string; embedLoading: boolean; isProOrAbove: boolean; isAdmin: boolean;
+  language: "en" | "ar" | "both";
 }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
   const whatsappWebhook = `${apiUrl}/webhooks/whatsapp/${embedKey}`;
@@ -1468,7 +1477,11 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
             />
           </div>
         </div>
-        <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
+        <div className={cn(
+          "mb-3.5 grid grid-cols-1 gap-3.5",
+          language === "both" && "sm:grid-cols-2 sm:gap-x-5",
+        )}>
+          {language !== "ar" && (
           <div>
             {fieldLabel("Welcome Message (English)")}
             <Textarea
@@ -1478,6 +1491,8 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
               placeholder="Hi! How can I help you today?"
             />
           </div>
+          )}
+          {language !== "en" && (
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5">
             <Label className="mb-1.5 block text-xs font-medium text-amber-500">Welcome Message (Arabic)</Label>
             <Textarea
@@ -1489,6 +1504,7 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
               placeholder="هلا! كيف أقدر أساعدك اليوم؟"
             />
           </div>
+          )}
         </div>
 
         {channels.website.enabled && (
@@ -1651,7 +1667,7 @@ function ConversationsTab({ conversations, loading, expandedConvo, setExpandedCo
           <p className="text-[13px] text-muted-foreground">No conversations yet. They'll appear here once customers start chatting.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="scroll-area-hover flex h-[480px] flex-col gap-2 overflow-y-auto pr-1">
           {conversations.map((c) => {
             const Icon = CHANNEL_ICON[c.channel] || Globe;
             const chColor = CHANNEL_COLOR[c.channel] || "#7c3aed";
@@ -1659,7 +1675,7 @@ function ConversationsTab({ conversations, loading, expandedConvo, setExpandedCo
             const lastMsg = c.messages?.[c.messages.length - 1];
             const isOpen = expandedConvo === c._id;
             return (
-              <div key={c._id} className="overflow-hidden rounded-lg border">
+              <div key={c._id} className="shrink-0 overflow-hidden rounded-lg border">
                 <div onClick={() => setExpandedConvo(isOpen ? null : c._id)} className="flex cursor-pointer items-center gap-2.5 bg-background px-3.5 py-3">
                   <div
                     className="flex size-7 shrink-0 items-center justify-center rounded-md border"

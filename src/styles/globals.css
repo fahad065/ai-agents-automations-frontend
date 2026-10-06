@@ -198,6 +198,17 @@ body.light {
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #6d28d9; }
 
+/* Fixed-height scroll areas (e.g. chatbot config's Knowledge Base /
+   Conversations lists) — scrollbar is invisible until the container is
+   hovered, so a short list reads as a plain list, not a scroll widget. */
+.scroll-area-hover { scrollbar-width: none; }
+.scroll-area-hover::-webkit-scrollbar { width: 6px; }
+.scroll-area-hover::-webkit-scrollbar-track { background: transparent; }
+.scroll-area-hover::-webkit-scrollbar-thumb { background: transparent; border-radius: 99px; }
+.scroll-area-hover:hover { scrollbar-width: thin; scrollbar-color: rgba(120, 120, 120, 0.5) transparent; }
+.scroll-area-hover:hover::-webkit-scrollbar-thumb { background: rgba(120, 120, 120, 0.5); }
+.scroll-area-hover:hover::-webkit-scrollbar-thumb:hover { background: rgba(120, 120, 120, 0.8); }
+
 /* Responsive root-font shrinking (14px/13px) was removed here — same
    reasoning as the html font-size fix above: it only affected Tailwind's
    rem-based utility classes, and shrinking them further on mobile is the
