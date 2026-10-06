@@ -1,21 +1,48 @@
 /**
  * LogicMate Chatbot Widget
- * Usage:
- *   <script>window.LMChatbot = { embedKey: "YOUR_EMBED_KEY", color: "#7c3aed" };</script>
- *   <script src="https://www.logicmate.io/chatbot-widget.js" async></script>
+ * Usage — a single, self-closing <script> tag, config passed as data
+ * attributes (no inline script body, no object literal). This is what
+ * makes the exact same snippet paste-able verbatim into plain HTML *and*
+ * into JSX/Vue-template source (Next.js, React, Vue) with zero changes —
+ * there's no text content for a framework's compiler to choke on:
+ *   <script
+ *     src="https://www.logicmate.io/chatbot-widget.js"
+ *     data-embed-key="YOUR_EMBED_KEY"
+ *     data-api-url="https://api.logicmate.io/api/v1"
+ *     data-color="#7c3aed"
+ *     async
+ *   ></script>
  */
 (function () {
   if (typeof window === "undefined") return;
   if (window.__lmChatbotLoaded) return;
   window.__lmChatbotLoaded = true;
 
+  // document.currentScript is reliably set to this exact <script> element
+  // during its own initial synchronous execution — true even with the
+  // async attribute, since the browser still runs a classic script's
+  // top-level code as one uninterrupted synchronous block whenever it
+  // does run. Falls back to a src-based lookup for the rare case
+  // currentScript isn't available (and to window.LMChatbot, for anyone
+  // still on the previous object-literal-based snippet).
+  var scriptEl = document.currentScript;
+  if (!scriptEl) {
+    var scripts = document.getElementsByTagName("script");
+    for (var i = scripts.length - 1; i >= 0; i--) {
+      if (scripts[i].src && scripts[i].src.indexOf("chatbot-widget.js") !== -1) {
+        scriptEl = scripts[i];
+        break;
+      }
+    }
+  }
+  var ds = (scriptEl && scriptEl.dataset) || {};
   var cfg = window.LMChatbot || {};
-  var EMBED_KEY = cfg.embedKey;
-  var COLOR = cfg.color || "#7c3aed";
-  var API_URL = cfg.apiUrl || "https://api.logicmate.io/api/v1";
-  var WELCOME = cfg.welcomeMessage || "Hi! How can I help you today?";
-  var WELCOME_AR = cfg.welcomeMessageAr || "مرحباً! كيف أقدر أساعدك اليوم؟";
-  var BOT_NAME = cfg.botName || "LogicMate Assistant";
+  var EMBED_KEY = ds.embedKey || cfg.embedKey;
+  var COLOR = ds.color || cfg.color || "#7c3aed";
+  var API_URL = ds.apiUrl || cfg.apiUrl || "https://api.logicmate.io/api/v1";
+  var WELCOME = ds.welcomeMessage || cfg.welcomeMessage || "Hi! How can I help you today?";
+  var WELCOME_AR = ds.welcomeMessageAr || cfg.welcomeMessageAr || "مرحباً! كيف أقدر أساعدك اليوم؟";
+  var BOT_NAME = ds.botName || cfg.botName || "LogicMate Assistant";
 
   if (!EMBED_KEY) {
     console.error("[LMChatbot] Missing embedKey — widget not initialized.");
