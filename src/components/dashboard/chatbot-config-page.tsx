@@ -224,6 +224,30 @@ function SaveBtn({ onClick, saving, label = "Save Changes" }: { onClick: () => v
   );
 }
 
+// One save action per tab, surfaced once at the top of that tab's content
+// instead of a Save button under every card — only renders while there's
+// something unsaved, pairs with the tab-switch guard below so edits can't
+// be silently lost by clicking to another tab.
+function UnsavedBar({ onSave, onDiscard, saving, label = "Save Changes" }: {
+  onSave: () => void; onDiscard: () => void; saving: boolean; label?: string;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+      <p className="flex items-center gap-2 text-[13px] font-medium text-amber-600 dark:text-amber-400">
+        <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+        You have unsaved changes
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={onDiscard} disabled={saving}>Discard</Button>
+        <Button size="sm" onClick={onSave} disabled={saving} className="gap-2">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {saving ? "Saving..." : label}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Shown in place of a Pro-tier feature (Analytics tab, WhatsApp/Instagram
 // channel cards) when the chatbot is on Basic. See backend CLAUDE.md's
 // "Tiered chatbot pricing" — upgrades are admin-set (Billing tab), not a
@@ -359,10 +383,17 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   }, []);
 
   // Overview form
-  const [overview, setOverview] = useState({
+  const emptyOverview = {
     name: "", description: "", persona: "", bookingUrl: "", language: "en" as "en" | "ar" | "both",
     fallbackMessage: "", fallbackMessage_ar: "", humanHandoff: false,
-  });
+  };
+  const [overview, setOverview] = useState(emptyOverview);
+  // Baselines track the last-loaded/last-saved snapshot of each tab's editable
+  // state, so we can tell whether there are unsaved edits (dirty = current !==
+  // baseline) without a separate "dirty" flag to keep in sync by hand on every
+  // onChange. Drives the single unsaved-changes bar per tab + the tab-switch
+  // guard below — see the "unify Save buttons" note near the tab nav.
+  const [overviewBaseline, setOverviewBaseline] = useState(emptyOverview);
   const [overviewSaving, setOverviewSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
 
@@ -374,11 +405,13 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
   // Locations (multi-branch businesses only — empty for most chatbots)
   const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [outletsBaseline, setOutletsBaseline] = useState<Outlet[]>([]);
   const [outletsSaving, setOutletsSaving] = useState(false);
 
   // Channels
   const [channels, setChannels] = useState<Channels>(EMPTY_CHANNELS);
-  const [savingChannel, setSavingChannel] = useState<string | null>(null);
+  const [channelsBaseline, setChannelsBaseline] = useState<Channels>(EMPTY_CHANNELS);
+  const [channelsSaving, setChannelsSaving] = useState(false);
   const [embedCode, setEmbedCode] = useState("");
   const [embedLoading, setEmbedLoading] = useState(false);
 
@@ -459,7 +492,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       const bot: Chatbot = res.data?.data || res.data;
       setChatbot(bot);
       checkOpenaiKey(bot.userId);
-      setOverview({
+      const freshOverview = {
         name: bot.name || "",
         description: bot.description || "",
         persona: bot.persona || "",
@@ -468,13 +501,19 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage: bot.fallbackMessage || "",
         fallbackMessage_ar: bot.fallbackMessage_ar || "",
         humanHandoff: !!bot.humanHandoff,
-      });
-      setOutlets(bot.outlets || []);
-      setChannels({
+      } as typeof emptyOverview;
+      setOverview(freshOverview);
+      setOverviewBaseline(freshOverview);
+      const freshOutlets = bot.outlets || [];
+      setOutlets(freshOutlets);
+      setOutletsBaseline(freshOutlets);
+      const freshChannels: Channels = {
         website: { ...EMPTY_CHANNELS.website, ...(bot.channels?.website || {}) },
         whatsapp: { ...EMPTY_CHANNELS.whatsapp, ...(bot.channels?.whatsapp || {}) },
         instagram: { ...EMPTY_CHANNELS.instagram, ...(bot.channels?.instagram || {}) },
-      });
+      };
+      setChannels(freshChannels);
+      setChannelsBaseline(freshChannels);
     } catch {
       toast.error("Failed to load chatbot");
     }
@@ -612,6 +651,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage_ar: overview.fallbackMessage_ar,
         humanHandoff: overview.humanHandoff,
       });
+      setOverviewBaseline(overview);
       toast.success("Chatbot updated");
       fetchChatbot();
     } catch {
@@ -627,6 +667,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     setOutletsSaving(true);
     try {
       await api.put(`/chatbots/${id}`, { outlets });
+      setOutletsBaseline(outlets);
       toast.success("Locations saved");
       fetchChatbot();
     } catch {
@@ -648,17 +689,22 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     setStatusSaving(false);
   };
 
-  const saveChannel = async (key: "website" | "whatsapp" | "instagram") => {
-    setSavingChannel(key);
+  // One PUT already saves the whole channels object regardless of which
+  // card's switch/fields changed, so one combined button is the honest
+  // reflection of that — not three buttons that look independent but all
+  // do the same save.
+  const saveChannels = async () => {
+    setChannelsSaving(true);
     try {
       await api.put(`/chatbots/${id}`, { channels });
-      toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} channel saved`);
-      if (key === "website" && channels.website.enabled) fetchEmbedCode();
+      setChannelsBaseline(channels);
+      toast.success("Channels saved");
+      if (channels.website.enabled) fetchEmbedCode();
       fetchChatbot();
     } catch {
-      toast.error("Failed to save channel");
+      toast.error("Failed to save channels");
     }
-    setSavingChannel(null);
+    setChannelsSaving(false);
   };
 
   if (loading) {
@@ -687,6 +733,27 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const isProOrAbove = chatbot.billing.tier === "pro" || chatbot.billing.tier === "custom";
   const visibleTabs = TABS.filter((t) => t.key !== "analytics" || isProOrAbove);
 
+  // Dirty = current editable state differs from the last loaded/saved
+  // snapshot. Drives both the single unsaved-changes bar per tab and the
+  // guard below that blocks switching tabs (or leaving the page) mid-edit.
+  const overviewDirty = JSON.stringify(overview) !== JSON.stringify(overviewBaseline);
+  const outletsDirty = JSON.stringify(outlets) !== JSON.stringify(outletsBaseline);
+  const channelsDirty = JSON.stringify(channels) !== JSON.stringify(channelsBaseline);
+  const currentTabDirty =
+    tab === "overview" ? overviewDirty :
+    tab === "locations" ? outletsDirty :
+    tab === "channels" ? channelsDirty :
+    tab === "knowledge" ? showAddKnowledge : // an add/edit entry form is open
+    false;
+
+  const guardNavigate = (go: () => void) => {
+    if (currentTabDirty) {
+      toast.error("Save your changes before leaving this tab.");
+      return;
+    }
+    go();
+  };
+
   const statusMeta: Record<string, { label: string; desc: string; color: string; bg: string }> = {
     draft: { label: "Draft", desc: "Bot is in draft — not visible to customers yet.", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
     active: { label: "Live", desc: "Bot is live and responding to customers.", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
@@ -696,7 +763,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   return (
     <div>
       {/* Breadcrumb */}
-      <button onClick={() => router.push("/dashboard/chatbots")} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
+      <button onClick={() => guardNavigate(() => router.push("/dashboard/chatbots"))} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
         <ArrowLeft size={14} /> Back to Chatbots
       </button>
 
@@ -714,7 +781,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         </span>
       </div>
 
-      <ChatbotTrialBanner billing={chatbot.billing} onGoToBilling={() => setTab("billing")} />
+      <ChatbotTrialBanner billing={chatbot.billing} onGoToBilling={() => guardNavigate(() => setTab("billing"))} />
 
       {/* Dismissed the OpenAI key dialog but it's still missing — keep a
           quiet reminder visible instead of just letting it disappear. */}
@@ -742,7 +809,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
           {visibleTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => guardNavigate(() => setTab(key))}
               className={cn(
                 "flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
                 tab === key
@@ -759,6 +826,14 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       {/* ── OVERVIEW ── */}
       {tab === "overview" && (
         <>
+          {overviewDirty && (
+            <UnsavedBar
+              onSave={saveOverview}
+              onDiscard={() => setOverview(overviewBaseline)}
+              saving={overviewSaving}
+            />
+          )}
+
           <Section title="Status" icon={Radio}>
             <div
               className="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-lg border px-4 py-3.5"
@@ -833,7 +908,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                 If a customer wants to book, the bot shares this link. Leave blank and it'll still take their name/phone/date & time in the conversation instead — your team just confirms manually.
               </p>
             </div>
-            <SaveBtn onClick={saveOverview} saving={overviewSaving} />
           </Section>
 
           <Section title="Fallback & Handoff" icon={AlertCircle}>
@@ -868,14 +942,23 @@ export function ChatbotConfigPage({ id }: { id: string }) {
               </div>
               <Switch checked={overview.humanHandoff} onCheckedChange={() => setOverview((o) => ({ ...o, humanHandoff: !o.humanHandoff }))} />
             </div>
-            <SaveBtn onClick={saveOverview} saving={overviewSaving} />
           </Section>
         </>
       )}
 
       {/* ── LOCATIONS ── */}
       {tab === "locations" && (
-        <LocationsTab outlets={outlets} setOutlets={setOutlets} saveOutlets={saveOutlets} saving={outletsSaving} />
+        <>
+          {outletsDirty && (
+            <UnsavedBar
+              onSave={saveOutlets}
+              onDiscard={() => setOutlets(outletsBaseline)}
+              saving={outletsSaving}
+              label="Save Locations"
+            />
+          )}
+          <LocationsTab outlets={outlets} setOutlets={setOutlets} />
+        </>
       )}
 
       {/* ── KNOWLEDGE ── */}
@@ -892,18 +975,26 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
       {/* ── CHANNELS ── */}
       {tab === "channels" && (
-        <ChannelsTab
-          embedKey={chatbot.embedKey}
-          channels={channels}
-          setChannels={setChannels}
-          savingChannel={savingChannel}
-          saveChannel={saveChannel}
-          embedCode={embedCode}
-          embedLoading={embedLoading}
-          isProOrAbove={isProOrAbove}
-          isAdmin={isAdmin}
-          language={overview.language}
-        />
+        <>
+          {channelsDirty && (
+            <UnsavedBar
+              onSave={saveChannels}
+              onDiscard={() => setChannels(channelsBaseline)}
+              saving={channelsSaving}
+              label="Save Channels"
+            />
+          )}
+          <ChannelsTab
+            embedKey={chatbot.embedKey}
+            channels={channels}
+            setChannels={setChannels}
+            embedCode={embedCode}
+            embedLoading={embedLoading}
+            isProOrAbove={isProOrAbove}
+            isAdmin={isAdmin}
+            language={overview.language}
+          />
+        </>
       )}
 
       {/* ── CONVERSATIONS ── */}
@@ -1236,9 +1327,8 @@ function formToOutlet(f: OutletForm): Outlet {
   };
 }
 
-function LocationsTab({ outlets, setOutlets, saveOutlets, saving }: {
+function LocationsTab({ outlets, setOutlets }: {
   outlets: Outlet[]; setOutlets: (fn: (o: Outlet[]) => Outlet[]) => void;
-  saveOutlets: () => void; saving: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -1363,8 +1453,6 @@ function LocationsTab({ outlets, setOutlets, saveOutlets, saving }: {
         </div>
       )}
 
-      <SaveBtn onClick={saveOutlets} saving={saving} label="Save Locations" />
-
       <AlertDialog open={deleteIndex !== null} onOpenChange={(open) => !open && setDeleteIndex(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1450,9 +1538,8 @@ function ColorField({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
-function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChannel, embedCode, embedLoading, isProOrAbove, isAdmin, language }: {
+function ChannelsTab({ embedKey, channels, setChannels, embedCode, embedLoading, isProOrAbove, isAdmin, language }: {
   embedKey: string; channels: Channels; setChannels: (fn: (c: Channels) => Channels) => void;
-  savingChannel: string | null; saveChannel: (key: "website" | "whatsapp" | "instagram") => void;
   embedCode: string; embedLoading: boolean; isProOrAbove: boolean; isAdmin: boolean;
   language: "en" | "ar" | "both";
 }) {
@@ -1536,8 +1623,6 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
             )}
           </div>
         )}
-
-        <SaveBtn onClick={() => saveChannel("website")} saving={savingChannel === "website"} label="Save Website Channel" />
       </Section>
 
       {/* WhatsApp */}
@@ -1584,7 +1669,6 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
                 </Button>
               </div>
             </div>
-            <SaveBtn onClick={() => saveChannel("whatsapp")} saving={savingChannel === "whatsapp"} label="Save WhatsApp Channel" />
           </>
         )}
       </Section>
@@ -1633,7 +1717,6 @@ function ChannelsTab({ embedKey, channels, setChannels, savingChannel, saveChann
             </Button>
           </div>
         </div>
-        <SaveBtn onClick={() => saveChannel("instagram")} saving={savingChannel === "instagram"} label="Save Instagram Channel" />
           </>
         )}
       </Section>
