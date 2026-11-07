@@ -31,3 +31,12 @@ Chatbots filter-tab pattern rather than inventing a new one.
 Nothing else about the platform's conventions changes because of this
 redesign — inline styles stay inline styles, the Tailwind/shadcn pages stay
 as they are, the bilingual rendering pattern is unchanged.
+
+**Service detail pages get a second CTA button.** `services.brochureUrl`
+(new field, see the backend's `architecture.md`) is a downloadable PDF
+one-pager. The detail page (`agent-detail-page.tsx`/`chatbot-detail-page.tsx`
+pattern) should render it as a second button alongside the existing "See it
+works" demo-video button — "Download Brochure / Overview," a plain link to
+the PDF, rendered only when `brochureUrl` is set (same optional-field
+pattern as `demoVideoUrl`). First real content: a restaurant chatbot
+brochure, meant to be sent to leads. Not built yet.
