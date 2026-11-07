@@ -1,3 +1,12 @@
+## LogicMate frontend
+
+> **AI agents working in this repo:** read [`ai/README.md`](ai/README.md)
+> first, then [`CLAUDE.md`](CLAUDE.md). The `ai/` folder documents the
+> database architecture redesign in progress on the `fahad-development`
+> branch — start there to pick that work back up from any environment.
+> `CLAUDE.md` documents every feature already shipped and the platform's
+> styling conventions.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
