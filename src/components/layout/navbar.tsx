@@ -13,6 +13,12 @@ const LANGUAGES = [
   { code: "ar", label: "AR" },
 ];
 
+// Hidden, not removed — flip this back to `true` to bring the language
+// switcher back (desktop dropdown + mobile row). Everything underneath it
+// (useLang, lm_lang localStorage, the lm_lang_change event) is untouched,
+// so re-enabling is just this one flag.
+const SHOW_LANGUAGE_SELECTOR = false;
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -112,43 +118,45 @@ export function Navbar() {
           {/* Right side */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
 
-            {/* Language selector */}
-            <div ref={langRef} className="desktop-nav" style={{ position: "relative" }}>
-              <button onClick={() => setLangOpen(!langOpen)} style={{
-                display: "flex", alignItems: "center", gap: "5px",
-                padding: "6px 10px", borderRadius: "8px",
-                background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-                cursor: "pointer", color: colors.text, fontSize: "13px", fontWeight: 500,
-              }}>
-                <Globe size={12} color={colors.textMuted} />
-                <span style={{ textTransform: "uppercase" }}>{lang}</span>
-                <ChevronDown size={11} color={colors.textMuted} />
-              </button>
-              {langOpen && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  background: dropdownBg, border: `1px solid ${dropdownBorder}`,
-                  borderRadius: "10px", overflow: "hidden", minWidth: "100px",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                  zIndex: 100,
+            {/* Language selector — hidden via SHOW_LANGUAGE_SELECTOR, not removed */}
+            {SHOW_LANGUAGE_SELECTOR && (
+              <div ref={langRef} className="desktop-nav" style={{ position: "relative" }}>
+                <button onClick={() => setLangOpen(!langOpen)} style={{
+                  display: "flex", alignItems: "center", gap: "5px",
+                  padding: "6px 10px", borderRadius: "8px",
+                  background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+                  cursor: "pointer", color: colors.text, fontSize: "13px", fontWeight: 500,
                 }}>
-                  {LANGUAGES.map((l) => (
-                    <button key={l.code} onClick={() => selectLang(l.code)} style={{
-                      display: "flex", alignItems: "center", gap: "8px",
-                      width: "100%", padding: "10px 14px",
-                      background: lang === l.code ? "rgba(124,58,237,0.08)" : "transparent",
-                      border: "none", cursor: "pointer",
-                      color: lang === l.code ? "#a78bfa" : colors.text,
-                      fontSize: "13px", fontWeight: lang === l.code ? 600 : 400, textAlign: "left",
-                    }}>
-                      {l.label}
-                      {lang === l.code && <span style={{ marginLeft: "auto", fontSize: "10px", color: "#a78bfa" }}>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                  <Globe size={12} color={colors.textMuted} />
+                  <span style={{ textTransform: "uppercase" }}>{lang}</span>
+                  <ChevronDown size={11} color={colors.textMuted} />
+                </button>
+                {langOpen && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 8px)", right: 0,
+                    background: dropdownBg, border: `1px solid ${dropdownBorder}`,
+                    borderRadius: "10px", overflow: "hidden", minWidth: "100px",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                    zIndex: 100,
+                  }}>
+                    {LANGUAGES.map((l) => (
+                      <button key={l.code} onClick={() => selectLang(l.code)} style={{
+                        display: "flex", alignItems: "center", gap: "8px",
+                        width: "100%", padding: "10px 14px",
+                        background: lang === l.code ? "rgba(124,58,237,0.08)" : "transparent",
+                        border: "none", cursor: "pointer",
+                        color: lang === l.code ? "#a78bfa" : colors.text,
+                        fontSize: "13px", fontWeight: lang === l.code ? 600 : 400, textAlign: "left",
+                      }}>
+                        {l.label}
+                        {lang === l.code && <span style={{ marginLeft: "auto", fontSize: "10px", color: "#a78bfa" }}>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Sign in */}
             <Link href="/auth/login" className="desktop-nav" style={{
@@ -205,20 +213,22 @@ export function Navbar() {
             </Link>
           ))}
 
-          {/* Mobile lang row */}
-          <div style={{ display: "flex", gap: "8px", marginTop: "16px", marginBottom: "12px" }}>
-            {LANGUAGES.map((l) => (
-              <button key={l.code} onClick={() => selectLang(l.code)} style={{
-                padding: "7px 12px", borderRadius: "8px", cursor: "pointer",
-                border: `1px solid ${lang === l.code ? "rgba(124,58,237,0.4)" : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)")}`,
-                background: lang === l.code ? "rgba(124,58,237,0.1)" : "transparent",
-                color: lang === l.code ? "#a78bfa" : colors.text,
-                fontSize: "13px", fontWeight: 500,
-              }}>
-                {l.label.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          {/* Mobile lang row — hidden via SHOW_LANGUAGE_SELECTOR, not removed */}
+          {SHOW_LANGUAGE_SELECTOR && (
+            <div style={{ display: "flex", gap: "8px", marginTop: "16px", marginBottom: "12px" }}>
+              {LANGUAGES.map((l) => (
+                <button key={l.code} onClick={() => selectLang(l.code)} style={{
+                  padding: "7px 12px", borderRadius: "8px", cursor: "pointer",
+                  border: `1px solid ${lang === l.code ? "rgba(124,58,237,0.4)" : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)")}`,
+                  background: lang === l.code ? "rgba(124,58,237,0.1)" : "transparent",
+                  color: lang === l.code ? "#a78bfa" : colors.text,
+                  fontSize: "13px", fontWeight: 500,
+                }}>
+                  {l.label.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
             <Link href="/auth/login" onClick={() => setMobileOpen(false)} style={{
