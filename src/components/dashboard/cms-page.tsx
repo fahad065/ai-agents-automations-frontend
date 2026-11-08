@@ -18,33 +18,41 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogTitle, AlertDialogHeader,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-interface BlogPost {
+// This whole admin surface talks to one unified backend resource —
+// `/cms/admin...` over a single `cms` collection (type-discriminated
+// 'page' | 'blog') — there is no more separate "Pages" / "BlogPosts" API
+// or collection on the backend. See the backend repo's ai/architecture.md.
+type CmsType = "page" | "blog";
+
+// Fixed set of real routes in the Next.js app (/about, /contact, ...) —
+// pages aren't freely created from this UI the way blog posts are, since
+// creating a page document with no matching route would do nothing.
+const PAGE_SLUGS = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"] as const;
+
+interface CmsItem {
   _id: string;
+  type: CmsType;
+  slug: string;
   title: string;
   title_ar?: string;
-  slug: string;
-  excerpt?: string;
-  excerpt_ar?: string;
-  content?: string;
+  content?: any;
   content_ar?: string;
-  category?: string;
-  tags?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
   isPublished: boolean;
-  authorName?: string;
+  lastEditedBy?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface CmsPage {
-  slug: string;
-  title: string;
-  content?: any;
-  lastUpdatedBy?: string;
-  updatedAt: string;
+  // blog-only
+  excerpt?: string;
+  excerpt_ar?: string;
+  category?: string;
+  tags?: string[];
+  authorName?: string;
 }
 
 const fieldLabel = (text: string, className?: string) => (
@@ -97,9 +105,25 @@ function ArabicActiveBanner({ note }: { note: string }) {
   );
 }
 
+function CmsTypeTag({ type }: { type: CmsType }) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded px-1.5 py-0.25 text-[9px] font-bold uppercase tracking-wide",
+        type === "page" ? "bg-primary/10 text-[#a78bfa]" : "bg-sky-500/10 text-sky-500",
+      )}
+    >
+      {type}
+    </span>
+  );
+}
+
 // ── Page Edit Modal ───────────────────────────────────────────
-function PageEditModal({ page, onClose, onSave }: {
-  page: CmsPage; onClose: () => void; onSave: () => void;
+// Pages are never created here (see PAGE_SLUGS) — only edited. The item
+// passed in is just {slug, title} from the list; full content (incl. _ar
+// fields) is fetched fresh by id/slug on open.
+function PageEditModal({ item, onClose, onSave }: {
+  item: CmsItem; onClose: () => void; onSave: () => void;
 }) {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [pageData, setPageData] = useState<any>(null);
@@ -108,14 +132,14 @@ function PageEditModal({ page, onClose, onSave }: {
   const [error, setError] = useState("");
 
   const isAr = lang === "ar";
-  const isFaq = page.slug === "faq";
+  const isFaq = item.slug === "faq";
 
   useEffect(() => {
-    api.get(`/cms/admin/pages/${page.slug}`)
+    api.get(`/cms/admin/${item.slug}`)
       .then((r) => setPageData(r.data))
-      .catch(() => setPageData({ slug: page.slug, title: page.title }))
+      .catch(() => setPageData({ slug: item.slug, title: item.title }))
       .finally(() => setFetching(false));
-  }, [page.slug]);
+  }, [item.slug]);
 
   const set = (field: string, value: any) =>
     setPageData((p: any) => ({ ...p, [field]: value }));
@@ -123,7 +147,7 @@ function PageEditModal({ page, onClose, onSave }: {
   const handleSave = async () => {
     setSaving(true); setError("");
     try {
-      await api.put(`/cms/admin/pages/${page.slug}`, pageData);
+      await api.put(`/cms/admin/${pageData._id || item.slug}`, pageData);
       toast.success("Content updated successfully");
       onSave(); onClose();
     } catch (err: any) {
@@ -139,7 +163,10 @@ function PageEditModal({ page, onClose, onSave }: {
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Edit Page — <span className="text-[#a78bfa]">/{page.slug}</span></DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Edit Page — <span className="text-[#a78bfa]">/{item.slug}</span>
+            <CmsTypeTag type="page" />
+          </DialogTitle>
         </DialogHeader>
         <p className="-mt-3 text-xs text-muted-foreground">
           Select a language to edit the English or Arabic content
@@ -152,7 +179,6 @@ function PageEditModal({ page, onClose, onSave }: {
             subs={{ en: "Default content", ar: "UAE dialect · اللهجة الإماراتية" }}
           />
 
-          {/* Form body */}
           <div className="flex min-h-0 flex-col overflow-y-auto pr-1">
           {isAr && <ArabicActiveBanner note="you are editing Arabic (UAE dialect) content. All changes save to the _ar fields." />}
           {fetching ? (
@@ -161,7 +187,6 @@ function PageEditModal({ page, onClose, onSave }: {
             </div>
           ) : (
             <div className="flex flex-col gap-3.5" dir={isAr ? "rtl" : "ltr"}>
-              {/* Title */}
               <div>
                 {fieldLabel(isAr ? "العنوان (عربي)" : "Page Title")}
                 <Input
@@ -171,7 +196,6 @@ function PageEditModal({ page, onClose, onSave }: {
                 />
               </div>
 
-              {/* Subtitle */}
               <div>
                 {fieldLabel(isAr ? "النبذة (عربي)" : "Subtitle")}
                 <Input
@@ -181,7 +205,6 @@ function PageEditModal({ page, onClose, onSave }: {
                 />
               </div>
 
-              {/* SEO fields — EN only */}
               {!isAr && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
@@ -195,7 +218,6 @@ function PageEditModal({ page, onClose, onSave }: {
                 </div>
               )}
 
-              {/* Content HTML */}
               {!isFaq && (
                 <div>
                   {fieldLabel(isAr ? "المحتوى بالعربي (HTML)" : "Content (HTML)")}
@@ -209,14 +231,13 @@ function PageEditModal({ page, onClose, onSave }: {
                 </div>
               )}
 
-              {/* FAQ items editor */}
               {isFaq && (
                 <div>
                   {fieldLabel(isAr ? `الأسئلة الشائعة (عربي) — ${faqItems.length} سؤال` : `FAQ Items — ${faqItems.length} questions`, "mb-2")}
-                  {faqItems.map((item: any, i: number) => (
+                  {faqItems.map((it: any, i: number) => (
                     <div key={i} className="mb-2 rounded-lg border bg-muted/40 p-3">
                       <Input
-                        value={item.question || ""}
+                        value={it.question || ""}
                         dir={isAr ? "rtl" : "ltr"}
                         onChange={(e) => {
                           const updated = [...faqItems];
@@ -227,7 +248,7 @@ function PageEditModal({ page, onClose, onSave }: {
                         className="mb-2"
                       />
                       <Textarea
-                        value={item.answer || ""}
+                        value={it.answer || ""}
                         dir={isAr ? "rtl" : "ltr"}
                         onChange={(e) => {
                           const updated = [...faqItems];
@@ -276,7 +297,7 @@ function PageEditModal({ page, onClose, onSave }: {
 
 // ── Blog Post Modal ───────────────────────────────────────────
 function BlogModal({ post, onClose, onSave }: {
-  post?: BlogPost; onClose: () => void; onSave: () => void;
+  post?: CmsItem; onClose: () => void; onSave: () => void;
 }) {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [fetching, setFetching] = useState(!!post?._id);
@@ -297,10 +318,9 @@ function BlogModal({ post, onClose, onSave }: {
 
   const isAr = lang === "ar";
 
-  // Fetch full post data (includes _ar fields) when editing
   useEffect(() => {
     if (!post?._id) return;
-    api.get(`/cms/admin/blog/${post._id}`)
+    api.get(`/cms/admin/${post._id}`)
       .then((r) => {
         const d = r.data;
         setForm({
@@ -330,7 +350,7 @@ function BlogModal({ post, onClose, onSave }: {
     if (!form.title.trim()) { setError("English title is required"); return; }
     setSaving(true); setError("");
     try {
-      const payload = {
+      const payload: any = {
         title: form.title,
         title_ar: form.title_ar,
         slug: form.slug || autoSlug(form.title),
@@ -343,10 +363,11 @@ function BlogModal({ post, onClose, onSave }: {
         isPublished: form.isPublished,
       };
       if (post?._id) {
-        await api.put(`/cms/admin/blog/${post._id}`, payload);
+        await api.put(`/cms/admin/${post._id}`, payload);
         toast.success("Post updated successfully");
       } else {
-        await api.post("/cms/admin/blog", payload);
+        payload.type = "blog";
+        await api.post("/cms/admin", payload);
         toast.success("Post created successfully");
       }
       onSave(); onClose();
@@ -360,7 +381,10 @@ function BlogModal({ post, onClose, onSave }: {
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{post ? "Edit Blog Post" : "New Blog Post"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {post ? "Edit Blog Post" : "New Blog Post"}
+            <CmsTypeTag type="blog" />
+          </DialogTitle>
         </DialogHeader>
         <p className="-mt-3 text-xs text-muted-foreground">
           Select a language to edit the English or Arabic content
@@ -373,7 +397,6 @@ function BlogModal({ post, onClose, onSave }: {
             subs={{ en: "Title · excerpt · content · settings", ar: "UAE dialect · عنوان · مقتطف · محتوى" }}
           />
 
-          {/* Form body */}
           <div className="flex min-h-0 flex-col overflow-y-auto pr-1" dir={isAr ? "rtl" : "ltr"}>
           {isAr && <ArabicActiveBanner note="editing Arabic (UAE dialect). Changes save to title_ar, excerpt_ar, content_ar." />}
           {fetching ? (
@@ -382,7 +405,6 @@ function BlogModal({ post, onClose, onSave }: {
             </div>
           ) : (
             <div className="flex flex-col gap-3.5">
-              {/* ── ENGLISH fields ── */}
               {!isAr && (
                 <>
                   <div>
@@ -443,7 +465,6 @@ function BlogModal({ post, onClose, onSave }: {
                 </>
               )}
 
-              {/* ── ARABIC fields ── */}
               {isAr && (
                 <>
                   <div>
@@ -499,6 +520,12 @@ function BlogModal({ post, onClose, onSave }: {
 }
 
 // ── Main CMS Page ─────────────────────────────────────────────
+// One admin surface over one backend resource (`/cms/admin`, operating on
+// the merged `cms` collection). Pages and blog posts still get separate,
+// focused edit forms — their field sets genuinely differ (a page has FAQ
+// items and no author/tags/publish-date; a blog post has those and no
+// FAQ) — but both now flow through the same create/update/delete API,
+// just filtered by `type`.
 export function CmsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -507,22 +534,20 @@ export function CmsPage() {
     if (user && user.role !== "admin") router.push("/dashboard");
   }, [user]);
 
-  const [tab, setTab] = useState<"blog" | "pages">("blog");
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [pages, setPages] = useState<CmsPage[]>([]);
+  const [tab, setTab] = useState<CmsType>("blog");
+  const [posts, setPosts] = useState<CmsItem[]>([]);
+  const [pages, setPages] = useState<CmsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Blog modal state
   const [showBlogModal, setShowBlogModal] = useState(false);
-  const [editPost, setEditPost] = useState<BlogPost | undefined>();
-  const [deleteTarget, setDeleteTarget] = useState<BlogPost | null>(null);
+  const [editPost, setEditPost] = useState<CmsItem | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<CmsItem | null>(null);
 
-  // Page edit modal state
   const [showPageModal, setShowPageModal] = useState(false);
-  const [editPage, setEditPage] = useState<CmsPage | undefined>();
+  const [editPage, setEditPage] = useState<CmsItem | undefined>();
 
   const limit = 10;
 
@@ -532,17 +557,16 @@ export function CmsPage() {
     setLoading(true);
     try {
       if (tab === "blog") {
-        const res = await api.get(`/cms/admin/blog?page=${page}&limit=${limit}`);
-        setPosts(res.data?.posts || res.data?.data || []);
+        const res = await api.get(`/cms/admin?type=blog&page=${page}&limit=${limit}`);
+        setPosts(res.data?.items || []);
         setTotal(res.data?.total || 0);
       } else {
-        const slugs = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"];
         const results = await Promise.allSettled(
-          slugs.map(s => api.get(`/cms/admin/pages/${s}`))
+          PAGE_SLUGS.map((s) => api.get(`/cms/admin/${s}`))
         );
         setPages(
           results
-            .filter(r => r.status === "fulfilled")
+            .filter((r) => r.status === "fulfilled")
             .map((r: any) => r.value.data)
             .filter(Boolean)
         );
@@ -554,7 +578,7 @@ export function CmsPage() {
   const confirmDeletePost = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/cms/admin/blog/${deleteTarget._id}`);
+      await api.delete(`/cms/admin/${deleteTarget._id}`);
       toast.success("Deleted successfully");
       fetchData();
     } catch {
@@ -565,17 +589,16 @@ export function CmsPage() {
 
   const totalPages = Math.ceil(total / limit);
 
-  const filteredPosts = posts.filter(p =>
+  const filteredPosts = posts.filter((p) =>
     !search || p.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="mb-1 text-xl font-bold text-foreground">Content CMS</h1>
-          <p className="text-sm text-muted-foreground">Manage blog posts and website pages.</p>
+          <p className="text-sm text-muted-foreground">Manage blog posts and website pages — one content system, two views.</p>
         </div>
         {tab === "blog" && (
           <Button onClick={() => { setEditPost(undefined); setShowBlogModal(true); }} className="gap-2">
@@ -585,11 +608,10 @@ export function CmsPage() {
       </div>
 
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[220px_1fr]">
-        {/* Left vertical nav — same convention as settings-page.tsx */}
         <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
           {([
             { key: "blog" as const, label: "Blog Posts", icon: BookOpen },
-            { key: "pages" as const, label: "Pages", icon: Globe },
+            { key: "page" as const, label: "Pages", icon: Globe },
           ]).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -607,7 +629,6 @@ export function CmsPage() {
 
         <div className="min-w-0">
 
-      {/* ── BLOG TAB ── */}
       {tab === "blog" && (
         <>
           <div className="mb-3.5 flex items-center gap-2.5 rounded-lg border bg-card p-3">
@@ -622,7 +643,7 @@ export function CmsPage() {
             <div className="overflow-x-auto">
               <div className="min-w-[640px]">
                 <div className="grid grid-cols-[1fr_100px_80px_90px_100px] gap-2.5 border-b bg-background px-4.5 py-2.5">
-                  {["Title", "Category", "Status", "Date", "Actions"].map(h => (
+                  {["Title", "Category", "Status", "Date", "Actions"].map((h) => (
                     <span key={h} className="text-[11px] font-semibold text-muted-foreground">{h}</span>
                   ))}
                 </div>
@@ -702,10 +723,10 @@ export function CmsPage() {
                 {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
               </p>
               <div className="flex gap-1">
-                <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
                   <ChevronLeft size={13} />
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                   <ChevronRight size={13} />
                 </Button>
               </div>
@@ -714,8 +735,7 @@ export function CmsPage() {
         </>
       )}
 
-      {/* ── PAGES TAB ── */}
-      {tab === "pages" && (
+      {tab === "page" && (
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="border-b px-4.5 py-3.5">
             <p className="text-[13px] text-muted-foreground">
@@ -749,7 +769,7 @@ export function CmsPage() {
                     <p className="text-[11px] text-muted-foreground">
                       /{p.slug}
                       {p.updatedAt && ` · Last updated ${new Date(p.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
-                      {p.lastUpdatedBy && ` by ${p.lastUpdatedBy}`}
+                      {p.lastEditedBy && ` by ${p.lastEditedBy}`}
                     </p>
                   </div>
                 </div>
@@ -770,7 +790,6 @@ export function CmsPage() {
         </div>
       </div>
 
-      {/* Blog modal */}
       {showBlogModal && (
         <BlogModal
           post={editPost}
@@ -779,10 +798,9 @@ export function CmsPage() {
         />
       )}
 
-      {/* Page edit modal */}
       {showPageModal && editPage && (
         <PageEditModal
-          page={editPage}
+          item={editPage}
           onClose={() => { setShowPageModal(false); setEditPage(undefined); }}
           onSave={fetchData}
         />
@@ -793,7 +811,7 @@ export function CmsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this blog post?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget && `"${deleteTarget.title}" will be permanently deleted. This can't be undone.`}
+              {deleteTarget && `"${deleteTarget.title}" will be moved to trash (soft-deleted) — it disappears from the site immediately but isn't permanently gone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

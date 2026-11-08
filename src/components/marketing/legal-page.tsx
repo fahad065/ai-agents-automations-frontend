@@ -12,7 +12,7 @@ export function LegalPage({ slug }: { slug: string }) {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    fetch(`${apiUrl}/cms/pages/${slug}`)
+    fetch(`${apiUrl}/cms/content/page/${slug}`)
       .then((r) => r.json())
       .then(setPage)
       .catch(() => {})

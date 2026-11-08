@@ -41,9 +41,9 @@ export function BlogListPage() {
     setLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const params = new URLSearchParams({ page: String(page), limit: "9" });
+      const params = new URLSearchParams({ type: "blog", page: String(page), limit: "9" });
       if (category !== "all") params.set("category", category);
-      const res = await fetch(`${apiUrl}/cms/blog?${params}`, { cache: "no-store" });
+      const res = await fetch(`${apiUrl}/cms/content?${params}`, { cache: "no-store" });
       const data = await res.json();
       setPosts(data.posts || []);
       setTotal(data.total || 0);

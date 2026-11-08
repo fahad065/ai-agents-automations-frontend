@@ -36,7 +36,7 @@ export function ContactPage() {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    fetch(`${apiUrl}/cms/pages/contact`)
+    fetch(`${apiUrl}/cms/content/page/contact`)
       .then((r) => r.json())
       .then(setPageData)
       .catch(() => {});

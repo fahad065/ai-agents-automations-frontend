@@ -30,7 +30,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    fetch(`${apiUrl}/cms/blog/${slug}`)
+    fetch(`${apiUrl}/cms/content/blog/${slug}`)
       .then((r) => r.json())
       .then(setPost)
       .catch(() => {})
