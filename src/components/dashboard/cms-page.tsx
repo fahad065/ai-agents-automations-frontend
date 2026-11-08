@@ -34,7 +34,16 @@ type CmsType = "page" | "blog";
 // real, hardcoded page. Any other page slug is admin-created content with
 // no dedicated route file — it renders through the generic catch-all
 // `src/app/(marketing)/[slug]/page.tsx`, and can be freely deleted.
-const CORE_PAGE_SLUGS = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"] as const;
+//
+// Values are whatever's actually saved in the DB today (matches
+// CmsPageSlug on the backend) — not the short form you'd guess from the
+// route's own URL. E.g. the page at the /cookies URL has slug
+// "cookie-policy" in Mongo; the route folder name and the stored slug are
+// two independent things.
+const CORE_PAGE_SLUGS = [
+  "about-logicmate", "contact-us", "privacy-policy", "terms-of-service",
+  "cookie-policy", "refund-policy", "frequently-asked-questions",
+] as const;
 
 interface CmsItem {
   _id: string;
@@ -140,7 +149,7 @@ function PageEditModal({ item, onClose, onSave }: {
   // on — not just the dedicated /faq page by slug. Defaults on once the
   // fetched/edited page already has FAQ items (so the existing /faq page
   // keeps showing its editor without the admin re-toggling it).
-  const [includeFaq, setIncludeFaq] = useState(!isCreate && item.slug === "faq");
+  const [includeFaq, setIncludeFaq] = useState(!isCreate && item.slug === "frequently-asked-questions");
 
   useEffect(() => {
     if (isCreate) return;

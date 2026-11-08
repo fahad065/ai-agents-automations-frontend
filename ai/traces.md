@@ -4,6 +4,44 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-08 (even later) — Real slug mismatch found and fixed — code now matches what's actually saved
+
+User tested `/cookies` locally and got a 404 from the backend. Root
+cause: they'd saved the 7 structural pages from `/dashboard/cms` using
+their own slugs, not the short ones every fetch call assumed —
+`about-logicmate`, `contact-us`, `privacy-policy`, `terms-of-service`,
+`cookie-policy`, `frequently-asked-questions`, `refund-policy`. Every
+hardcoded fetch (`about`, `contact`, `privacy`, `terms`, `cookies`,
+`faq`, `refund`) was looking up a slug that simply didn't exist.
+
+Fixed every call site to match the real saved values — no data was
+touched, this is purely a code-side fix:
+- `app/(marketing)/privacy/page.tsx`, `terms/page.tsx`, `cookies/page.tsx`,
+  `refund/page.tsx` — the `<LegalPage slug="...">` prop each passes.
+- `components/marketing/about-page.tsx`, `contact-page.tsx`,
+  `faq-page.tsx` — their own internally-hardcoded `fetch(.../cms/content/
+  page/...)` URLs.
+- `components/dashboard/cms-page.tsx` — `CORE_PAGE_SLUGS` (the "can't
+  delete this, it backs a real route" list) and the `includeFaq` toggle's
+  default-on heuristic, both previously keyed on the short slugs.
+
+See the backend repo's `traces.md` for the matching `CmsPageSlug` enum
+fix (`seed()` and the About-page backfill both reference that enum, so
+one change there covered both).
+
+**Worth remembering for next time**: the URL a page lives at (`/cookies`,
+a Next.js folder name) and the slug stored for its `cms` document in
+Mongo (`cookie-policy`) are two independent things — nothing enforces
+them matching, they just need to be wired together correctly in whatever
+code does the fetch. A mismatch here reads as "page 404s" with no error
+anywhere obviously pointing at "wrong slug" — worth checking first
+whenever one of the 7 structural pages 404s unexpectedly.
+
+Verified: `tsc --noEmit` clean, `next build` clean, all 43 routes still
+generating.
+
+---
+
 ## 2026-11-08 (later same day) — "+ New Page" actually added — pages are now creatable, not just editable
 
 Follow-up: the user caught that the previous rewrite (below) still only

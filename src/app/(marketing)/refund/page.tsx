@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function Refund() { 
-    return <LegalPage slug="refund" />; 
+    return <LegalPage slug="refund-policy" />; 
 }

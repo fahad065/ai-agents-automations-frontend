@@ -55,7 +55,7 @@ export function FaqPage() {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    fetch(`${apiUrl}/cms/content/page/faq`)
+    fetch(`${apiUrl}/cms/content/page/frequently-asked-questions`)
       .then((r) => r.json())
       .then((data) => setPageData(data))
       .catch(() => {})

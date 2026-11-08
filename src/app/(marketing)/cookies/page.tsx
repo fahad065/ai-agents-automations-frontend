@@ -1,4 +1,4 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/marketing/legal-page";
 export const metadata: Metadata = { title: "Cookie Policy — LogicMate" };
-export default function Cookies() { return <LegalPage slug="cookies" />; }
+export default function Cookies() { return <LegalPage slug="cookie-policy" />; }
