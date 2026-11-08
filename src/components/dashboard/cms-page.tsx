@@ -136,12 +136,19 @@ function PageEditModal({ item, onClose, onSave }: {
   const [error, setError] = useState("");
 
   const isAr = lang === "ar";
-  const isFaq = !isCreate && item.slug === "faq";
+  // "Does this page have an FAQ section" is now a toggle any page can turn
+  // on — not just the dedicated /faq page by slug. Defaults on once the
+  // fetched/edited page already has FAQ items (so the existing /faq page
+  // keeps showing its editor without the admin re-toggling it).
+  const [includeFaq, setIncludeFaq] = useState(!isCreate && item.slug === "faq");
 
   useEffect(() => {
     if (isCreate) return;
     api.get(`/cms/admin/${item.slug}`)
-      .then((r) => setPageData(r.data))
+      .then((r) => {
+        setPageData(r.data);
+        if (r.data?.faqItems?.length || r.data?.faqItems_ar?.length) setIncludeFaq(true);
+      })
       .catch(() => setPageData({ slug: item.slug, title: item.title }))
       .finally(() => setFetching(false));
   }, [isCreate, item?.slug]);
@@ -156,12 +163,15 @@ function PageEditModal({ item, onClose, onSave }: {
     if (isCreate && !pageData?.title?.trim()) { setError("Title is required"); return; }
     setSaving(true); setError("");
     try {
+      // Toggling the FAQ section off actually clears it, rather than
+      // leaving stale hidden items the editor no longer shows.
+      const body = includeFaq ? pageData : { ...pageData, faqItems: [], faqItems_ar: [] };
       if (isCreate) {
-        const slug = pageData.slug?.trim() || autoSlug(pageData.title);
-        await api.post("/cms/admin", { ...pageData, slug, type: "page" });
+        const slug = body.slug?.trim() || autoSlug(body.title);
+        await api.post("/cms/admin", { ...body, slug, type: "page" });
         toast.success("Page created — now live at /" + slug);
       } else {
-        await api.put(`/cms/admin/${pageData._id || item.slug}`, pageData);
+        await api.put(`/cms/admin/${body._id || item.slug}`, body);
         toast.success("Content updated successfully");
       }
       onSave(); onClose();
@@ -253,20 +263,30 @@ function PageEditModal({ item, onClose, onSave }: {
                 </div>
               </div>
 
-              {!isFaq && (
-                <div>
-                  {fieldLabel(isAr ? "المحتوى بالعربي (HTML)" : "Content (HTML)")}
-                  <Textarea
-                    value={(isAr ? pageData?.content_ar : pageData?.content) || ""}
-                    onChange={(e) => set(isAr ? "content_ar" : "content", e.target.value)}
-                    rows={16}
-                    className="font-mono text-xs leading-relaxed"
-                    placeholder={isAr ? "<h2>العنوان</h2><p>المحتوى هنا...</p>" : "<h2>Heading</h2><p>Content here...</p>"}
-                  />
+              <div>
+                {fieldLabel(isAr ? "المحتوى بالعربي (HTML)" : "Content (HTML)")}
+                <Textarea
+                  value={(isAr ? pageData?.content_ar : pageData?.content) || ""}
+                  onChange={(e) => set(isAr ? "content_ar" : "content", e.target.value)}
+                  rows={isAr ? 16 : 10}
+                  className="font-mono text-xs leading-relaxed"
+                  placeholder={isAr ? "<h2>العنوان</h2><p>المحتوى هنا...</p>" : "<h2>Heading</h2><p>Content here...</p>"}
+                />
+              </div>
+
+              {!isAr && (
+                <div className="flex items-center justify-between rounded-lg border bg-background px-3.5 py-3">
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground">Include FAQ section</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Adds a list of questions &amp; answers below this page's content
+                    </p>
+                  </div>
+                  <Switch checked={includeFaq} onCheckedChange={setIncludeFaq} />
                 </div>
               )}
 
-              {isFaq && (
+              {includeFaq && (
                 <div>
                   {fieldLabel(isAr ? `الأسئلة الشائعة (عربي) — ${faqItems.length} سؤال` : `FAQ Items — ${faqItems.length} questions`, "mb-2")}
                   {faqItems.map((it: any, i: number) => (
