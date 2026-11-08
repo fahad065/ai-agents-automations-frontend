@@ -4,6 +4,54 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-08 (later same day) — "+ New Page" actually added — pages are now creatable, not just editable
+
+Follow-up: the user caught that the previous rewrite (below) still only
+let you *edit* the 7 fixed pages, with no way to add a new one — pointed
+out directly: "I should be able to add both blogs and pages from
+dashboard/cms... Right now I can't add pages." Also: "no script or
+seeding directly now" — i.e. this needs to be real UI, not a backfill/seed
+workaround.
+
+- `PageEditModal` generalized to a create-or-edit modal (`item` is now
+  optional — no `item` means create). Create mode adds a Slug input
+  (auto-generated from title, editable before first save, shown as
+  read-only after), a Published switch, and AR variants for
+  `metaTitle`/`metaDescription` that the edit form was missing entirely
+  before (schema already had `metaTitle_ar`/`metaDescription_ar`, just
+  never exposed in this UI).
+- `CmsPage()`'s Pages tab switched from fetching the 7 hardcoded slugs one
+  by one to `GET /cms/admin?type=page&limit=100` — the same generic
+  listing the Blog tab already used, filtered by type. A newly created
+  page just shows up in this list like any other.
+- **New public route to actually serve a new page**: a brand-new page
+  document had nowhere to render — there's no generic page-by-slug route,
+  only 7 dedicated folders (`about/`, `contact/`, ...). Added
+  `src/app/(marketing)/[slug]/page.tsx` (+ `components/marketing/
+  generic-page.tsx`) — a catch-all that fetches `/cms/content/page/:slug`
+  and renders it through the same shared `CmsPage`/`CmsContent` shell the
+  legal pages use. Next.js always prefers a literal route segment over a
+  dynamic one, so this can't shadow `/about`, `/pricing`, etc. — confirmed
+  via a real build showing `ƒ /[slug]` alongside every existing literal
+  route with no conflicts.
+- **Deletion added for pages too, but gated**: the 7 structural slugs
+  (`CORE_PAGE_SLUGS`, renamed from `PAGE_SLUGS`) each back a real,
+  hardcoded Next.js route — deleting their content would break a live
+  page, so no delete button renders for them. Any other page (admin-
+  created, rendered through the new catch-all) gets a delete button,
+  same `AlertDialog` soft-delete pattern as blog posts. The one shared
+  delete handler (`confirmDelete`, renamed from `confirmDeletePost`) and
+  its dialog now read `deleteTarget.type` to word the confirmation
+  correctly for either kind.
+- A `CUSTOM` badge marks non-structural pages in the list, and a `DRAFT`
+  badge shows when `isPublished === false`, mirroring the blog list's
+  Live/Draft badge.
+
+**Verified**: `tsc --noEmit` clean, `next build` clean — 43 routes now
+(up from 42), including the new `ƒ /[slug]`.
+
+---
+
 ## 2026-11-08 — CMS admin page rebuilt against the new unified `/cms/admin` API
 
 Companion to the backend's "CMS API redesigned too" trace entry — read

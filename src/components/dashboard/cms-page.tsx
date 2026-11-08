@@ -28,10 +28,13 @@ import { cn } from "@/lib/utils";
 // or collection on the backend. See the backend repo's ai/architecture.md.
 type CmsType = "page" | "blog";
 
-// Fixed set of real routes in the Next.js app (/about, /contact, ...) —
-// pages aren't freely created from this UI the way blog posts are, since
-// creating a page document with no matching route would do nothing.
-const PAGE_SLUGS = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"] as const;
+// These 7 slugs are structural — each has its own dedicated Next.js route
+// file (/about, /contact, /privacy, ...). They can be edited here but
+// never deleted from this UI, since deleting the content would break a
+// real, hardcoded page. Any other page slug is admin-created content with
+// no dedicated route file — it renders through the generic catch-all
+// `src/app/(marketing)/[slug]/page.tsx`, and can be freely deleted.
+const CORE_PAGE_SLUGS = ["about", "contact", "privacy", "terms", "cookies", "faq", "refund"] as const;
 
 interface CmsItem {
   _id: string;
@@ -119,36 +122,48 @@ function CmsTypeTag({ type }: { type: CmsType }) {
 }
 
 // ── Page Edit Modal ───────────────────────────────────────────
-// Pages are never created here (see PAGE_SLUGS) — only edited. The item
-// passed in is just {slug, title} from the list; full content (incl. _ar
-// fields) is fetched fresh by id/slug on open.
+// Also handles create: pass no `item` to create a brand-new page. A new
+// page's slug becomes a real public URL via the generic catch-all route
+// `src/app/(marketing)/[slug]/page.tsx` — no code change needed per page.
 function PageEditModal({ item, onClose, onSave }: {
-  item: CmsItem; onClose: () => void; onSave: () => void;
+  item?: CmsItem; onClose: () => void; onSave: () => void;
 }) {
+  const isCreate = !item;
   const [lang, setLang] = useState<"en" | "ar">("en");
-  const [pageData, setPageData] = useState<any>(null);
-  const [fetching, setFetching] = useState(true);
+  const [pageData, setPageData] = useState<any>(isCreate ? { isPublished: true } : null);
+  const [fetching, setFetching] = useState(!isCreate);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const isAr = lang === "ar";
-  const isFaq = item.slug === "faq";
+  const isFaq = !isCreate && item.slug === "faq";
 
   useEffect(() => {
+    if (isCreate) return;
     api.get(`/cms/admin/${item.slug}`)
       .then((r) => setPageData(r.data))
       .catch(() => setPageData({ slug: item.slug, title: item.title }))
       .finally(() => setFetching(false));
-  }, [item.slug]);
+  }, [isCreate, item?.slug]);
+
+  const autoSlug = (title: string) =>
+    title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   const set = (field: string, value: any) =>
     setPageData((p: any) => ({ ...p, [field]: value }));
 
   const handleSave = async () => {
+    if (isCreate && !pageData?.title?.trim()) { setError("Title is required"); return; }
     setSaving(true); setError("");
     try {
-      await api.put(`/cms/admin/${pageData._id || item.slug}`, pageData);
-      toast.success("Content updated successfully");
+      if (isCreate) {
+        const slug = pageData.slug?.trim() || autoSlug(pageData.title);
+        await api.post("/cms/admin", { ...pageData, slug, type: "page" });
+        toast.success("Page created — now live at /" + slug);
+      } else {
+        await api.put(`/cms/admin/${pageData._id || item.slug}`, pageData);
+        toast.success("Content updated successfully");
+      }
       onSave(); onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to save page");
@@ -164,7 +179,9 @@ function PageEditModal({ item, onClose, onSave }: {
       <DialogContent className="flex max-h-[92vh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Edit Page — <span className="text-[#a78bfa]">/{item.slug}</span>
+            {isCreate ? "New Page" : (
+              <>Edit Page — <span className="text-[#a78bfa]">/{item.slug}</span></>
+            )}
             <CmsTypeTag type="page" />
           </DialogTitle>
         </DialogHeader>
@@ -188,13 +205,27 @@ function PageEditModal({ item, onClose, onSave }: {
           ) : (
             <div className="flex flex-col gap-3.5" dir={isAr ? "rtl" : "ltr"}>
               <div>
-                {fieldLabel(isAr ? "العنوان (عربي)" : "Page Title")}
+                {fieldLabel(isAr ? "العنوان (عربي)" : "Title *")}
                 <Input
                   value={(isAr ? pageData?.title_ar : pageData?.title) || ""}
                   onChange={(e) => set(isAr ? "title_ar" : "title", e.target.value)}
                   placeholder={isAr ? "أدخل العنوان بالعربي..." : "Enter page title..."}
                 />
               </div>
+
+              {!isAr && isCreate && (
+                <div>
+                  {fieldLabel("Slug (URL) — leave blank to auto-generate from title")}
+                  <Input
+                    value={pageData?.slug || ""}
+                    onChange={(e) => set("slug", e.target.value)}
+                    placeholder={pageData?.title ? autoSlug(pageData.title) : "e.g. careers"}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Will be live at <span className="font-mono">logicmate.io/{pageData?.slug || autoSlug(pageData?.title || "")}</span>
+                  </p>
+                </div>
+              )}
 
               <div>
                 {fieldLabel(isAr ? "النبذة (عربي)" : "Subtitle")}
@@ -205,18 +236,22 @@ function PageEditModal({ item, onClose, onSave }: {
                 />
               </div>
 
-              {!isAr && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    {fieldLabel("Meta title (SEO)")}
-                    <Input value={pageData?.metaTitle || ""} onChange={(e) => set("metaTitle", e.target.value)} />
-                  </div>
-                  <div>
-                    {fieldLabel("Meta description (SEO)")}
-                    <Input value={pageData?.metaDescription || ""} onChange={(e) => set("metaDescription", e.target.value)} />
-                  </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  {fieldLabel(isAr ? "عنوان SEO (عربي)" : "Meta title (SEO)")}
+                  <Input
+                    value={(isAr ? pageData?.metaTitle_ar : pageData?.metaTitle) || ""}
+                    onChange={(e) => set(isAr ? "metaTitle_ar" : "metaTitle", e.target.value)}
+                  />
                 </div>
-              )}
+                <div>
+                  {fieldLabel(isAr ? "وصف SEO (عربي)" : "Meta description (SEO)")}
+                  <Input
+                    value={(isAr ? pageData?.metaDescription_ar : pageData?.metaDescription) || ""}
+                    onChange={(e) => set(isAr ? "metaDescription_ar" : "metaDescription", e.target.value)}
+                  />
+                </div>
+              </div>
 
               {!isFaq && (
                 <div>
@@ -271,6 +306,18 @@ function PageEditModal({ item, onClose, onSave }: {
                 </div>
               )}
 
+              {!isAr && (
+                <div className="flex items-center justify-between rounded-lg border bg-background px-3.5 py-3">
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground">Published</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {pageData?.isPublished !== false ? "Visible on website" : "Draft — not visible yet"}
+                    </p>
+                  </div>
+                  <Switch checked={pageData?.isPublished !== false} onCheckedChange={(v: boolean) => set("isPublished", v)} />
+                </div>
+              )}
+
               {error && (
                 <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
               )}
@@ -287,7 +334,7 @@ function PageEditModal({ item, onClose, onSave }: {
             className={cn("gap-2", isAr && "bg-amber-600 hover:bg-amber-600/90")}
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? "Saving..." : (isAr ? "حفظ المحتوى العربي" : "Save Changes")}
+            {saving ? "Saving..." : isAr ? "حفظ المحتوى العربي" : (isCreate ? "Create Page" : "Save Changes")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -561,28 +608,23 @@ export function CmsPage() {
         setPosts(res.data?.items || []);
         setTotal(res.data?.total || 0);
       } else {
-        const results = await Promise.allSettled(
-          PAGE_SLUGS.map((s) => api.get(`/cms/admin/${s}`))
-        );
-        setPages(
-          results
-            .filter((r) => r.status === "fulfilled")
-            .map((r: any) => r.value.data)
-            .filter(Boolean)
-        );
+        // Generic listing — every `type: 'page'` doc, not just the 7
+        // structural ones. A page created here shows up the same way.
+        const res = await api.get(`/cms/admin?type=page&limit=100`);
+        setPages(res.data?.items || []);
       }
     } catch {}
     setLoading(false);
   };
 
-  const confirmDeletePost = async () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/cms/admin/${deleteTarget._id}`);
       toast.success("Deleted successfully");
       fetchData();
     } catch {
-      toast.error("Failed to delete post");
+      toast.error(`Failed to delete ${deleteTarget.type === "blog" ? "post" : "page"}`);
     }
     setDeleteTarget(null);
   };
@@ -593,6 +635,8 @@ export function CmsPage() {
     !search || p.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  const isCorePage = (slug: string) => (CORE_PAGE_SLUGS as readonly string[]).includes(slug);
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -600,9 +644,13 @@ export function CmsPage() {
           <h1 className="mb-1 text-xl font-bold text-foreground">Content CMS</h1>
           <p className="text-sm text-muted-foreground">Manage blog posts and website pages — one content system, two views.</p>
         </div>
-        {tab === "blog" && (
+        {tab === "blog" ? (
           <Button onClick={() => { setEditPost(undefined); setShowBlogModal(true); }} className="gap-2">
             <Plus size={15} /> New Post
+          </Button>
+        ) : (
+          <Button onClick={() => { setEditPage(undefined); setShowPageModal(true); }} className="gap-2">
+            <Plus size={15} /> New Page
           </Button>
         )}
       </div>
@@ -748,8 +796,12 @@ export function CmsPage() {
               <Loader2 size={22} className="mx-auto animate-spin text-primary" />
             </div>
           ) : pages.length === 0 ? (
-            <div className="p-10 text-center">
-              <p className="text-[13px] text-muted-foreground">No pages found.</p>
+            <div className="p-15 text-center">
+              <Globe size={32} className="mx-auto mb-3 text-muted-foreground" />
+              <p className="mb-4 text-sm text-muted-foreground">No pages found</p>
+              <Button size="sm" onClick={() => { setEditPage(undefined); setShowPageModal(true); }} className="gap-1.5">
+                <Plus size={13} /> Create first page
+              </Button>
             </div>
           ) : (
             pages.map((p, i) => (
@@ -764,8 +816,16 @@ export function CmsPage() {
                   <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
                     <Globe size={15} className="text-[#a78bfa]" />
                   </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-foreground capitalize">{p.title || p.slug}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[13px] font-medium text-foreground capitalize">{p.title || p.slug}</p>
+                      {!isCorePage(p.slug) && (
+                        <span className="shrink-0 rounded bg-sky-500/[0.12] px-1.25 py-0.25 text-[9px] font-bold text-sky-500">CUSTOM</span>
+                      )}
+                      {p.isPublished === false && (
+                        <span className="shrink-0 rounded bg-muted px-1.25 py-0.25 text-[9px] font-bold text-muted-foreground">DRAFT</span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-muted-foreground">
                       /{p.slug}
                       {p.updatedAt && ` · Last updated ${new Date(p.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
@@ -773,14 +833,31 @@ export function CmsPage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setEditPage(p); setShowPageModal(true); }}
-                  className="gap-1.5 border-primary/20 bg-primary/[0.06] text-[#a78bfa] hover:bg-primary/15 hover:text-[#a78bfa]"
-                >
-                  <Pencil size={12} /> Edit
-                </Button>
+                <div className="flex gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setEditPage(p); setShowPageModal(true); }}
+                    className="gap-1.5 border-primary/20 bg-primary/[0.06] text-[#a78bfa] hover:bg-primary/15 hover:text-[#a78bfa]"
+                  >
+                    <Pencil size={12} /> Edit
+                  </Button>
+                  {/* Core structural pages (about, contact, ...) each have a
+                      real, hardcoded Next.js route — deleting the content
+                      would break a live page, so no delete here. Only
+                      admin-created custom pages (rendered through the
+                      generic [slug] catch-all) can be removed. */}
+                  {!isCorePage(p.slug) && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setDeleteTarget(p)}
+                      className="border-destructive/20 bg-destructive/[0.06] text-destructive hover:bg-destructive/15 hover:text-destructive"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -798,7 +875,7 @@ export function CmsPage() {
         />
       )}
 
-      {showPageModal && editPage && (
+      {showPageModal && (
         <PageEditModal
           item={editPage}
           onClose={() => { setShowPageModal(false); setEditPage(undefined); }}
@@ -809,14 +886,14 @@ export function CmsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this blog post?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this {deleteTarget?.type === "blog" ? "blog post" : "page"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget && `"${deleteTarget.title}" will be moved to trash (soft-deleted) — it disappears from the site immediately but isn't permanently gone.`}
+              {deleteTarget && `"${deleteTarget.title}" will be moved to trash (soft-deleted)${deleteTarget.type === "page" ? ` — its page at /${deleteTarget.slug} will stop loading immediately` : " — it disappears from the site immediately"}, but isn't permanently gone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeletePost} className="bg-destructive text-white hover:bg-destructive/90">
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
