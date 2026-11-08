@@ -29,9 +29,16 @@ type-adaptive detail page described in `rules.md`. This replaces:
   enforced server-side per `{user_id, userservice_id}`).
 - `activity_logs`: admin-only — a filterable activity feed page, similar
   shape to the existing admin usage/audit pages.
-- `cms` merge: likely no visible frontend change at all if the API routes
-  keep the same shape (`GET /cms/pages/:slug`, `GET /cms/blog`) — confirm
-  with the backend phase before assuming frontend work is needed here.
+- **`cms` merge is ✅ done, merged to `main`, 2026-11-08** — turned out to
+  need real frontend work, not "likely no visible change" as this section
+  originally guessed: the backend API itself was redesigned (not kept
+  backward-compatible), so every public page's fetch call and the whole
+  admin editor (`dashboard/cms-page.tsx`) were rewritten against the new
+  `/cms/content/...` and `/cms/admin/...` routes. Also added real page
+  *creation* (not just editing the 7 fixed slugs) via a generic catch-all
+  route, and FAQ sections on any page, not just the dedicated `/faq`
+  page. See `traces.md` for the full breakdown — several entries, newest
+  first.
 
 ## Phase 7 (agents/automations) — frontend follow-on
 Build the "Run History" tab for the agent/automation side of "My Services,"
