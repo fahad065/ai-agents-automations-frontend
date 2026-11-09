@@ -11,6 +11,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { navigateToAction } from "@/lib/notification-nav";
 
 interface Notification {
   _id: string;
@@ -155,7 +156,7 @@ export function NotificationsPage() {
                 )}
                 onClick={() => {
                   if (!notif.isRead) markAsRead(notif._id);
-                  if (notif.actionUrl) router.push(notif.actionUrl);
+                  if (notif.actionUrl) navigateToAction(notif.actionUrl, router);
                 }}
               >
                 {/* Icon */}

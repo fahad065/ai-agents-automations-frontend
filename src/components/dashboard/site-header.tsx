@@ -8,6 +8,7 @@ import { Bell, Settings, Sun, Moon, LogOut, User as UserIcon, CreditCard, KeyRou
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
+import { navigateToAction } from "@/lib/notification-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,7 +137,10 @@ export function SiteHeader() {
                 <DropdownMenuItem
                   key={n._id}
                   className="flex-col items-start gap-0.5"
-                  onClick={() => !n.isRead && markAsRead(n._id)}
+                  onClick={() => {
+                    if (!n.isRead) markAsRead(n._id);
+                    if (n.actionUrl) navigateToAction(n.actionUrl, router);
+                  }}
                 >
                   <span className="flex w-full items-center gap-1.5 text-sm font-medium">
                     <span>{n.icon || notifIcon[n.type] || "🔔"}</span>

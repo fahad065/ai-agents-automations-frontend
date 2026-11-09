@@ -4,6 +4,51 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-09 — Activity Logs page added; two real Notifications bugs fixed
+
+Companion to the backend's matching entry (read that one first for the
+`activity_logs` design) — this is the frontend half: a new page, plus
+two Notifications bugs caught while building the redirect-after-login
+flow the user specifically asked about.
+
+- **New `/dashboard/activity-logs` page** (`activity-logs-page.tsx`),
+  nav item added to `src/config/nav.ts` under "Dashboard" — **not**
+  `adminOnly`, since every user sees their own feed and only admin gets
+  the filters + every-account view, same data source, branched client-
+  side on `user.role`. Server-paginated (`page`/`limit`, same ChevronLeft/
+  Right pattern as `cms-page.tsx`'s blog list) — this was deliberate per
+  the user's explicit requirement that this scale to "tons of records"
+  without fetching everything client-side.
+- **Real bug #1, the one the user described directly**: "an user
+  receives an email... clicks... should sign in and then redirect to
+  particular url" — traced to `src/proxy.ts` (the dashboard auth-gate
+  middleware) setting `?from=<path>` on the redirect to `/auth/login`,
+  while `login-form.tsx`/`signup-form.tsx` only ever read `?redirect=`
+  (the same param the Google OAuth `state` round-trip and the chatbot
+  autostart flow already use end to end). Every protected-URL click
+  while logged out silently lost its destination and always landed back
+  on the plain `/dashboard` post-login. Fixed in `proxy.ts`: now sets
+  `redirect` to the full original path **plus its query string** (e.g.
+  `/dashboard/chatbots/abc?tab=conversations`, not just the bare path —
+  the old code dropped query params too, a second half of the same bug).
+- **Real bug #2, found while auditing `actionUrl` end to end**:
+  `notifications-page.tsx`'s click handler called `router.push(notif.
+  actionUrl)` unconditionally — but `actionUrl` is sometimes a real
+  external link (`onPipelineComplete`'s YouTube URL), and Next's router
+  silently mishandles an absolute external URL passed to `push()`. New
+  shared `src/lib/notification-nav.ts` (`navigateToAction()`) checks for
+  `http(s)://` and opens those in a new tab instead.
+- **Real bug #3, same audit**: `site-header.tsx`'s notification-bell
+  dropdown (the one in the top nav, separate from the full
+  `/dashboard/notifications` page) didn't navigate anywhere on click at
+  all — it only marked the notification as read. Wired it to the same
+  `navigateToAction()` helper.
+
+**Verified**: `tsc --noEmit` clean, `next build` clean, 44 routes (up
+from 43 — the new `/dashboard/activity-logs`).
+
+---
+
 ## 2026-11-08 (even later) — Real slug mismatch found and fixed — code now matches what's actually saved
 
 User tested `/cookies` locally and got a 404 from the backend. Root
