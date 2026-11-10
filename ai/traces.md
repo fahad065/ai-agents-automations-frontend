@@ -4,6 +4,35 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-10 (later same day) — Delete Account dialog rebuilt: mode picker (Instant vs 8-day), typed confirm for Instant
+
+Companion to the backend's matching entry — read that one first. The
+single confirm `AlertDialog` from the first version is now a real
+`Dialog` with a two-card mode picker:
+- **"Delete in 8 days (recommended)"** — same plain-confirm flow as
+  before, just relabeled with the corrected day-count and the day-7
+  reminder mentioned explicitly in the card's own description.
+- **"Delete instantly"** — selecting it reveals a typed confirmation
+  input (`Type DELETE to confirm`); the destructive button stays
+  disabled until the text matches exactly. On success, redirects to
+  `/auth/login` after a short delay instead of showing the pending-
+  deletion banner, since there's nothing pending — it already happened.
+
+`requestDeletion()` now posts `{mode}` and branches its own success
+handling per mode (instant → sign out and redirect; scheduled → show
+the countdown banner, same as before). The Deactivate Account card's
+description was also corrected to state what actually happens — "you
+won't be able to log back in... email hello@logicmate.io to have an
+admin reactivate it" — replacing the vaguer "reversible by contacting
+support" from the first draft, since this behavior was already live on
+the backend (`AuthService.login()` already blocked `isActive: false`
+accounts) and just hadn't been described accurately in the UI copy.
+
+**Verified**: `tsc --noEmit` clean, `next build` clean — no new routes,
+same `/dashboard/settings` Security tab.
+
+---
+
 ## 2026-11-10 — Account deletion + data export UI, in Settings → Security
 
 Companion to the backend's matching entry (read that one first for the

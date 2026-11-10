@@ -10,7 +10,7 @@ import {
   Bell, Shield, Save,
   Loader2, AlertCircle, AlertTriangle,
   Mail, Bold, Italic, Underline, List, ListOrdered, Link, Eye, EyeOff, Send,
-  Download, Ban, Trash2,
+  Download, Ban, Trash2, Clock, Zap, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -49,7 +50,9 @@ export function SettingsPage() {
   const [deactivating, setDeactivating] = useState(false);
 
   const [exporting, setExporting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<"instant" | "scheduled" | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [cancellingDeletion, setCancellingDeletion] = useState(false);
   const [pendingDeletionAt, setPendingDeletionAt] = useState<string | null>(null);
@@ -151,12 +154,18 @@ export function SettingsPage() {
   };
 
   const requestDeletion = async () => {
+    if (!deleteMode) return;
     setDeleting(true);
     try {
-      const res = await api.post("/account/deletion/request");
-      setPendingDeletionAt(res.data?.scheduledFor || null);
-      setShowDeleteConfirm(false);
-      toast.success("Deletion requested — check your email for the deadline");
+      const res = await api.post("/account/deletion/request", { mode: deleteMode });
+      if (deleteMode === "instant") {
+        toast.success("Account deleted. Signing you out…");
+        setTimeout(() => { window.location.href = "/auth/login"; }, 1500);
+      } else {
+        setPendingDeletionAt(res.data?.scheduledFor || null);
+        setShowDeleteDialog(false);
+        toast.success("Deletion requested — check your email for the deadline");
+      }
     } catch {
       toast.error("Failed to request account deletion");
     }
@@ -397,7 +406,7 @@ export function SettingsPage() {
                     <div>
                       <p className="text-sm font-medium text-foreground">Deactivate Account</p>
                       <p className="text-xs text-muted-foreground">
-                        Disables your account and cancels all active subscriptions. Reversible by contacting support.
+                        Instantly disables your account — you won't be able to log back in. Your data stays as-is. Email hello@logicmate.io to have an admin reactivate it.
                       </p>
                     </div>
                     <Button variant="destructive" size="sm" onClick={() => setShowDeactivateConfirm(true)}>
@@ -410,10 +419,15 @@ export function SettingsPage() {
                       <div>
                         <p className="text-sm font-medium text-foreground">Delete Account Permanently</p>
                         <p className="text-xs text-muted-foreground">
-                          Schedules full deletion of your account and all data. You'll have 7 working days to download a backup before it's permanent.
+                          Permanently deletes your account and data — either right away, or on a delay so you can back up first.
                         </p>
                       </div>
-                      <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setShowDeleteConfirm(true)}>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => { setDeleteMode(null); setDeleteConfirmText(""); setShowDeleteDialog(true); }}
+                      >
                         <Trash2 className="size-3.5" /> Delete Account
                       </Button>
                     </div>
@@ -446,26 +460,79 @@ export function SettingsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
-            <AlertDialogDescription>
-              We'll email you a confirmation with the exact date (7 working days from now). Your account stays fully usable until then — download your backup from this page before it runs. After that date, LogicMate permanently deletes your chatbots, knowledge base, conversations, API keys and subscriptions, and cannot recover them. Billing records are kept, anonymized, for our own accounting records only.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={requestDeletion}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => { setShowDeleteDialog(open); if (!open) { setDeleteMode(null); setDeleteConfirmText(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete your account permanently</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => setDeleteMode("scheduled")}
+              className={cn(
+                "flex items-start gap-3 rounded-lg border px-4 py-3.5 text-left transition-colors",
+                deleteMode === "scheduled" ? "border-primary bg-primary/[0.06]" : "hover:bg-muted/40",
+              )}
             >
-              {deleting ? "Requesting…" : "Yes, delete my account"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Delete in 8 days (recommended)</p>
+                <p className="text-xs text-muted-foreground">
+                  Your account keeps working normally. We'll email you now, remind you once the day before, then permanently delete everything on day 8. Cancel any time before then from this page.
+                </p>
+              </div>
+              {deleteMode === "scheduled" && <CheckCircle2 className="ml-auto size-4 shrink-0 text-primary" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDeleteMode("instant")}
+              className={cn(
+                "flex items-start gap-3 rounded-lg border px-4 py-3.5 text-left transition-colors",
+                deleteMode === "instant" ? "border-destructive bg-destructive/[0.06]" : "hover:bg-muted/40",
+              )}
+            >
+              <Zap className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Delete instantly</p>
+                <p className="text-xs text-muted-foreground">
+                  Everything is deleted right now, immediately. There is no waiting period and this cannot be undone or cancelled.
+                </p>
+              </div>
+              {deleteMode === "instant" && <CheckCircle2 className="ml-auto size-4 shrink-0 text-destructive" />}
+            </button>
+
+            {deleteMode === "instant" && (
+              <div className="mt-1 rounded-lg border border-destructive/25 bg-destructive/[0.04] px-4 py-3.5">
+                <p className="text-xs font-medium text-destructive">
+                  This deletes everything immediately and cannot be reversed. Type DELETE below to confirm.
+                </p>
+                <Input
+                  autoFocus
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  className="mt-2.5"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={requestDeletion}
+              disabled={deleting || !deleteMode || (deleteMode === "instant" && deleteConfirmText !== "DELETE")}
+            >
+              {deleting ? "Processing…" : deleteMode === "instant" ? "Delete Instantly" : "Schedule Deletion"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
