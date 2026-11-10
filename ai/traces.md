@@ -4,6 +4,42 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-10 — Account deletion + data export UI, in Settings → Security
+
+Companion to the backend's matching entry (read that one first for the
+confirmed policy: 7-working-day notice, account stays usable throughout,
+billing anonymized not deleted, export covers everything). This is the
+UI half, all in the existing Danger Zone section of `settings-page.tsx`
+— no new page, since the user specifically pointed at "there is an
+option to deactivate the account... we can utilize or implement
+remaining functionality here."
+
+- **"Download My Data"** card — `GET /account/export` with
+  `responseType: "blob"`, triggers a real browser download
+  (`logicmate-my-data.xlsx`) via a throwaway `<a download>` element.
+  Sits above the existing Deactivate card since it's the thing a user
+  should do *before* either deactivating or deleting.
+- **"Delete Account Permanently"** card — only rendered when no deletion
+  is already pending. Confirm dialog states the policy in plain language
+  (7 working days, account stays usable, billing kept-anonymized,
+  cancel-anytime) before calling `POST /account/deletion/request`.
+- **Pending-deletion banner** — once `GET /account/deletion/status`
+  returns a `pendingDeletionAt`, the Delete card is replaced by a red
+  banner stating the exact date and a "Cancel Deletion Request" button
+  (`POST /account/deletion/cancel`). Fetched alongside the existing
+  notification-preferences load on mount, not a separate loading state.
+- **Deliberately not built**: a global dashboard-wide banner (like
+  `verify-email-banner.tsx`) for the pending-deletion state — the user's
+  ask was scoped to the Settings page itself, and this would be the
+  first thing to add if a future session decides account-wide visibility
+  matters more than Settings-only.
+
+**Verified**: `tsc --noEmit` clean, `next build` clean, 44 routes
+(unchanged — no new route, just the existing `/dashboard/settings`
+page's Security tab extended).
+
+---
+
 ## 2026-11-09 — Activity Logs page added; two real Notifications bugs fixed
 
 Companion to the backend's matching entry (read that one first for the

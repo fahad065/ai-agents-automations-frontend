@@ -10,6 +10,7 @@ import {
   Bell, Shield, Save,
   Loader2, AlertCircle, AlertTriangle,
   Mail, Bold, Italic, Underline, List, ListOrdered, Link, Eye, EyeOff, Send,
+  Download, Ban, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,12 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
+
+  const [exporting, setExporting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [cancellingDeletion, setCancellingDeletion] = useState(false);
+  const [pendingDeletionAt, setPendingDeletionAt] = useState<string | null>(null);
 
   const [notifs, setNotifs] = useState({
     notifyOnComplete: true, notifyOnFail: true,
@@ -99,7 +106,7 @@ export function SettingsPage() {
     dropdownIndicator: (base: any) => ({ ...base, color: colors.textMuted }),
   };
 
-  useEffect(() => { fetchNotifPrefs(); }, []);
+  useEffect(() => { fetchNotifPrefs(); fetchDeletionStatus(); }, []);
 
   const fetchNotifPrefs = async () => {
     setLoading(true);
@@ -115,6 +122,57 @@ export function SettingsPage() {
       });
     } catch {}
     setLoading(false);
+  };
+
+  const fetchDeletionStatus = async () => {
+    try {
+      const res = await api.get("/account/deletion/status");
+      setPendingDeletionAt(res.data?.pendingDeletionAt || null);
+    } catch {}
+  };
+
+  const downloadMyData = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get("/account/export", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "logicmate-my-data.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Your data export is downloading");
+    } catch {
+      toast.error("Failed to export your data");
+    }
+    setExporting(false);
+  };
+
+  const requestDeletion = async () => {
+    setDeleting(true);
+    try {
+      const res = await api.post("/account/deletion/request");
+      setPendingDeletionAt(res.data?.scheduledFor || null);
+      setShowDeleteConfirm(false);
+      toast.success("Deletion requested — check your email for the deadline");
+    } catch {
+      toast.error("Failed to request account deletion");
+    }
+    setDeleting(false);
+  };
+
+  const cancelDeletionRequest = async () => {
+    setCancellingDeletion(true);
+    try {
+      await api.post("/account/deletion/cancel");
+      setPendingDeletionAt(null);
+      toast.success("Deletion request cancelled");
+    } catch {
+      toast.error("Failed to cancel deletion request");
+    }
+    setCancellingDeletion(false);
   };
 
   const saveNotifications = async () => {
@@ -296,17 +354,70 @@ export function SettingsPage() {
                   <h2 className="flex items-center gap-1.5 text-base font-semibold text-destructive">
                     <AlertTriangle className="size-4" /> Danger Zone
                   </h2>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] px-4 py-3.5">
+
+                  {pendingDeletionAt && (
+                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/[0.06] px-4 py-3.5">
+                      <p className="flex items-center gap-1.5 text-sm font-semibold text-destructive">
+                        <AlertTriangle className="size-3.5" /> Account deletion scheduled
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Your account and all its data will be permanently deleted on{" "}
+                        <strong className="text-foreground">
+                          {new Date(pendingDeletionAt).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                        </strong>
+                        . Download your backup before then — after this date, we can't recover it.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 gap-1.5"
+                        onClick={cancelDeletionRequest}
+                        disabled={cancellingDeletion}
+                      >
+                        {cancellingDeletion ? <Loader2 className="size-3.5 animate-spin" /> : <Ban className="size-3.5" />}
+                        {cancellingDeletion ? "Cancelling…" : "Cancel Deletion Request"}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3.5">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Download My Data</p>
+                      <p className="text-xs text-muted-foreground">
+                        Export everything we have on your account — chatbots, knowledge base, subscriptions and billing history — as an Excel file.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadMyData} disabled={exporting}>
+                      {exporting ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+                      {exporting ? "Preparing…" : "Download My Data"}
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] px-4 py-3.5">
                     <div>
                       <p className="text-sm font-medium text-foreground">Deactivate Account</p>
                       <p className="text-xs text-muted-foreground">
-                        Disables your account and cancels all active subscriptions.
+                        Disables your account and cancels all active subscriptions. Reversible by contacting support.
                       </p>
                     </div>
                     <Button variant="destructive" size="sm" onClick={() => setShowDeactivateConfirm(true)}>
                       Deactivate Account
                     </Button>
                   </div>
+
+                  {!pendingDeletionAt && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] px-4 py-3.5">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Delete Account Permanently</p>
+                        <p className="text-xs text-muted-foreground">
+                          Schedules full deletion of your account and all data. You'll have 7 working days to download a backup before it's permanent.
+                        </p>
+                      </div>
+                      <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setShowDeleteConfirm(true)}>
+                        <Trash2 className="size-3.5" /> Delete Account
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -330,6 +441,27 @@ export function SettingsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deactivating ? "Deactivating…" : "Deactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              We'll email you a confirmation with the exact date (7 working days from now). Your account stays fully usable until then — download your backup from this page before it runs. After that date, LogicMate permanently deletes your chatbots, knowledge base, conversations, API keys and subscriptions, and cannot recover them. Billing records are kept, anonymized, for our own accounting records only.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={requestDeletion}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Requesting…" : "Yes, delete my account"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
