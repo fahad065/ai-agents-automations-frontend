@@ -4,6 +4,37 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-10 (even later) — Multi-provider AI (OpenAI/Claude/Gemini) for chatbots — companion to backend's `apikeys` rebuild
+
+Companion to the backend's matching entry — read that one first for the
+full design discussion (provider always explicit, model defaults to
+"auto", and the real finding that agents/automations don't use BYOK at
+all yet — deferred, chatbots went first per the user's own sequencing).
+
+- `api-keys-page.tsx`'s `PROVIDERS` list gained Anthropic and Gemini
+  entries (icon/color/helpUrl/placeholder), reused automatically
+  everywhere else in the file that already looks up `PROVIDERS.find(...)`
+  — no separate table to keep in sync.
+- `chatbot-config-page.tsx`: new `AiModelConfig` type + `chatModelConfig`/
+  `embeddingModelConfig` on the `Chatbot` interface and `overview` form
+  state, round-tripped through the existing `PUT /chatbots/:id` (no new
+  route). New "AI Model" `Section` on the Overview tab — a provider
+  dropdown + model text input (placeholder "auto") for chat, and a
+  separate pair for embeddings (dropdown only offers OpenAI/Gemini, with
+  a one-line note on why Anthropic isn't an option there).
+- The OpenAI-only key-gate (`AddOpenAiKeyDialog`, the dialog that prompts
+  for a key before setup if one's missing) was generalized to
+  `AddProviderKeyDialog` — takes whichever provider the bot is actually
+  configured for and missing a key on. `checkOpenaiKey()` →
+  `checkRequiredKeys()` now checks both the chat provider's key and the
+  embedding provider's key (they can differ), surfacing the chat one
+  first if both are missing since that's the more severe gap (no reply
+  at all vs. just unranked knowledge).
+
+**Verified**: `tsc --noEmit` + `npm run build` clean, all 43 routes.
+
+---
+
 ## 2026-11-10 (later same day) — Delete Account dialog rebuilt: mode picker (Instant vs 8-day), typed confirm for Instant
 
 Companion to the backend's matching entry — read that one first. The

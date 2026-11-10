@@ -32,7 +32,7 @@ interface ApiKey {
   _id: string;
   provider: string;
   label: string;
-  isActive: boolean;
+  status: "active" | "inactive";
   lastUsedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -40,7 +40,9 @@ interface ApiKey {
 
 const PROVIDERS = [
   { provider: "atlas_seedance", label: "Atlas Cloud - Seedance", description: "AI video clip generation via Seedance v1.5 Pro", icon: "🎬", color: "#7c3aed", required: true, helpUrl: "https://atlascloud.ai", placeholder: "sk-atlas-..." },
-  { provider: "openai", label: "OpenAI", description: "TTS voiceover generation (onyx voice)", icon: "🎙️", color: "#22c55e", required: true, helpUrl: "https://platform.openai.com/api-keys", placeholder: "sk-..." },
+  { provider: "openai", label: "OpenAI", description: "TTS voiceover generation (onyx voice), chatbot replies and knowledge-base embeddings", icon: "🎙️", color: "#22c55e", required: true, helpUrl: "https://platform.openai.com/api-keys", placeholder: "sk-..." },
+  { provider: "anthropic", label: "Anthropic (Claude)", description: "Alternate chatbot reply model — pick it as your bot's chat provider below", icon: "✦", color: "#d97757", required: false, helpUrl: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-..." },
+  { provider: "gemini", label: "Google Gemini", description: "Alternate chatbot reply/embedding model — pick it as your bot's provider below", icon: "✨", color: "#4285f4", required: false, helpUrl: "https://aistudio.google.com/apikey", placeholder: "AIza..." },
   { provider: "youtube_oauth", label: "YouTube OAuth", description: "Upload and schedule videos to your YouTube channel", icon: "📺", color: "#ef4444", required: true, helpUrl: "https://console.cloud.google.com", placeholder: "OAuth credentials JSON or token" },
   { provider: "youtube_data", label: "YouTube Data API", description: "Trend discovery and video analytics", icon: "📊", color: "#f59e0b", required: false, helpUrl: "https://console.cloud.google.com", placeholder: "AIza..." },
   { provider: "elevenlabs", label: "ElevenLabs", description: "Premium TTS fallback voice generation", icon: "🔊", color: "#3b82f6", required: false, helpUrl: "https://elevenlabs.io", placeholder: "el-..." },
@@ -231,7 +233,7 @@ export function ApiKeysPage() {
     return keys.filter((k) => {
       const pInfo = PROVIDERS.find((p) => p.provider === k.provider);
       const matchesSearch = !q || k.label.toLowerCase().includes(q) || (pInfo?.label || k.provider).toLowerCase().includes(q);
-      const matchesStatus = statusFilter.has(k.isActive ? "active" : "inactive");
+      const matchesStatus = statusFilter.has(k.status === "inactive" ? "inactive" : "active");
       return matchesSearch && matchesStatus;
     });
   }, [keys, search, statusFilter]);
@@ -410,7 +412,7 @@ export function ApiKeysPage() {
                           <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-600">Valid</Badge>
                         ) : testResult === "error" ? (
                           <Badge className="border-destructive/25 bg-destructive/10 text-destructive">Failed</Badge>
-                        ) : key.isActive ? (
+                        ) : key.status !== "inactive" ? (
                           <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-600">Active</Badge>
                         ) : (
                           <Badge variant="secondary">Inactive</Badge>

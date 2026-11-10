@@ -67,6 +67,15 @@ interface Outlet {
   notes?: string;
 }
 
+type AiProvider = "openai" | "anthropic" | "gemini";
+
+interface AiModelConfig {
+  provider: AiProvider;
+  model: string; // "auto" or an explicit provider model id
+}
+
+const EMPTY_AI_MODEL_CONFIG: AiModelConfig = { provider: "openai", model: "auto" };
+
 interface Chatbot {
   _id: string;
   userId: string;
@@ -84,6 +93,8 @@ interface Chatbot {
   channels: Channels;
   outlets?: Outlet[];
   billing: Billing;
+  chatModelConfig?: AiModelConfig;
+  embeddingModelConfig?: AiModelConfig;
   createdAt: string;
   updatedAt?: string;
 }
@@ -284,29 +295,41 @@ const copyText = async (text: string, label: string) => {
 const fieldLabel = (text: string) => <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">{text}</Label>;
 
 // ── OpenAI key gate dialog ───────────────────────────────────
+// Display info per BYOK provider a chatbot can be configured to use — kept
+// local to this file rather than shared with api-keys-page.tsx's own
+// (larger) PROVIDERS list, since this one only needs the 3 chat/embedding-
+// capable providers and their key-entry copy, not the full catalog.
+const AI_PROVIDER_INFO: Record<AiProvider, { label: string; placeholder: string; helpUrl: string }> = {
+  openai: { label: "OpenAI", placeholder: "sk-...", helpUrl: "https://platform.openai.com/api-keys" },
+  anthropic: { label: "Anthropic (Claude)", placeholder: "sk-ant-...", helpUrl: "https://console.anthropic.com/settings/keys" },
+  gemini: { label: "Google Gemini", placeholder: "AIza...", helpUrl: "https://aistudio.google.com/apikey" },
+};
+
 // LogicMate is bring-your-own-key — a chatbot can't embed a knowledge base
-// or answer a single message without its owner's own OpenAI key on file
-// (no platform-wide fallback, see backend CLAUDE.md's BYOK section). Rather
-// than let someone build out a whole bot and only discover that at chat
-// time, this prompts for the key up front, before any setup work.
-function AddOpenAiKeyDialog({ ownerId, forOtherUser, onClose, onSaved }: {
-  ownerId: string; forOtherUser: boolean; onClose: () => void; onSaved: () => void;
+// or answer a single message without its owner's own key, for whichever
+// provider the bot is configured to use (no platform-wide fallback, see
+// backend CLAUDE.md's BYOK section). Rather than let someone build out a
+// whole bot and only discover that at chat time, this prompts for the key
+// up front, before any setup work.
+function AddProviderKeyDialog({ provider, ownerId, forOtherUser, onClose, onSaved }: {
+  provider: AiProvider; ownerId: string; forOtherUser: boolean; onClose: () => void; onSaved: () => void;
 }) {
   const [keyValue, setKeyValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const info = AI_PROVIDER_INFO[provider];
 
   const handleSave = async () => {
-    if (!keyValue.trim()) { setError("Enter an OpenAI API key"); return; }
+    if (!keyValue.trim()) { setError(`Enter a ${info.label} API key`); return; }
     setSaving(true); setError("");
     try {
       await api.post("/api-keys", {
-        provider: "openai",
-        label: "OpenAI",
+        provider,
+        label: info.label,
         key: keyValue.trim(),
         userId: forOtherUser ? ownerId : undefined,
       });
-      toast.success("OpenAI key saved");
+      toast.success(`${info.label} key saved`);
       onSaved();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to save key");
@@ -318,27 +341,27 @@ function AddOpenAiKeyDialog({ ownerId, forOtherUser, onClose, onSaved }: {
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add an OpenAI API key</DialogTitle>
+          <DialogTitle>Add a {info.label} API key</DialogTitle>
         </DialogHeader>
         <p className="-mt-2 text-xs leading-relaxed text-muted-foreground">
           {forOtherUser
-            ? "This client needs their own OpenAI key on file before their chatbot can embed knowledge or reply — paste it here to add it to their account."
-            : "Your chatbot needs an OpenAI key on file before it can embed its knowledge base or reply to customers."}
+            ? `This client needs their own ${info.label} key on file before their chatbot can embed knowledge or reply — paste it here to add it to their account.`
+            : `Your chatbot needs a ${info.label} key on file before it can embed its knowledge base or reply to customers.`}
         </p>
 
         <div className="flex flex-col gap-3">
           <div>
-            {fieldLabel("OpenAI API Key")}
+            {fieldLabel(`${info.label} API Key`)}
             <Input
               type="password"
               value={keyValue}
               onChange={(e) => setKeyValue(e.target.value)}
-              placeholder="sk-..."
+              placeholder={info.placeholder}
               onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
             />
           </div>
-          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-[#a78bfa]">
-            Get an API key from OpenAI →
+          <a href={info.helpUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#a78bfa]">
+            Get an API key from {info.label} →
           </a>
           {error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
@@ -386,6 +409,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   const emptyOverview = {
     name: "", description: "", persona: "", bookingUrl: "", language: "en" as "en" | "ar" | "both",
     fallbackMessage: "", fallbackMessage_ar: "", humanHandoff: false,
+    chatModelConfig: EMPTY_AI_MODEL_CONFIG as AiModelConfig,
+    embeddingModelConfig: EMPTY_AI_MODEL_CONFIG as AiModelConfig,
   };
   const [overview, setOverview] = useState(emptyOverview);
   // Baselines track the last-loaded/last-saved snapshot of each tab's editable
@@ -447,7 +472,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   // right after the bot loads so the prompt appears before any setup work,
   // whether the viewer is the client themselves or an admin configuring a
   // client's bot on their behalf.
-  const [openaiKeyMissing, setOpenaiKeyMissing] = useState(false);
+  const [missingKeyProvider, setMissingKeyProvider] = useState<AiProvider | null>(null);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
 
   useEffect(() => { fetchChatbot(); }, [id]);
@@ -467,21 +492,34 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, channels.website?.enabled, chatbot]);
 
-  // Checks the bot OWNER's OpenAI key (not the viewer's — an admin viewing
+  // Checks the bot OWNER's key for whichever provider(s) this bot is
+  // actually configured to use — chatModelConfig/embeddingModelConfig
+  // default to OpenAI, but may be Anthropic/Gemini (see backend CLAUDE.md's
+  // multi-provider BYOK section). Not the viewer's key — an admin viewing
   // a client's bot needs to know whether the client has one, not whether
-  // the admin does). Passing ?userId= is a no-op for a non-admin viewing
+  // the admin does. Passing ?userId= is a no-op for a non-admin viewing
   // their own bot since the backend only honors it for admins, so it's
   // always safe to pass the bot's userId here regardless of who's viewing.
-  const checkOpenaiKey = async (ownerId: string) => {
+  const checkRequiredKeys = async (bot: Chatbot) => {
+    const chatProvider = bot.chatModelConfig?.provider || "openai";
+    const embeddingProvider = bot.embeddingModelConfig?.provider || "openai";
     try {
-      const res = await api.get(`/api-keys?userId=${ownerId}`);
+      const res = await api.get(`/api-keys?userId=${bot.userId}`);
       const keys = res.data?.data || res.data || [];
-      const hasOpenAi = keys.some((k: any) => k.provider === "openai" && k.isActive !== false);
-      setOpenaiKeyMissing(!hasOpenAi);
-      setShowKeyDialog(!hasOpenAi);
+      const hasKey = (p: AiProvider) =>
+        keys.some((k: any) => k.provider === p && k.status !== "inactive");
+      // Chat reply is the more critical gap (no reply at all without it) —
+      // surface that first if both are missing.
+      const missing: AiProvider | null = !hasKey(chatProvider)
+        ? chatProvider
+        : !hasKey(embeddingProvider)
+          ? embeddingProvider
+          : null;
+      setMissingKeyProvider(missing);
+      setShowKeyDialog(!!missing);
     } catch {
       // Fail open — don't block setup over the check itself failing.
-      setOpenaiKeyMissing(false);
+      setMissingKeyProvider(null);
     }
   };
 
@@ -491,7 +529,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       const res = await api.get(`/chatbots/${id}`);
       const bot: Chatbot = res.data?.data || res.data;
       setChatbot(bot);
-      checkOpenaiKey(bot.userId);
+      checkRequiredKeys(bot);
       const freshOverview = {
         name: bot.name || "",
         description: bot.description || "",
@@ -501,6 +539,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage: bot.fallbackMessage || "",
         fallbackMessage_ar: bot.fallbackMessage_ar || "",
         humanHandoff: !!bot.humanHandoff,
+        chatModelConfig: bot.chatModelConfig || EMPTY_AI_MODEL_CONFIG,
+        embeddingModelConfig: bot.embeddingModelConfig || EMPTY_AI_MODEL_CONFIG,
       } as typeof emptyOverview;
       setOverview(freshOverview);
       setOverviewBaseline(freshOverview);
@@ -650,12 +690,14 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage: overview.fallbackMessage,
         fallbackMessage_ar: overview.fallbackMessage_ar,
         humanHandoff: overview.humanHandoff,
+        chatModelConfig: overview.chatModelConfig,
+        embeddingModelConfig: overview.embeddingModelConfig,
       });
       setOverviewBaseline(overview);
       toast.success("Chatbot updated");
       fetchChatbot();
-    } catch {
-      toast.error("Failed to save changes");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to save changes");
     }
     setOverviewSaving(false);
   };
@@ -783,14 +825,14 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
       <ChatbotTrialBanner billing={chatbot.billing} onGoToBilling={() => guardNavigate(() => setTab("billing"))} />
 
-      {/* Dismissed the OpenAI key dialog but it's still missing — keep a
+      {/* Dismissed the key dialog but a key is still missing — keep a
           quiet reminder visible instead of just letting it disappear. */}
-      {openaiKeyMissing && !showKeyDialog && (
+      {missingKeyProvider && !showKeyDialog && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3">
           <p className="text-[13px] text-foreground">
             {isAdmin && chatbot.userId !== (user as any)?._id
-              ? "This client hasn't added an OpenAI API key yet — the bot can't answer until they do."
-              : "Add your OpenAI API key to power this chatbot's knowledge base and replies."}
+              ? `This client hasn't added a ${AI_PROVIDER_INFO[missingKeyProvider].label} API key yet — the bot can't answer until they do.`
+              : `Add your ${AI_PROVIDER_INFO[missingKeyProvider].label} API key to power this chatbot's knowledge base and replies.`}
           </p>
           <Button
             size="sm"
@@ -907,6 +949,70 @@ export function ChatbotConfigPage({ id }: { id: string }) {
               <p className="mt-1.5 text-xs text-muted-foreground">
                 If a customer wants to book, the bot shares this link. Leave blank and it'll still take their name/phone/date & time in the conversation instead — your team just confirms manually.
               </p>
+            </div>
+          </Section>
+
+          <Section title="AI Model" icon={BotIcon}>
+            <p className="mb-3.5 text-xs text-muted-foreground">
+              Which BYOK provider powers this bot's replies and knowledge-base embeddings. The provider determines which of your own API keys gets billed — add it from the API Keys page first if you haven't. Model defaults to "Auto" (a sensible model for that provider); only override it if you know exactly which model you want.
+            </p>
+            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div>
+                {fieldLabel("Chat provider")}
+                <select
+                  value={overview.chatModelConfig.provider}
+                  onChange={(e) => setOverview((o) => ({
+                    ...o,
+                    chatModelConfig: { ...o.chatModelConfig, provider: e.target.value as AiProvider },
+                  }))}
+                  className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+              </div>
+              <div>
+                {fieldLabel("Chat model")}
+                <Input
+                  value={overview.chatModelConfig.model}
+                  onChange={(e) => setOverview((o) => ({
+                    ...o,
+                    chatModelConfig: { ...o.chatModelConfig, model: e.target.value || "auto" },
+                  }))}
+                  placeholder="auto"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <div>
+                {fieldLabel("Embedding provider")}
+                <select
+                  value={overview.embeddingModelConfig.provider}
+                  onChange={(e) => setOverview((o) => ({
+                    ...o,
+                    embeddingModelConfig: { ...o.embeddingModelConfig, provider: e.target.value as AiProvider },
+                  }))}
+                  className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Anthropic has no embeddings API — only OpenAI/Gemini can rank your knowledge base.
+                </p>
+              </div>
+              <div>
+                {fieldLabel("Embedding model")}
+                <Input
+                  value={overview.embeddingModelConfig.model}
+                  onChange={(e) => setOverview((o) => ({
+                    ...o,
+                    embeddingModelConfig: { ...o.embeddingModelConfig, model: e.target.value || "auto" },
+                  }))}
+                  placeholder="auto"
+                />
+              </div>
             </div>
           </Section>
 
@@ -1052,12 +1158,13 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         </div>
       </div>
 
-      {showKeyDialog && (
-        <AddOpenAiKeyDialog
+      {showKeyDialog && missingKeyProvider && (
+        <AddProviderKeyDialog
+          provider={missingKeyProvider}
           ownerId={chatbot.userId}
           forOtherUser={isAdmin && chatbot.userId !== (user as any)?._id}
           onClose={() => setShowKeyDialog(false)}
-          onSaved={() => { setOpenaiKeyMissing(false); setShowKeyDialog(false); }}
+          onSaved={() => checkRequiredKeys(chatbot)}
         />
       )}
     </div>
