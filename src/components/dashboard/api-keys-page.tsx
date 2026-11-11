@@ -49,6 +49,10 @@ const PROVIDERS = [
   { provider: "ollama", label: "Ollama", description: "Local LLM host URL (default: http://localhost:11434)", icon: "🧠", color: "#a78bfa", required: false, helpUrl: "https://ollama.ai", placeholder: "http://localhost:11434" },
 ];
 
+// Sentinel for the select's "Other" option — never sent to the backend,
+// just tells the dialog to show the free-text provider input instead.
+const CUSTOM_PROVIDER_VALUE = "__custom__";
+
 const PAGE_SIZE = 6;
 
 function formatDate(d?: string) {
@@ -67,6 +71,10 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // True once "Other" is picked from the dropdown — reveals a free-text
+  // input so a provider not in PROVIDERS can still be added. The backend
+  // normalizes whatever gets typed into a consistent slug before storing.
+  const [isCustomProvider, setIsCustomProvider] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -80,6 +88,7 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
       setKeyValue("");
       setError("");
       setShowKey(false);
+      setIsCustomProvider(false);
     }
   }, [open, existingKey]);
 
@@ -89,6 +98,17 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
     setProvider(p);
     const pInfo = PROVIDERS.find((x) => x.provider === p);
     if (pInfo && !existingKey) setLabel(pInfo.label);
+  };
+
+  const handleProviderSelect = (value: string) => {
+    if (value === CUSTOM_PROVIDER_VALUE) {
+      setIsCustomProvider(true);
+      setProvider("");
+      setLabel("");
+    } else {
+      setIsCustomProvider(false);
+      handleProviderChange(value);
+    }
   };
 
   const handleSave = async () => {
@@ -122,27 +142,36 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
         <div className="flex flex-col gap-4">
           {!existingKey && (
             <div className="flex flex-col gap-2">
-              <Label>Service / Provider</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <Label htmlFor="key-provider">Service / Provider</Label>
+              <select
+                id="key-provider"
+                value={isCustomProvider ? CUSTOM_PROVIDER_VALUE : provider}
+                onChange={(e) => handleProviderSelect(e.target.value)}
+                className="h-9 w-full cursor-pointer rounded-lg border bg-background px-3 text-sm text-foreground outline-none"
+              >
                 {PROVIDERS.map((p) => (
-                  <button
-                    key={p.provider}
-                    type="button"
-                    onClick={() => handleProviderChange(p.provider)}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${
-                      provider === p.provider ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
-                    }`}
-                  >
-                    <span className="text-base">{p.icon}</span>
-                    <span className="min-w-0">
-                      <span className={`block truncate text-xs font-semibold ${provider === p.provider ? "text-primary" : "text-foreground"}`}>
-                        {p.label}
-                      </span>
-                      {p.required && <span className="text-[10px] text-destructive">Required</span>}
-                    </span>
-                  </button>
+                  <option key={p.provider} value={p.provider}>
+                    {p.icon} {p.label}{p.required ? " (required)" : ""}
+                  </option>
                 ))}
-              </div>
+                <option value={CUSTOM_PROVIDER_VALUE}>🔑 Other — add a new provider</option>
+              </select>
+              {selectedProvider?.description && !isCustomProvider && (
+                <p className="text-xs text-muted-foreground">{selectedProvider.description}</p>
+              )}
+              {isCustomProvider && (
+                <div className="mt-1">
+                  <Input
+                    autoFocus
+                    value={provider}
+                    onChange={(e) => { setProvider(e.target.value); setLabel(e.target.value); }}
+                    placeholder="e.g. Stripe, Twilio, SendGrid"
+                  />
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    We'll save this as a new provider — type whatever service this key is for.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

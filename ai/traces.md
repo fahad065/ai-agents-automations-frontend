@@ -4,6 +4,27 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-11 — Add API Key dialog: dropdown + "Other" free-text provider
+
+Companion to the backend's matching entry — read that one first (the
+`provider` field is no longer enum-constrained, so any typed name is
+accepted and normalized).
+
+`api-keys-page.tsx`'s `KeyDialog` provider picker changed from a
+button-grid to a real `<select>` dropdown, per the user's explicit ask.
+Picking "Other — add a new provider" reveals a free-text `Input` instead
+(new `isCustomProvider` state) — typing into it sets both `provider` and
+`label` together, same auto-fill pattern known providers already used.
+Each known `<option>` is prefixed with its existing `PROVIDERS` emoji
+icon; "Other" is prefixed with 🔑, per a follow-up ask mid-build for icon
+parity. No change needed to the table/badge rendering — it already fell
+back to 🔑 for any provider not found in `PROVIDERS`, so a freshly-typed
+custom provider picks up the right icon automatically.
+
+**Verified**: `tsc --noEmit` + `npm run build` clean, all 43 routes.
+
+---
+
 ## 2026-11-10 (even later) — Multi-provider AI (OpenAI/Claude/Gemini) for chatbots — companion to backend's `apikeys` rebuild
 
 Companion to the backend's matching entry — read that one first for the
