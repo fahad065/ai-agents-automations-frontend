@@ -4,8 +4,13 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
 import dynamic from "next/dynamic";
-import { User, Save, Loader2, Moon, Sun } from "lucide-react";
+import { User, Save, Loader2, Moon, Sun, FileText, Upload, Trash2, Paperclip } from "lucide-react";
 import { toast } from "sonner";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ReactSelect = dynamic(() => import("react-select"), { ssr: false });
 
@@ -63,6 +68,44 @@ const GOALS = ["Grow YouTube channel", "Generate leads", "Build brand", "Passive
 const EXPERIENCE = ["Beginner", "Intermediate", "Advanced", "Expert"].map(e => ({ value: e, label: e }));
 const HEARD_ABOUT = ["Google Search", "YouTube", "Instagram", "Twitter/X", "Friend / Referral", "Reddit", "Other"].map(s => ({ value: s, label: s }));
 
+// Country-specific identity/business document suggestions for the Documents
+// section below. Any country not listed here still gets the generic set —
+// the Combobox is `creatable`, so a user who doesn't see a fitting preset
+// can always type their own and it's saved as-is.
+const DOCUMENT_TYPE_PRESETS: Record<string, string[]> = {
+  "United Arab Emirates": ["Emirates ID", "Passport", "UAE Visa / Residence Permit", "Trade License"],
+  Kenya: ["National ID", "Passport", "KRA PIN Certificate", "Business Registration Certificate"],
+  "Saudi Arabia": ["National ID (Iqama)", "Passport", "Commercial Registration"],
+  "United States": ["Driver's License", "Passport", "State ID", "EIN / Tax ID"],
+  "United Kingdom": ["Passport", "Driving Licence", "National Insurance Number"],
+  India: ["Aadhaar Card", "PAN Card", "Passport", "GST Registration Certificate"],
+  Pakistan: ["CNIC", "Passport", "NTN Certificate"],
+};
+const GENERIC_DOCUMENT_TYPES = ["Passport", "National ID", "Driving License", "Business Registration Certificate", "Tax Certificate"];
+
+function getDocumentTypeOptions(country: string): ComboboxOption[] {
+  const preset = DOCUMENT_TYPE_PRESETS[country] || [];
+  const merged = [...preset];
+  GENERIC_DOCUMENT_TYPES.forEach((g) => { if (!merged.includes(g)) merged.push(g); });
+  return merged.map((d) => ({ value: d, label: d }));
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface UploadedDocument {
+  _id: string;
+  documentType: string;
+  fileUrl: string;
+  fileType?: string;
+  fileSize?: number;
+  uploadedAt: string;
+}
+
 function Section({ title, icon: Icon, children, colors }: { title: string; icon: any; children: React.ReactNode; colors: any }) {
   return (
     <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden", marginBottom: "16px" }}>
@@ -86,6 +129,14 @@ export function ProfilePage() {
     primaryGoal: "", experienceLevel: "", heardAboutUs: "",
   });
 
+  const [documents, setDocuments] = useState<UploadedDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [docType, setDocType] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UploadedDocument | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const selectStyles = {
     control: (base: any) => ({ ...base, background: colors.bg, borderColor: colors.border, borderRadius: "8px", fontSize: "13px", minHeight: "38px", boxShadow: "none", "&:hover": { borderColor: "#7c3aed" } }),
     menu: (base: any) => ({ ...base, background: isDark ? "#1a1a1a" : "#ffffff", border: `1px solid ${colors.border}`, borderRadius: "8px", zIndex: 9999, position: "absolute" }),
@@ -98,7 +149,60 @@ export function ProfilePage() {
     dropdownIndicator: (base: any) => ({ ...base, color: colors.textMuted }),
   };
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => { fetchProfile(); fetchDocuments(); }, []);
+
+  const fetchDocuments = async () => {
+    setDocsLoading(true);
+    try {
+      const res = await api.get("/documents");
+      setDocuments(Array.isArray(res.data) ? res.data : []);
+    } catch {}
+    setDocsLoading(false);
+  };
+
+  const uploadDocument = async () => {
+    if (!docType.trim()) { toast.error("Select or enter a document type first"); return; }
+    if (!docFile) { toast.error("Choose a file to upload"); return; }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", docFile);
+      formData.append("documentType", docType.trim());
+      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${API_URL}/documents`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed");
+      }
+      const created = await res.json();
+      setDocuments((prev) => [created, ...prev]);
+      setDocType("");
+      setDocFile(null);
+      toast.success("Document uploaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to upload document");
+    }
+    setUploading(false);
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/documents/${deleteTarget._id}`);
+      setDocuments((prev) => prev.filter((d) => d._id !== deleteTarget._id));
+      toast.success("Document removed");
+    } catch {
+      toast.error("Failed to remove document");
+    }
+    setDeleting(false);
+    setDeleteTarget(null);
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -241,6 +345,91 @@ export function ProfilePage() {
             <SaveBtn />
           </Section>
 
+          <Section title="Documents" icon={FileText} colors={colors}>
+            <p style={{ fontSize: "12px", color: colors.textMuted, marginBottom: "14px" }}>
+              Upload identity or business documents for verification — this is entirely optional and you can add or remove documents any time.
+            </p>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "16px" }}>
+              <div style={{ flex: "1 1 220px", minWidth: "200px" }}>
+                {lbl("Document Type")}
+                <Combobox
+                  value={docType}
+                  onChange={setDocType}
+                  options={getDocumentTypeOptions(profile.country)}
+                  placeholder="Select document type..."
+                  searchPlaceholder="Search types..."
+                  creatable
+                  createRowLabel="Other — type your own"
+                  createInputPlaceholder="e.g. Residency Permit"
+                />
+              </div>
+              <div style={{ flex: "1 1 220px", minWidth: "200px" }}>
+                {lbl("File (JPG, PNG, WEBP, or PDF — max 10MB)")}
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                  style={{ ...inp, padding: "7px 10px" }}
+                />
+              </div>
+              <button onClick={uploadDocument} disabled={uploading} style={{
+                display: "flex", alignItems: "center", gap: "8px", padding: "9px 18px",
+                borderRadius: "8px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                color: "white", border: "none", cursor: uploading ? "not-allowed" : "pointer",
+                fontSize: "13px", fontWeight: 600, opacity: uploading ? 0.7 : 1,
+                whiteSpace: "nowrap", height: "38px",
+              }}>
+                {uploading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={14} />}
+                {uploading ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+
+            {docsLoading ? (
+              <div style={{ padding: "20px", textAlign: "center" }}>
+                <Loader2 size={18} color="#7c3aed" style={{ animation: "spin 1s linear infinite" }} />
+              </div>
+            ) : documents.length === 0 ? (
+              <p style={{ fontSize: "12px", color: colors.textMuted, padding: "14px 0" }}>
+                No documents uploaded yet.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {documents.map((doc) => (
+                  <div key={doc._id} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+                    padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: "9px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <Paperclip size={14} color={colors.textMuted} style={{ flexShrink: 0 }} />
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: 500, color: colors.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {doc.documentType}
+                        </p>
+                        <p style={{ fontSize: "11px", color: colors.textMuted }}>
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                          {doc.fileSize ? ` · ${formatFileSize(doc.fileSize)}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none", fontWeight: 500 }}>
+                        View
+                      </a>
+                      <button
+                        onClick={() => setDeleteTarget(doc)}
+                        aria-label="Delete document"
+                        style={{ display: "flex", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", color: colors.textMuted, padding: "4px" }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
           <Section title="Appearance" icon={isDark ? Moon : Sun} colors={colors}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: "9px" }}>
               <div>
@@ -252,6 +441,23 @@ export function ProfilePage() {
           </Section>
         </>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove &quot;{deleteTarget?.documentType}&quot;. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDocument} disabled={deleting} className="bg-destructive text-white hover:bg-destructive/90">
+              {deleting ? "Removing..." : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

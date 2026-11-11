@@ -377,3 +377,65 @@ a phase that needs frontend work (Phase 5, per
 `ai-agents-automations-backend/ai/implementation-guide.md`). Check that
 file's phase status, and this repo's own `rules.md`/`implementation-guide.md`,
 before starting any frontend task related to this redesign.
+
+## 2026-11-11 — Documents subsection added to the Profile page (not a separate route)
+
+User explicitly rejected a separate `/dashboard/documents` route/page for
+the new `documents` entity (see the backend repo's `ai/architecture.md`
+"documents" section for the schema/endpoints, already built and pushed
+before this change): *"I don't want separate URL like
+/dashboard/documents... it should be under profiles page... in UI
+perspective I just need only one page as profile, and under the same
+profile page we will have subsection called documents."*
+
+- `src/components/dashboard/profile-page.tsx` gained a new "Documents"
+  `Section`, placed between the existing "Content Preferences" and
+  "Appearance" sections — same inline-styled `Section`/`colors` pattern
+  as the rest of this file (this page was never part of the
+  Tailwind/shadcn admin-panel-revamp batches, so it stayed consistent
+  with its own existing convention rather than introducing a second
+  styling system mid-file). The database side is unchanged from what the
+  backend already built — a separate `documents` Mongo collection, not
+  an embedded array — this was purely a frontend routing/placement
+  correction, nothing about the data model needed to change.
+- Upload row: a `Combobox` (document type, `creatable`) + native file
+  input (accept jpg/png/webp/pdf) + an Upload button. `getDocumentTypeOptions(country)`
+  returns country-specific presets (UAE → Emirates ID/Trade License/etc,
+  Kenya → National ID/KRA PIN/etc, plus Saudi/US/UK/India/Pakistan) merged
+  with a generic fallback set (Passport/National ID/Driving
+  License/Business Registration Certificate/Tax Certificate) for any
+  other country — the Combobox's `creatable` "Other" row covers anything
+  not on either list, per the user's own stated requirement.
+- List of the user's existing documents below the upload row (type, date,
+  formatted file size, a "View" link to the file, a delete icon) — empty
+  state when there are none. Delete goes through a real `AlertDialog`
+  confirm (`deleteTarget` state), matching this whole project's
+  established "no `confirm()`, always a real dialog" convention, even on
+  this otherwise-inline-styled page (same precedent `modules-page.tsx`
+  set in an earlier phase: mixing a shadcn dialog into an inline-styled
+  page is already normal here).
+- The upload request is **plain `fetch` with `FormData`**, not the `api`
+  axios instance already imported in this file — `api` is an axios
+  instance created with a default `Content-Type: application/json`
+  header, which does not get discarded automatically for a `FormData`
+  body the way a bare `fetch`/XHR does, and would have broken the
+  multipart boundary. `GET`/`DELETE` on `/documents` still go through the
+  normal `api` instance, since those are plain JSON requests with no such
+  conflict.
+- **Still pending, not done by the user yet**: `BLOB_READ_WRITE_TOKEN`
+  needs to be added as a Railway env var on the backend for uploads to
+  actually work in production (flagged again here since this is the
+  frontend half of the same feature finally landing).
+- **Still deferred, not started**: the "first confirmed payment → one-time
+  nudge to upload a document" banner, reusing `ProfileCompletionBanner`
+  per the user's own instruction — blocked on `userservices`/invoicing
+  not existing yet, same as noted when the backend module was built.
+
+**Verified:** `tsc --noEmit` clean, `npm run build` clean (all 44 routes,
+including `/dashboard/profile`), and a Playwright pass against a mocked
+`GET/POST/DELETE /documents` and `GET /users/profile` confirmed: the
+Documents section renders in the correct position (between Content
+Preferences and Appearance, not a separate page), an existing document
+row displays correctly, the document-type Combobox shows the UAE presets
+for a UAE-country user, the delete `AlertDialog` opens with the right
+document name, and there's zero horizontal overflow at 390px.
