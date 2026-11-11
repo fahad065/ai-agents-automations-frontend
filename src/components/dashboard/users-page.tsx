@@ -154,7 +154,6 @@ function UserModal({ user, onClose, onSave }: {
                   value={form.role}
                   onChange={(v) => setForm(f => ({ ...f, role: v }))}
                   options={[{ value: "user", label: "User" }, { value: "admin", label: "Admin" }]}
-                  allowClear={false}
                 />
               </div>
 
@@ -203,7 +202,6 @@ function UserModal({ user, onClose, onSave }: {
                     { value: "free_forever", label: "Free Forever" },
                     { value: "expired", label: "Expired" },
                   ]}
-                  allowClear={false}
                 />
               </div>
 
@@ -356,7 +354,6 @@ export function UsersPage() {
             { value: "true", label: "Active" },
             { value: "false", label: "Inactive" },
           ]}
-          allowClear={false}
           className="min-w-[150px]"
         />
 
@@ -371,7 +368,6 @@ export function UsersPage() {
             { value: "free_forever", label: "Free Forever" },
             { value: "expired", label: "Expired" },
           ]}
-          allowClear={false}
           className="min-w-[160px]"
         />
 

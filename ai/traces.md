@@ -4,6 +4,18 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-11 (even later) — Combobox: two real bugs from the first pass, both user-reported
+
+User tested the new platform-wide Combobox and reported two things broken, both confirmed real and fixed.
+
+**1. The clear "X" was invisible almost everywhere.** Root cause: the first conversion pass set `allowClear={false}` on nearly every form-field Combobox (24 occurrences across 9 files) on the theory that "a required field with a default value has no none state to clear to." That was my own inference, not something asked for — the user's original ask was explicit and universal ("once user clicks on this icon, then it will clear selected option value from the dropdown"), no carve-out for required fields. Removed every `allowClear={false}` override (`sed` across all 9 files, confirmed zero remaining via grep) — the X now shows on every Combobox once something is selected, same as originally requested. CLAUDE.md's Dropdown convention section corrected to say so explicitly, so a future session doesn't reintroduce the same wrong inference.
+
+**2. The API Keys provider dropdown's "Other" option wasn't discoverable.** The first version's `creatable` mode only showed an "Add "<query>"" row once you'd already typed something that didn't match a known provider — nothing in the dropdown's default (unopened-search) state hinted that typing a custom value was even possible. User remembered an explicit, always-visible "Other" option from before (a real one existed pre-Combobox, as a literal `<option>`) and asked for it back. Rebuilt `Combobox`'s `creatable` mode: now an **always-visible** "Other — add a new one" row sits at the bottom of the list regardless of search text; selecting it swaps the popover to a dedicated `Input` + "Add" button (not just the search box) — closer to the original UX than the inline-typing version was. Prop names changed accordingly: `createLabel` (a function) → `createRowLabel` (static string) + `createInputPlaceholder`, updated at the one call site (`api-keys-page.tsx`).
+
+**Verified**: `tsc --noEmit` clean, `npm run build` clean (all 43 routes). Playwright against a clean rebuild + fresh server (avoided the known stale-`.next`/Turbopack chunk flake by rebuilding before testing): confirmed the "Other — add a new provider" row renders immediately on open with no typing required, clicking it reveals the dedicated input, submitting a custom value ("Stripe Payments") selects it correctly, and the clear "X" is now visible on that selection and correctly resets the field back to its placeholder when clicked.
+
+---
+
 ## 2026-11-11 (later) — Platform-wide dropdown convention: every native `<select>` converted to a searchable Combobox
 
 User asked for a standing rule, not a one-off: every dropdown in this codebase should open a searchable popover (search input + filtered list below, clear "X" on the right of the field), and this should apply to every future dropdown too, not just the API Keys one from earlier today.

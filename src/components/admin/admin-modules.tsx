@@ -532,7 +532,6 @@ export function AdminModules() {
                     value={form.badge}
                     onChange={(v) => setForm(f => ({ ...f, badge: v }))}
                     options={BADGE_OPTIONS.map(b => ({ value: b, label: b }))}
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -545,7 +544,6 @@ export function AdminModules() {
                       { value: "automation", label: "Automation" },
                       { value: "chatbot", label: "Chatbot" },
                     ]}
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -555,7 +553,6 @@ export function AdminModules() {
                     onChange={(v) => setForm(f => ({ ...f, category: v }))}
                     options={CATEGORY_OPTIONS.map(c => ({ value: c, label: formatLabel(c) }))}
                     searchPlaceholder="Search categories..."
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
@@ -598,7 +595,6 @@ export function AdminModules() {
                     value={form.pipelineType}
                     onChange={(v) => setForm(f => ({ ...f, pipelineType: v }))}
                     options={PIPELINE_TYPES.map(p => ({ value: p, label: formatLabel(p) }))}
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -607,7 +603,6 @@ export function AdminModules() {
                     value={form.outputType}
                     onChange={(v) => setForm(f => ({ ...f, outputType: v }))}
                     options={OUTPUT_TYPES.map(o => ({ value: o, label: formatLabel(o) }))}
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -619,7 +614,6 @@ export function AdminModules() {
                       { value: "standalone", label: "Standalone Agent" },
                       { value: "niche_pipeline", label: "Niche Pipeline" },
                     ]}
-                    allowClear={false}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -629,7 +623,6 @@ export function AdminModules() {
                     onChange={(v) => setForm(f => ({ ...f, nicheSlug: v }))}
                     options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
                     searchPlaceholder="Search niches..."
-                    allowClear={false}
                   />
                 </div>
                 <div className="col-span-full mb-3.5">

@@ -521,7 +521,6 @@ export function DashboardOverview() {
                   { value: "podcast", label: "Podcast" },
                   { value: "marketing", label: "Marketing" },
                 ]}
-                allowClear={false}
                 className="min-w-[150px]"
               />
               <Link href="/dashboard/pipeline-logs" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none", whiteSpace: "nowrap" }}>

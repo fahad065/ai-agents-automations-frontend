@@ -297,7 +297,6 @@ export function SubscriptionsPage() {
             { value: "expired", label: "Expired" },
             { value: "cancelled", label: "Cancelled" },
           ]}
-          allowClear={false}
           className="min-w-[150px]"
         />
         <Combobox
@@ -308,7 +307,6 @@ export function SubscriptionsPage() {
             { value: "agent", label: "Agent" },
             { value: "automation", label: "Automation" },
           ]}
-          allowClear={false}
           className="min-w-[150px]"
         />
         <span className="ml-auto text-xs text-muted-foreground">{total} results</span>

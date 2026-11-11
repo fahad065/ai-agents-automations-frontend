@@ -236,7 +236,6 @@ export default function PipelineLogsPage() {
             value={moduleFilter}
             onChange={(v) => setModuleFilter(v)}
             options={MODULE_TYPES}
-            allowClear={false}
             className="w-auto min-w-[150px]"
           />
           {/* Refresh */}

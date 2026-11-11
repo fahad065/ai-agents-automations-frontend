@@ -148,11 +148,11 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
                 onChange={handleProviderChange}
                 options={PROVIDER_OPTIONS}
                 creatable
-                createLabel={(q) => `🔑 Add "${q}" as a new provider`}
+                createRowLabel="🔑 Other — add a new provider"
+                createInputPlaceholder="e.g. Stripe, Twilio, SendGrid"
                 placeholder="Select a provider..."
                 searchPlaceholder="Search providers..."
                 emptyText="No matching provider."
-                allowClear={false}
               />
               {selectedProvider?.description ? (
                 <p className="text-xs text-muted-foreground">{selectedProvider.description}</p>

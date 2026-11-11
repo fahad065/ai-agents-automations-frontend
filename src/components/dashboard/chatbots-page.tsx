@@ -191,7 +191,6 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
                   ...clients.map((c) => ({ value: c._id, label: `${c.name || "Unnamed"} — ${c.email}` })),
                 ]}
                 searchPlaceholder="Search clients..."
-                allowClear={false}
               />
               <p className="mt-1.25 text-[11px] text-muted-foreground">
                 Pick a client to build and configure this bot under their account — they'll see it in their own dashboard right away.
@@ -345,7 +344,6 @@ export function ChatbotsPage() {
             { value: "all", label: "All Types" },
             ...TEMPLATES.map((t) => ({ value: t.key, label: t.name, icon: <span className="text-sm">{t.emoji}</span> })),
           ]}
-          allowClear={false}
           className="w-auto min-w-[160px]"
         />
 

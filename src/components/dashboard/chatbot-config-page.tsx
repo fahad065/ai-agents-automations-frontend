@@ -978,7 +978,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                     chatModelConfig: { ...o.chatModelConfig, provider: v as AiProvider },
                   }))}
                   options={CHAT_PROVIDER_OPTIONS}
-                  allowClear={false}
                 />
               </div>
               <div>
@@ -1003,7 +1002,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                     embeddingModelConfig: { ...o.embeddingModelConfig, provider: v as AiProvider },
                   }))}
                   options={EMBEDDING_PROVIDER_OPTIONS}
-                  allowClear={false}
                 />
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   Anthropic has no embeddings API — only OpenAI/Gemini can rank your knowledge base.

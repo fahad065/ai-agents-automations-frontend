@@ -388,7 +388,6 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
                         { value: "daily", label: "Daily" },
                         { value: "weekly", label: "Weekly" },
                       ]}
-                      allowClear={false}
                     />
                   </div>
                   <div>
@@ -499,7 +498,6 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
               value={country}
               onChange={onCountryChange}
               options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
-              allowClear={false}
               className="w-auto min-w-[140px]"
             />
           </div>
@@ -712,7 +710,6 @@ export function MyModulesPage() {
             value={country}
             onChange={setCountry}
             options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
-            allowClear={false}
             className="w-auto min-w-[150px]"
           />
           <Button onClick={() => setShowMarketplace(true)} className="gap-2">
@@ -737,7 +734,6 @@ export function MyModulesPage() {
             { value: "paused", label: "Paused" },
             { value: "expired", label: "Expired" },
           ]}
-          allowClear={false}
           className="w-auto min-w-[150px]"
         />
         <span className="ml-auto text-xs text-muted-foreground">{filtered.length} module{filtered.length !== 1 ? "s" : ""}</span>
