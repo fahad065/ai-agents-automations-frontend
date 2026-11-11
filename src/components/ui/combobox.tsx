@@ -9,7 +9,7 @@
 // with no real "none" state). See CLAUDE.md's "Dropdown convention"
 // section for the full rule.
 import * as React from "react";
-import { ChevronsUpDownIcon, XIcon, PlusIcon } from "lucide-react";
+import { ChevronDownIcon, XIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -114,17 +114,24 @@ export function Combobox({
           id={id}
           disabled={disabled}
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-lg border bg-background px-3 text-left text-sm text-foreground outline-none transition-colors",
+            "flex h-9 w-full items-center gap-2 rounded-lg border bg-background px-3 text-left text-sm text-foreground outline-none transition-colors",
             "hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50",
-            allowClear && selected ? "pr-8" : "",
+            // Reserve room on the right for the chevron (always) and the
+            // clear "X" (when shown) with real space between them, instead
+            // of letting both icons fight over the same few pixels.
+            allowClear && selected ? "pr-14" : "pr-8",
           )}
         >
           <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 truncate", !selected && "text-muted-foreground")}>
             {selected?.icon}
             <span className="truncate">{selected ? selected.label : placeholder}</span>
           </span>
-          <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
         </PopoverTrigger>
+
+        {/* Chevron — fixed in place, never shares space with the clear
+            button; pointer-events-none so clicks still reach the trigger
+            underneath it. */}
+        <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 shrink-0 text-muted-foreground opacity-50" />
 
         {allowClear && selected && !disabled && (
           <button
@@ -135,7 +142,7 @@ export function Combobox({
               e.stopPropagation();
               onChange("");
             }}
-            className="absolute right-7 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground outline-none hover:text-foreground"
+            className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground outline-none hover:text-foreground"
           >
             <XIcon className="size-3.5" />
           </button>

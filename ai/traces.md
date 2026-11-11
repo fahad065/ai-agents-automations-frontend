@@ -4,6 +4,33 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-11 (even later) — Combobox: chevron and clear "X" were colliding
+
+User reported the down-arrow and clear "X" icons visually overlapping on
+the trigger field. Root cause: the chevron was rendered as the trigger's
+own last flex child (positioned by flex layout, ending right where the
+trigger's `pr-8` padding began), while the clear button was absolutely
+positioned at a fixed `right-7` — the two ended up occupying overlapping
+pixel ranges rather than sitting side by side with any gap.
+
+Fixed by pulling the chevron out of the trigger's flex flow entirely —
+both the chevron and the clear button are now independently
+absolutely-positioned siblings inside the same `relative` wrapper
+(chevron fixed at `right-2.5`, `pointer-events-none` so clicks still
+reach the trigger underneath; clear button at `right-8`, a real ~6px gap
+between them), with the trigger's own `pr-*` sized to match (`pr-8` with
+no clear button, `pr-14` when one is shown) so the label text never runs
+under either icon. Also swapped `ChevronsUpDownIcon` (the up/down double
+arrow) for a plain `ChevronDownIcon`, per the explicit ask for "just show
+(down) icon."
+
+**Verified**: `tsc --noEmit` + `npm run build` clean (all 43 routes).
+Playwright screenshot + `boundingBox()` measurement on a live rebuilt
+server confirmed the clear button's right edge sits a clean 32px from the
+trigger's edge with no overlap with the chevron.
+
+---
+
 ## 2026-11-11 (even later) — Combobox: two real bugs from the first pass, both user-reported
 
 User tested the new platform-wide Combobox and reported two things broken, both confirmed real and fixed.
