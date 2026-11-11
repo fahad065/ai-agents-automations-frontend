@@ -13,6 +13,7 @@ import {
   CreditCard, Activity, Video, DollarSign, Key, Building2, MessageCircle,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
+import { Combobox } from "@/components/ui/combobox";
 import { TrialBanner } from "./trial-banner";
 
 // ── Stat Card ─────────────────────────────────────────────────
@@ -326,11 +327,6 @@ export function DashboardOverview() {
   const firstName = user?.name?.split(" ")[0] || "there";
   const totalSubscribed = userStats.totalIndustries + userStats.totalAgents + userStats.totalAutomations + userStats.totalChatbots;
 
-  const inputStyle = {
-    padding: "7px 12px", borderRadius: "8px", fontSize: "13px",
-    border: `1px solid ${colors.border}`, background: colors.bg,
-    color: colors.text, outline: "none",
-  };
 
   const TYPE_META: Record<SubscribedItem["type"], { label: string; color: string; icon: any }> = {
     industry: { label: "Industry", color: "#3b82f6", icon: Building2 },
@@ -515,13 +511,19 @@ export function DashboardOverview() {
               {isAdmin ? "All Pipeline Runs" : "Recent Pipeline Runs"}
             </h2>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <select value={tableType} onChange={(e) => { setTableType(e.target.value); setTablePage(1); }} style={inputStyle}>
-                <option value="all">All Types</option>
-                <option value="youtube">YouTube</option>
-                <option value="instagram">Instagram</option>
-                <option value="podcast">Podcast</option>
-                <option value="marketing">Marketing</option>
-              </select>
+              <Combobox
+                value={tableType}
+                onChange={(v) => { setTableType(v); setTablePage(1); }}
+                options={[
+                  { value: "all", label: "All Types" },
+                  { value: "youtube", label: "YouTube" },
+                  { value: "instagram", label: "Instagram" },
+                  { value: "podcast", label: "Podcast" },
+                  { value: "marketing", label: "Marketing" },
+                ]}
+                allowClear={false}
+                className="min-w-[150px]"
+              />
               <Link href="/dashboard/pipeline-logs" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none", whiteSpace: "nowrap" }}>
                 View all →
               </Link>

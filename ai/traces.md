@@ -4,6 +4,35 @@ Newest entry first. Append, don't rewrite.
 
 ---
 
+## 2026-11-11 (later) — Platform-wide dropdown convention: every native `<select>` converted to a searchable Combobox
+
+User asked for a standing rule, not a one-off: every dropdown in this codebase should open a searchable popover (search input + filtered list below, clear "X" on the right of the field), and this should apply to every future dropdown too, not just the API Keys one from earlier today.
+
+**New `src/components/ui/combobox.tsx`** — built on the existing (previously zero-usage) `Popover` + `Command`/cmdk primitives, first real usage of `Popover` anywhere in this codebase. `ComboboxOption{value,label,icon?,disabled?}`, props: `allowClear` (default true — shows the "X"), `creatable` (lets the user type a value not in the list; shows a "Add "<query>"" row and calls `onChange` with the raw text — used by the API Keys provider field built earlier today). Clear "X" is rendered as a sibling `<button>` positioned absolutely over the trigger field, not nested inside the trigger's own `<button>` — avoids an invalid nested-button DOM structure.
+
+**Documented as a standing rule in CLAUDE.md** ("Dropdown convention" section, right after Styling conventions) — any new dropdown uses `Combobox`, not a bare `<select>`; real brand icons (`react-icons/si`) for known providers, colored brand hex for genuinely colorful marks (Claude orange, Gemini blue, YouTube red) vs. `currentColor` for monochrome logos (OpenAI, ElevenLabs, Ollama) so they adapt to light/dark mode.
+
+**Every live native `<select>` converted** (29 found via grep, 28 converted — `admin/admin-pipelines.tsx`'s is the one exception, confirmed dead code via grep for `AdminPipelines` import references before skipping it, same shadow-file pattern as the three dead files deleted in the admin-panel-revamp cleanup pass):
+- `admin/admin-modules.tsx` — 9 selects (2 page filters + 7 inside the create/edit dialog's Basic/Pipeline tabs)
+- `dashboard/users-page.tsx` — 4 (role/plan in the edit modal, status/plan page filters)
+- `dashboard/overview.tsx` — 1 (pipeline-table type filter)
+- `dashboard/chatbots-page.tsx` — 2 (admin "Build for" client picker, template filter)
+- `dashboard/pipeline-logs-page.tsx` — 1 (module filter)
+- `dashboard/chatbot-config-page.tsx` — 2 (the chat/embedding AI provider pickers added earlier today — now with real brand icons too, not plain text)
+- `dashboard/activity-logs-page.tsx` — 2 (entity type / action filters)
+- `dashboard/modules-page.tsx` — 4 (2 country selectors with flag icons, schedule frequency, status filter)
+- `dashboard/subscriptions-page.tsx` — 2 (status/type filters)
+
+Each conversion also removed its file's now-dead `selectClass`/`inputStyle` constant where nothing else referenced it, rather than leaving unused style strings behind.
+
+**Real mid-build correction**: user flagged that the dropdown's provider icons (built earlier today for the API Keys page) were generic emoji, not real brand marks — asked specifically for Claude's orange logo, Gemini's blue icon, and OpenAI's own logo. Swapped to `react-icons/si` (Simple Icons): `SiOpenai`/`SiAnthropic`/`SiGooglegemini`/`SiYoutube`/`SiElevenlabs`/`SiOllama`, all already resolvable in the installed `react-icons@5.6.0`. Reused the same icon set in `chatbot-config-page.tsx`'s AI Model provider pickers for consistency.
+
+**One real test-fixture bug caught before it was mistaken for an app bug**: an early Playwright check against a mocked `GET /api-keys` returning `{data: []}` threw `e.filter is not a function` inside the page — traced to `api-keys-page.tsx`'s `setKeys(res.data || [])`, which expects the real backend's raw-array response shape (`ApiKeysService.getKeys()` returns the array directly, no envelope), not a wrapped object. Fixed the test mock, not the app. Separately hit the known "ChunkLoadError / page renders as an unstyled bullet list" Turbopack flake noted in an earlier CLAUDE.md session on this exact codebase — confirmed it wasn't code-related by seeing the identical broken render on the very first, pre-interaction screenshot too, then cleared `.next` and restarted on a fresh port, which resolved it cleanly.
+
+**Verified**: `tsc --noEmit` clean after every file, final `npm run build` clean (all 43 routes). Playwright: full open → search → select → clear → creatable-add flow confirmed working end-to-end on the API Keys provider Combobox (including the real anthropic/gemini/openai/youtube/elevenlabs/ollama icons rendering correctly), plus a visual pass on `modules-page.tsx`'s country Combobox (flag icons + checkmark) and `admin-modules.tsx`'s 4-Combobox Pipeline tab inside its dialog (no layout regressions, correct default values).
+
+---
+
 ## 2026-11-11 — Add API Key dialog: dropdown + "Other" free-text provider
 
 Companion to the backend's matching entry — read that one first (the

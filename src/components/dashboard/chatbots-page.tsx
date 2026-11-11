@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -182,16 +183,16 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
           {isAdmin && (
             <div>
               <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Build for</Label>
-              <select
+              <Combobox
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
-              >
-                <option value="">Myself (admin account)</option>
-                {clients.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name || "Unnamed"} — {c.email}</option>
-                ))}
-              </select>
+                onChange={setClientId}
+                options={[
+                  { value: "", label: "Myself (admin account)" },
+                  ...clients.map((c) => ({ value: c._id, label: `${c.name || "Unnamed"} — ${c.email}` })),
+                ]}
+                searchPlaceholder="Search clients..."
+                allowClear={false}
+              />
               <p className="mt-1.25 text-[11px] text-muted-foreground">
                 Pick a client to build and configure this bot under their account — they'll see it in their own dashboard right away.
               </p>
@@ -337,16 +338,16 @@ export function ChatbotsPage() {
       {/* Filters: type dropdown (anyone with 2+ templates in use) + admin
           needs-setup queue pills */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select
+        <Combobox
           value={templateFilter}
-          onChange={(e) => setTemplateFilter(e.target.value)}
-          className="h-8 cursor-pointer rounded-lg border bg-background px-3 text-xs font-medium text-foreground outline-none"
-        >
-          <option value="all">All Types</option>
-          {TEMPLATES.map((t) => (
-            <option key={t.key} value={t.key}>{t.emoji} {t.name}</option>
-          ))}
-        </select>
+          onChange={setTemplateFilter}
+          options={[
+            { value: "all", label: "All Types" },
+            ...TEMPLATES.map((t) => ({ value: t.key, label: t.name, icon: <span className="text-sm">{t.emoji}</span> })),
+          ]}
+          allowClear={false}
+          className="w-auto min-w-[160px]"
+        />
 
         {isAdmin && !loading && chatbots.length > 0 && (
           <>

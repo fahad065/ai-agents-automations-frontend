@@ -10,6 +10,7 @@ import { FaYoutube } from "react-icons/fa";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 
 interface PipelineRun {
@@ -231,15 +232,13 @@ export default function PipelineLogsPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Module filter */}
-          <select
+          <Combobox
             value={moduleFilter}
-            onChange={e => setModuleFilter(e.target.value)}
-            className="cursor-pointer rounded-lg border bg-background px-3 py-1.75 text-xs text-foreground outline-none"
-          >
-            {MODULE_TYPES.map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
+            onChange={(v) => setModuleFilter(v)}
+            options={MODULE_TYPES}
+            allowClear={false}
+            className="w-auto min-w-[150px]"
+          />
           {/* Refresh */}
           <Button variant="outline" size="sm" onClick={() => fetchRuns(page, moduleFilter)} className="gap-1">
             <RefreshCw size={12} /> Refresh

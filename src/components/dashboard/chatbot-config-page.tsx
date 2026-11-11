@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { SiOpenai, SiAnthropic, SiGooglegemini } from "react-icons/si";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -75,6 +77,16 @@ interface AiModelConfig {
 }
 
 const EMPTY_AI_MODEL_CONFIG: AiModelConfig = { provider: "openai", model: "auto" };
+
+// Real brand marks, not emoji — OpenAI renders monochrome via currentColor
+// (its own logo is black/white, adapts to light/dark); Claude/Gemini are
+// genuinely colored brand marks, so those keep their real brand hex.
+const CHAT_PROVIDER_OPTIONS: ComboboxOption[] = [
+  { value: "openai", label: "OpenAI", icon: <SiOpenai className="size-4" /> },
+  { value: "anthropic", label: "Anthropic (Claude)", icon: <SiAnthropic className="size-4" style={{ color: "#D97757" }} /> },
+  { value: "gemini", label: "Google Gemini", icon: <SiGooglegemini className="size-4" style={{ color: "#4285F4" }} /> },
+];
+const EMBEDDING_PROVIDER_OPTIONS: ComboboxOption[] = CHAT_PROVIDER_OPTIONS.filter((o) => o.value !== "anthropic");
 
 interface Chatbot {
   _id: string;
@@ -959,18 +971,15 @@ export function ChatbotConfigPage({ id }: { id: string }) {
             <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div>
                 {fieldLabel("Chat provider")}
-                <select
+                <Combobox
                   value={overview.chatModelConfig.provider}
-                  onChange={(e) => setOverview((o) => ({
+                  onChange={(v) => setOverview((o) => ({
                     ...o,
-                    chatModelConfig: { ...o.chatModelConfig, provider: e.target.value as AiProvider },
+                    chatModelConfig: { ...o.chatModelConfig, provider: v as AiProvider },
                   }))}
-                  className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
-                >
-                  <option value="openai">OpenAI</option>
-                  <option value="anthropic">Anthropic (Claude)</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
+                  options={CHAT_PROVIDER_OPTIONS}
+                  allowClear={false}
+                />
               </div>
               <div>
                 {fieldLabel("Chat model")}
@@ -987,17 +996,15 @@ export function ChatbotConfigPage({ id }: { id: string }) {
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div>
                 {fieldLabel("Embedding provider")}
-                <select
+                <Combobox
                   value={overview.embeddingModelConfig.provider}
-                  onChange={(e) => setOverview((o) => ({
+                  onChange={(v) => setOverview((o) => ({
                     ...o,
-                    embeddingModelConfig: { ...o.embeddingModelConfig, provider: e.target.value as AiProvider },
+                    embeddingModelConfig: { ...o.embeddingModelConfig, provider: v as AiProvider },
                   }))}
-                  className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
-                >
-                  <option value="openai">OpenAI</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
+                  options={EMBEDDING_PROVIDER_OPTIONS}
+                  allowClear={false}
+                />
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   Anthropic has no embeddings API — only OpenAI/Gemini can rank your knowledge base.
                 </p>

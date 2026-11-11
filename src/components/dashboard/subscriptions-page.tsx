@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -240,7 +241,6 @@ export function SubscriptionsPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
-  const selectClass = "h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none cursor-pointer";
 
   // Stats
   const activeSubs = subs.filter(s => s.status === "active" || s.status === "trial").length;
@@ -287,18 +287,30 @@ export function SubscriptionsPage() {
             className="pl-7.5"
           />
         </div>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[130px]")}>
-          <option value="all">All Status</option>
-          <option value="trial">Trial</option>
-          <option value="active">Active</option>
-          <option value="expired">Expired</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[130px]")}>
-          <option value="all">All Types</option>
-          <option value="agent">Agent</option>
-          <option value="automation">Automation</option>
-        </select>
+        <Combobox
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "All Status" },
+            { value: "trial", label: "Trial" },
+            { value: "active", label: "Active" },
+            { value: "expired", label: "Expired" },
+            { value: "cancelled", label: "Cancelled" },
+          ]}
+          allowClear={false}
+          className="min-w-[150px]"
+        />
+        <Combobox
+          value={typeFilter}
+          onChange={(v) => { setTypeFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "All Types" },
+            { value: "agent", label: "Agent" },
+            { value: "automation", label: "Automation" },
+          ]}
+          allowClear={false}
+          className="min-w-[150px]"
+        />
         <span className="ml-auto text-xs text-muted-foreground">{total} results</span>
       </div>
 

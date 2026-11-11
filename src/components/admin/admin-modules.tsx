@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -135,7 +136,6 @@ const emptyForm = {
 
 type FormState = typeof emptyForm;
 
-const selectClass = "h-8 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none cursor-pointer";
 const monoTextareaClass = "font-mono text-xs";
 
 const fieldLabel = (text: string, hint?: string) => (
@@ -442,18 +442,26 @@ export function AdminModules() {
             className="pl-7.5"
           />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className={cn(selectClass, "w-auto min-w-[130px]")}>
-          <option value="">All types</option>
-          <option value="agent">Agent</option>
-          <option value="automation">Automation</option>
-          <option value="chatbot">Chatbot</option>
-        </select>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={cn(selectClass, "w-auto min-w-[150px]")}>
-          <option value="">All categories</option>
-          {CATEGORY_OPTIONS.map(c => (
-            <option key={c} value={c}>{formatLabel(c)}</option>
-          ))}
-        </select>
+        <Combobox
+          value={filterType}
+          onChange={setFilterType}
+          options={[
+            { value: "agent", label: "Agent" },
+            { value: "automation", label: "Automation" },
+            { value: "chatbot", label: "Chatbot" },
+          ]}
+          placeholder="All types"
+          searchPlaceholder="Search types..."
+          className="w-auto min-w-[150px]"
+        />
+        <Combobox
+          value={filterCategory}
+          onChange={setFilterCategory}
+          options={CATEGORY_OPTIONS.map((c) => ({ value: c, label: formatLabel(c) }))}
+          placeholder="All categories"
+          searchPlaceholder="Search categories..."
+          className="w-auto min-w-[170px]"
+        />
         {(search || filterType || filterCategory) && (
           <Button variant="outline" onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}>
             Clear
@@ -520,23 +528,35 @@ export function AdminModules() {
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Badge")}
-                  <select value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} className={selectClass}>
-                    {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
+                  <Combobox
+                    value={form.badge}
+                    onChange={(v) => setForm(f => ({ ...f, badge: v }))}
+                    options={BADGE_OPTIONS.map(b => ({ value: b, label: b }))}
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Module Type")}
-                  <select value={form.moduleType} onChange={e => setForm(f => ({ ...f, moduleType: e.target.value }))} className={selectClass}>
-                    <option value="agent">Agent</option>
-                    <option value="automation">Automation</option>
-                    <option value="chatbot">Chatbot</option>
-                  </select>
+                  <Combobox
+                    value={form.moduleType}
+                    onChange={(v) => setForm(f => ({ ...f, moduleType: v }))}
+                    options={[
+                      { value: "agent", label: "Agent" },
+                      { value: "automation", label: "Automation" },
+                      { value: "chatbot", label: "Chatbot" },
+                    ]}
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Category")}
-                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={selectClass}>
-                    {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{formatLabel(c)}</option>)}
-                  </select>
+                  <Combobox
+                    value={form.category}
+                    onChange={(v) => setForm(f => ({ ...f, category: v }))}
+                    options={CATEGORY_OPTIONS.map(c => ({ value: c, label: formatLabel(c) }))}
+                    searchPlaceholder="Search categories..."
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
                 <div className="mb-3.5">{fieldLabel("Est. Cost Per Run")}<Input value={form.estimatedCostPerRun} onChange={e => setForm(f => ({ ...f, estimatedCostPerRun: e.target.value }))} placeholder="$3-5 Per Video" /></div>
@@ -574,28 +594,43 @@ export function AdminModules() {
               <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
                 <div className="mb-3.5">
                   {fieldLabel("Pipeline Type", "how Python routes this")}
-                  <select value={form.pipelineType} onChange={e => setForm(f => ({ ...f, pipelineType: e.target.value }))} className={selectClass}>
-                    {PIPELINE_TYPES.map(p => <option key={p} value={p}>{formatLabel(p)}</option>)}
-                  </select>
+                  <Combobox
+                    value={form.pipelineType}
+                    onChange={(v) => setForm(f => ({ ...f, pipelineType: v }))}
+                    options={PIPELINE_TYPES.map(p => ({ value: p, label: formatLabel(p) }))}
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Output Type")}
-                  <select value={form.outputType} onChange={e => setForm(f => ({ ...f, outputType: e.target.value }))} className={selectClass}>
-                    {OUTPUT_TYPES.map(o => <option key={o} value={o}>{formatLabel(o)}</option>)}
-                  </select>
+                  <Combobox
+                    value={form.outputType}
+                    onChange={(v) => setForm(f => ({ ...f, outputType: v }))}
+                    options={OUTPUT_TYPES.map(o => ({ value: o, label: formatLabel(o) }))}
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Pipeline Category")}
-                  <select value={form.pipelineCategory} onChange={e => setForm(f => ({ ...f, pipelineCategory: e.target.value }))} className={selectClass}>
-                    <option value="standalone">Standalone Agent</option>
-                    <option value="niche_pipeline">Niche Pipeline</option>
-                  </select>
+                  <Combobox
+                    value={form.pipelineCategory}
+                    onChange={(v) => setForm(f => ({ ...f, pipelineCategory: v }))}
+                    options={[
+                      { value: "standalone", label: "Standalone Agent" },
+                      { value: "niche_pipeline", label: "Niche Pipeline" },
+                    ]}
+                    allowClear={false}
+                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Niche")}
-                  <select value={form.nicheSlug} onChange={e => setForm(f => ({ ...f, nicheSlug: e.target.value }))} className={selectClass}>
-                    {NICHE_OPTIONS.map(n => <option key={n.slug} value={n.slug}>{n.name}</option>)}
-                  </select>
+                  <Combobox
+                    value={form.nicheSlug}
+                    onChange={(v) => setForm(f => ({ ...f, nicheSlug: v }))}
+                    options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
+                    searchPlaceholder="Search niches..."
+                    allowClear={false}
+                  />
                 </div>
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Available In", "select countries")}

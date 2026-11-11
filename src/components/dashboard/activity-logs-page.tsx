@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { Loader2, ChevronLeft, ChevronRight, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -103,22 +104,22 @@ export function ActivityLogsPage() {
             onChange={(e) => { setUserIdFilter(e.target.value); setPage(1); }}
             className="max-w-[220px]"
           />
-          <select
+          <Combobox
             value={entityType}
-            onChange={(e) => { setEntityType(e.target.value); setPage(1); }}
-            className="h-9 rounded-md border bg-background px-3 text-sm text-foreground"
-          >
-            <option value="">All modules</option>
-            {ENTITY_TYPES.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
-          </select>
-          <select
+            onChange={(v) => { setEntityType(v); setPage(1); }}
+            options={ENTITY_TYPES.map((t) => ({ value: t, label: t.replace("_", " ") }))}
+            placeholder="All modules"
+            searchPlaceholder="Search modules..."
+            className="w-auto min-w-[160px]"
+          />
+          <Combobox
             value={action}
-            onChange={(e) => { setAction(e.target.value); setPage(1); }}
-            className="h-9 rounded-md border bg-background px-3 text-sm text-foreground"
-          >
-            <option value="">All actions</option>
-            {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+            onChange={(v) => { setAction(v); setPage(1); }}
+            options={ACTIONS.map((a) => ({ value: a, label: a }))}
+            placeholder="All actions"
+            searchPlaceholder="Search actions..."
+            className="w-auto min-w-[150px]"
+          />
           <span className="text-xs text-muted-foreground">{total} entries</span>
         </div>
       )}

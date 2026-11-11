@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -379,15 +380,16 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Schedule</Label>
-                    <select
+                    <Combobox
                       value={form.scheduleFrequency}
-                      onChange={(e) => setForm(f => ({ ...f, scheduleFrequency: e.target.value }))}
-                      className="h-8 w-full cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
-                    >
-                      <option value="manual">Manual only</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
+                      onChange={(v) => setForm(f => ({ ...f, scheduleFrequency: v }))}
+                      options={[
+                        { value: "manual", label: "Manual only" },
+                        { value: "daily", label: "Daily" },
+                        { value: "weekly", label: "Weekly" },
+                      ]}
+                      allowClear={false}
+                    />
                   </div>
                   <div>
                     <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Run Time (24hr)</Label>
@@ -493,15 +495,13 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
               <p className="mt-1 text-xs text-muted-foreground">Choose a module to add to your account</p>
             </div>
             {/* Country selector */}
-            <select
+            <Combobox
               value={country}
-              onChange={(e) => onCountryChange(e.target.value)}
-              className="h-8 cursor-pointer rounded-lg border bg-background px-2.5 text-xs font-semibold text-foreground outline-none"
-            >
-              {COUNTRIES.map(c => (
-                <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
-              ))}
-            </select>
+              onChange={onCountryChange}
+              options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
+              allowClear={false}
+              className="w-auto min-w-[140px]"
+            />
           </div>
 
           {/* Search */}
@@ -708,15 +708,13 @@ export function MyModulesPage() {
         </div>
         <div className="flex items-center gap-2.5">
           {/* Country selector */}
-          <select
+          <Combobox
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="h-8 cursor-pointer rounded-lg border bg-card px-3 text-[13px] font-semibold text-foreground outline-none"
-          >
-            {COUNTRIES.map(c => (
-              <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
-            ))}
-          </select>
+            onChange={setCountry}
+            options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
+            allowClear={false}
+            className="w-auto min-w-[150px]"
+          />
           <Button onClick={() => setShowMarketplace(true)} className="gap-2">
             <Plus size={15} /> Add Module
           </Button>
@@ -729,17 +727,19 @@ export function MyModulesPage() {
           <Search size={13} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search modules..." className="h-8 w-full pl-7.5 text-[13px]" />
         </div>
-        <select
+        <Combobox
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-8 min-w-[130px] cursor-pointer rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="trial">Trial</option>
-          <option value="paused">Paused</option>
-          <option value="expired">Expired</option>
-        </select>
+          onChange={setStatusFilter}
+          options={[
+            { value: "all", label: "All Status" },
+            { value: "active", label: "Active" },
+            { value: "trial", label: "Trial" },
+            { value: "paused", label: "Paused" },
+            { value: "expired", label: "Expired" },
+          ]}
+          allowClear={false}
+          className="w-auto min-w-[150px]"
+        />
         <span className="ml-auto text-xs text-muted-foreground">{filtered.length} module{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 

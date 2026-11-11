@@ -7,6 +7,9 @@ import {
   Plus, Search, ListFilter, MoreHorizontal, Key, ShieldCheck,
   RefreshCw, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, EyeOff,
 } from "lucide-react";
+import {
+  SiOpenai, SiAnthropic, SiGooglegemini, SiYoutube, SiElevenlabs, SiOllama,
+} from "react-icons/si";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +30,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
 interface ApiKey {
   _id: string;
@@ -38,20 +42,28 @@ interface ApiKey {
   updatedAt: string;
 }
 
+// Real provider brand marks (react-icons/si — Simple Icons), not emoji —
+// OpenAI/ElevenLabs/Ollama render monochrome via currentColor (their own
+// logos are black/white and should adapt to light/dark mode); Anthropic/
+// Gemini/YouTube are genuinely colored brand marks, so those get their
+// real brand hex regardless of theme. Atlas Cloud has no tracked Simple
+// Icons entry — 🎬 stays an emoji placeholder for that one only.
 const PROVIDERS = [
-  { provider: "atlas_seedance", label: "Atlas Cloud - Seedance", description: "AI video clip generation via Seedance v1.5 Pro", icon: "🎬", color: "#7c3aed", required: true, helpUrl: "https://atlascloud.ai", placeholder: "sk-atlas-..." },
-  { provider: "openai", label: "OpenAI", description: "TTS voiceover generation (onyx voice), chatbot replies and knowledge-base embeddings", icon: "🎙️", color: "#22c55e", required: true, helpUrl: "https://platform.openai.com/api-keys", placeholder: "sk-..." },
-  { provider: "anthropic", label: "Anthropic (Claude)", description: "Alternate chatbot reply model — pick it as your bot's chat provider below", icon: "✦", color: "#d97757", required: false, helpUrl: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-..." },
-  { provider: "gemini", label: "Google Gemini", description: "Alternate chatbot reply/embedding model — pick it as your bot's provider below", icon: "✨", color: "#4285f4", required: false, helpUrl: "https://aistudio.google.com/apikey", placeholder: "AIza..." },
-  { provider: "youtube_oauth", label: "YouTube OAuth", description: "Upload and schedule videos to your YouTube channel", icon: "📺", color: "#ef4444", required: true, helpUrl: "https://console.cloud.google.com", placeholder: "OAuth credentials JSON or token" },
-  { provider: "youtube_data", label: "YouTube Data API", description: "Trend discovery and video analytics", icon: "📊", color: "#f59e0b", required: false, helpUrl: "https://console.cloud.google.com", placeholder: "AIza..." },
-  { provider: "elevenlabs", label: "ElevenLabs", description: "Premium TTS fallback voice generation", icon: "🔊", color: "#3b82f6", required: false, helpUrl: "https://elevenlabs.io", placeholder: "el-..." },
-  { provider: "ollama", label: "Ollama", description: "Local LLM host URL (default: http://localhost:11434)", icon: "🧠", color: "#a78bfa", required: false, helpUrl: "https://ollama.ai", placeholder: "http://localhost:11434" },
+  { provider: "atlas_seedance", label: "Atlas Cloud - Seedance", description: "AI video clip generation via Seedance v1.5 Pro", icon: <span className="text-sm">🎬</span>, color: "#7c3aed", required: true, helpUrl: "https://atlascloud.ai", placeholder: "sk-atlas-..." },
+  { provider: "openai", label: "OpenAI", description: "TTS voiceover generation (onyx voice), chatbot replies and knowledge-base embeddings", icon: <SiOpenai className="size-4" />, color: "#10a37f", required: true, helpUrl: "https://platform.openai.com/api-keys", placeholder: "sk-..." },
+  { provider: "anthropic", label: "Anthropic (Claude)", description: "Alternate chatbot reply model — pick it as your bot's chat provider below", icon: <SiAnthropic className="size-4" style={{ color: "#D97757" }} />, color: "#d97757", required: false, helpUrl: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-..." },
+  { provider: "gemini", label: "Google Gemini", description: "Alternate chatbot reply/embedding model — pick it as your bot's provider below", icon: <SiGooglegemini className="size-4" style={{ color: "#4285F4" }} />, color: "#4285f4", required: false, helpUrl: "https://aistudio.google.com/apikey", placeholder: "AIza..." },
+  { provider: "youtube_oauth", label: "YouTube OAuth", description: "Upload and schedule videos to your YouTube channel", icon: <SiYoutube className="size-4" style={{ color: "#FF0000" }} />, color: "#ff0000", required: true, helpUrl: "https://console.cloud.google.com", placeholder: "OAuth credentials JSON or token" },
+  { provider: "youtube_data", label: "YouTube Data API", description: "Trend discovery and video analytics", icon: <SiYoutube className="size-4" style={{ color: "#FF0000" }} />, color: "#ff0000", required: false, helpUrl: "https://console.cloud.google.com", placeholder: "AIza..." },
+  { provider: "elevenlabs", label: "ElevenLabs", description: "Premium TTS fallback voice generation", icon: <SiElevenlabs className="size-4" />, color: "#3b82f6", required: false, helpUrl: "https://elevenlabs.io", placeholder: "el-..." },
+  { provider: "ollama", label: "Ollama", description: "Local LLM host URL (default: http://localhost:11434)", icon: <SiOllama className="size-4" />, color: "#a78bfa", required: false, helpUrl: "https://ollama.ai", placeholder: "http://localhost:11434" },
 ];
 
-// Sentinel for the select's "Other" option — never sent to the backend,
-// just tells the dialog to show the free-text provider input instead.
-const CUSTOM_PROVIDER_VALUE = "__custom__";
+const PROVIDER_OPTIONS: ComboboxOption[] = PROVIDERS.map((p) => ({
+  value: p.provider,
+  label: p.label + (p.required ? " (required)" : ""),
+  icon: p.icon,
+}));
 
 const PAGE_SIZE = 6;
 
@@ -71,10 +83,6 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  // True once "Other" is picked from the dropdown — reveals a free-text
-  // input so a provider not in PROVIDERS can still be added. The backend
-  // normalizes whatever gets typed into a consistent slug before storing.
-  const [isCustomProvider, setIsCustomProvider] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -88,27 +96,18 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
       setKeyValue("");
       setError("");
       setShowKey(false);
-      setIsCustomProvider(false);
     }
   }, [open, existingKey]);
 
   const selectedProvider = PROVIDERS.find((p) => p.provider === provider);
 
+  // Covers both a known-provider pick and typing a brand-new one via the
+  // Combobox's "Add ..." row — either way, auto-fills Name the same way:
+  // the provider's nice label if known, the raw typed text otherwise.
   const handleProviderChange = (p: string) => {
     setProvider(p);
     const pInfo = PROVIDERS.find((x) => x.provider === p);
-    if (pInfo && !existingKey) setLabel(pInfo.label);
-  };
-
-  const handleProviderSelect = (value: string) => {
-    if (value === CUSTOM_PROVIDER_VALUE) {
-      setIsCustomProvider(true);
-      setProvider("");
-      setLabel("");
-    } else {
-      setIsCustomProvider(false);
-      handleProviderChange(value);
-    }
+    if (!existingKey) setLabel(pInfo ? pInfo.label : p);
   };
 
   const handleSave = async () => {
@@ -143,35 +142,25 @@ function KeyDialog({ open, onClose, onSaved, existingKey }: {
           {!existingKey && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="key-provider">Service / Provider</Label>
-              <select
+              <Combobox
                 id="key-provider"
-                value={isCustomProvider ? CUSTOM_PROVIDER_VALUE : provider}
-                onChange={(e) => handleProviderSelect(e.target.value)}
-                className="h-9 w-full cursor-pointer rounded-lg border bg-background px-3 text-sm text-foreground outline-none"
-              >
-                {PROVIDERS.map((p) => (
-                  <option key={p.provider} value={p.provider}>
-                    {p.icon} {p.label}{p.required ? " (required)" : ""}
-                  </option>
-                ))}
-                <option value={CUSTOM_PROVIDER_VALUE}>🔑 Other — add a new provider</option>
-              </select>
-              {selectedProvider?.description && !isCustomProvider && (
+                value={provider}
+                onChange={handleProviderChange}
+                options={PROVIDER_OPTIONS}
+                creatable
+                createLabel={(q) => `🔑 Add "${q}" as a new provider`}
+                placeholder="Select a provider..."
+                searchPlaceholder="Search providers..."
+                emptyText="No matching provider."
+                allowClear={false}
+              />
+              {selectedProvider?.description ? (
                 <p className="text-xs text-muted-foreground">{selectedProvider.description}</p>
-              )}
-              {isCustomProvider && (
-                <div className="mt-1">
-                  <Input
-                    autoFocus
-                    value={provider}
-                    onChange={(e) => { setProvider(e.target.value); setLabel(e.target.value); }}
-                    placeholder="e.g. Stripe, Twilio, SendGrid"
-                  />
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    We'll save this as a new provider — type whatever service this key is for.
-                  </p>
-                </div>
-              )}
+              ) : provider ? (
+                <p className="text-xs text-muted-foreground">
+                  New provider — not in the preset list, saved exactly as typed.
+                </p>
+              ) : null}
             </div>
           )}
 

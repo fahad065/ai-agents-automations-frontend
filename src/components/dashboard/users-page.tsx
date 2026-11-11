@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -53,7 +54,6 @@ const PLAN_LABELS: Record<string, string> = {
   free_forever: "Free Forever", expired: "Expired",
 };
 
-const selectClass = "h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground outline-none cursor-pointer";
 
 // ── View/Edit User Modal ──────────────────────────────────────
 function UserModal({ user, onClose, onSave }: {
@@ -150,10 +150,12 @@ function UserModal({ user, onClose, onSave }: {
               {/* Role */}
               <div>
                 <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Role</Label>
-                <select value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))} className={cn(selectClass, "w-full")}>
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <Combobox
+                  value={form.role}
+                  onChange={(v) => setForm(f => ({ ...f, role: v }))}
+                  options={[{ value: "user", label: "User" }, { value: "admin", label: "Admin" }]}
+                  allowClear={false}
+                />
               </div>
 
               {/* Active status */}
@@ -192,12 +194,17 @@ function UserModal({ user, onClose, onSave }: {
               {/* Change plan */}
               <div>
                 <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Change Plan</Label>
-                <select value={form.planType} onChange={(e) => setForm(f => ({ ...f, planType: e.target.value }))} className={cn(selectClass, "w-full")}>
-                  <option value="trial">Free Trial</option>
-                  <option value="paid">Pro (Paid)</option>
-                  <option value="free_forever">Free Forever</option>
-                  <option value="expired">Expired</option>
-                </select>
+                <Combobox
+                  value={form.planType}
+                  onChange={(v) => setForm(f => ({ ...f, planType: v }))}
+                  options={[
+                    { value: "trial", label: "Free Trial" },
+                    { value: "paid", label: "Pro (Paid)" },
+                    { value: "free_forever", label: "Free Forever" },
+                    { value: "expired", label: "Expired" },
+                  ]}
+                  allowClear={false}
+                />
               </div>
 
               {/* Extend trial */}
@@ -341,20 +348,32 @@ export function UsersPage() {
         </div>
 
         {/* Status filter */}
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[130px]")}>
-          <option value="all">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+        <Combobox
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "All Status" },
+            { value: "true", label: "Active" },
+            { value: "false", label: "Inactive" },
+          ]}
+          allowClear={false}
+          className="min-w-[150px]"
+        />
 
         {/* Plan filter */}
-        <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }} className={cn(selectClass, "min-w-[140px]")}>
-          <option value="all">All Plans</option>
-          <option value="trial">Free Trial</option>
-          <option value="paid">Pro</option>
-          <option value="free_forever">Free Forever</option>
-          <option value="expired">Expired</option>
-        </select>
+        <Combobox
+          value={planFilter}
+          onChange={(v) => { setPlanFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "All Plans" },
+            { value: "trial", label: "Free Trial" },
+            { value: "paid", label: "Pro" },
+            { value: "free_forever", label: "Free Forever" },
+            { value: "expired", label: "Expired" },
+          ]}
+          allowClear={false}
+          className="min-w-[160px]"
+        />
 
         <Button onClick={handleSearch}>Search</Button>
 

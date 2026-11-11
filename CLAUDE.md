@@ -153,6 +153,22 @@ Three product categories (all data from backend):
 - Gradient text: `background: "linear-gradient(...)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"`
 - Max page width: `1280px` with `margin: "0 auto"`
 
+## Dropdown convention (established 2026-11-11 — read before adding any new dropdown)
+**Every new dropdown field in this codebase uses `src/components/ui/combobox.tsx`'s `Combobox` component — never a bare native `<select>`, and never a hand-rolled button-grid/popup.** This was an explicit, platform-wide request: click opens a popover with a search input filtering the option list below it, and a selected value shows a clear "X" on the right of the field (unless `allowClear={false}` — see below).
+
+```tsx
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+
+const options: ComboboxOption[] = items.map((x) => ({ value: x.id, label: x.name, icon: <SomeIcon className="size-4" /> }));
+
+<Combobox value={value} onChange={setValue} options={options} placeholder="Select..." />
+```
+
+- `icon` on an option should be the **provider/entity's own real logo**, not a generic emoji, whenever one exists (`react-icons/si` — Simple Icons — covers most SaaS/AI brands: `SiOpenai`, `SiAnthropic`, `SiGooglegemini`, `SiYoutube`, `SiElevenlabs`, `SiOllama`, etc. — check `node_modules/react-icons/si` for an exact export name before assuming one doesn't exist). Render a brand's own colorful mark (Claude orange `#D97757`, Gemini blue `#4285F4`, YouTube red `#FF0000`) with an explicit `style={{color: "..."}}`/inline brand hex regardless of theme; render a genuinely monochrome logo (OpenAI, ElevenLabs, Ollama) with no color override so it inherits `currentColor` and adapts to light/dark mode. Only fall back to an emoji placeholder when no real brand icon is trackable (e.g. a niche/internal-only provider).
+- `allowClear` defaults to `true`. Set it to `false` for a field that always has a value and has no real "none" state (e.g. a required single-choice picker that defaults to the first option) — see `api-keys-page.tsx`'s provider field for the example.
+- `creatable` lets the user type a value that isn't in `options` — a "Add "<query>"" row appears and calls `onChange` with the raw typed text. Use this for any field where the option list is a suggestion, not a closed set (a provider name, a free-form tag) — see `api-keys-page.tsx`'s provider Combobox, which both suggests known providers and accepts any custom one.
+- A plain, non-searchable 2-3-option native `<select>` (e.g. a simple status toggle) doesn't strictly need to be converted on sight if nothing else is touching that file — but **any new dropdown, and any existing one in a file you're already editing for another reason, should be converted to `Combobox`.** The full conversion pass (every pre-existing native `<select>` in the dashboard/admin pages, done 2026-11-11) is documented in `ai/traces.md` — check there before assuming a given page hasn't been touched yet.
+
 ## What has been built (complete)
 - All marketing pages including `/chatbots`
 - Full bilingual CMS (EN + AR UAE dialect) for all legal, FAQ, about, contact pages
