@@ -66,13 +66,13 @@ const CHATBOT_TEMPLATE_ENUM: Record<string, string> = {
 
 interface AvailableModule {
   _id: string; name: string; slug: string; tagline?: string; description?: string;
-  moduleType: string; category: string; pipelineType: string;
+  type: string; category: string; pipelineType: string;
   pipelineCategory: string; nicheSlug: string;
   icon: string; color: string; badge?: string;
   capabilities: string[]; requiredApiKeys: string[];
   platforms: string[]; estimatedCostPerRun?: string;
   pricing?: { monthly: number; annual: number };
-  isComingSoon: boolean;
+  status: "active" | "inactive" | "coming_soon";
   components?: { key: string; name: string; description: string; icon: string; isRequired: boolean; sortOrder: number }[];
   availableIn: string[];
 }
@@ -207,7 +207,7 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
     try {
       await api.post("/usermodules/subscribe", {
         moduleId: module._id, moduleName: module.name,
-        moduleType: module.moduleType, pipelineType: module.pipelineType,
+        moduleType: module.type, pipelineType: module.pipelineType,
         name: form.name, niche: form.niche, apiKeyMode: form.apiKeyMode,
         scheduleFrequency: form.scheduleFrequency, scheduleTime: form.scheduleTime,
         country, nicheSlug: module.nicheSlug, pipelineCategory: module.pipelineCategory,
@@ -454,7 +454,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
   useEffect(() => {
     setLoading(true);
     setActiveNiche("all");
-    api.get(`/modules?limit=100&country=${country}`).then((modRes) => {
+    api.get(`/services?limit=100&country=${country}`).then((modRes) => {
       const mods: AvailableModule[] = modRes.data?.data || [];
       setModules(mods);
       setLoading(false);
@@ -478,7 +478,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
   });
 
   if (selected) {
-    if (selected.moduleType === "chatbot") {
+    if (selected.type === "chatbot") {
       return <AddChatbotModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
     }
     return <SubscribeModal module={selected} country={country} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
@@ -557,9 +557,9 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
                 return (
                   <div
                     key={m._id}
-                    className={cn("rounded-xl border bg-card p-4 transition-colors", m.isComingSoon ? "cursor-not-allowed opacity-60" : "cursor-pointer")}
-                    style={isHovered && !m.isComingSoon ? { borderColor: `${m.color}50` } : undefined}
-                    onClick={() => !m.isComingSoon && setSelected(m)}
+                    className={cn("rounded-xl border bg-card p-4 transition-colors", m.status === "coming_soon" ? "cursor-not-allowed opacity-60" : "cursor-pointer")}
+                    style={isHovered && m.status !== "coming_soon" ? { borderColor: `${m.color}50` } : undefined}
+                    onClick={() => m.status !== "coming_soon" && setSelected(m)}
                     onMouseEnter={() => setHoveredId(m._id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
@@ -571,13 +571,13 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
                           {m.pipelineCategory === "niche_pipeline" && (
                             <span className="rounded border px-1.25 py-0.25 text-[9px] font-bold" style={{ background: `${m.color}15`, color: m.color, borderColor: `${m.color}25` }}>PIPELINE</span>
                           )}
-                          {m.moduleType === "chatbot" && (
+                          {m.type === "chatbot" && (
                             <span className="rounded border border-primary/30 bg-primary/15 px-1.25 py-0.25 text-[9px] font-bold text-[#a78bfa]">CHATBOT</span>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground capitalize">{m.moduleType} · {m.category}</p>
+                        <p className="text-[11px] text-muted-foreground capitalize">{m.type} · {m.category}</p>
                       </div>
-                      {m.isComingSoon ? (
+                      {m.status === "coming_soon" ? (
                         <span className="rounded-full bg-secondary px-1.75 py-0.5 text-[10px] font-semibold text-muted-foreground">Soon</span>
                       ) : (
                         <span className="rounded-full bg-[#22c55e]/10 px-1.75 py-0.5 text-[10px] font-semibold text-[#22c55e]">Free Trial</span>
@@ -603,7 +603,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
 
                     <div className="flex items-center justify-between">
                       <span className={cn("text-xs font-bold", m.pricing?.monthly ? "text-foreground" : "text-[#22c55e]")}>{m.pricing?.monthly ? `$${m.pricing.monthly}/mo` : "Free"}</span>
-                      {!m.isComingSoon && <span className="text-[11px] font-medium" style={{ color: m.color }}>{m.pipelineCategory === "niche_pipeline" ? "Set up pipeline →" : "Get started →"}</span>}
+                      {m.status !== "coming_soon" && <span className="text-[11px] font-medium" style={{ color: m.color }}>{m.pipelineCategory === "niche_pipeline" ? "Set up pipeline →" : "Get started →"}</span>}
                     </div>
                   </div>
                 );

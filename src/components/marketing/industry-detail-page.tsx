@@ -26,7 +26,7 @@ interface Module {
   badge: string;
   capabilities: string[];
   capabilities_ar?: string[];
-  moduleType: "agent" | "automation";
+  type: "agent" | "automation";
   pipelineCategory?: "standalone" | "niche_pipeline";
   nicheSlug?: string;
   components?: Array<{ name: string; description: string; icon: string; color?: string }>;
@@ -68,7 +68,7 @@ export function IndustryDetailPage({ slug }: { slug: string }) {
   const fetchModules = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const data = await apiClient.get<{ data: Module[] }>("/modules", { nicheSlug: slug });
+      const data = await apiClient.get<{ data: Module[] }>("/services", { nicheSlug: slug });
       setModules((data as any).data || (data as any));
     } catch {
       setError("Failed to load. Please try again.");
@@ -80,8 +80,8 @@ export function IndustryDetailPage({ slug }: { slug: string }) {
   useEffect(() => { fetchModules(); }, [fetchModules]);
 
   const pipeline = modules.find((m) => m.pipelineCategory === "niche_pipeline");
-  const agents = modules.filter((m) => m.moduleType === "agent" && m.pipelineCategory !== "niche_pipeline");
-  const automations = modules.filter((m) => m.moduleType === "automation" && m.pipelineCategory !== "niche_pipeline");
+  const agents = modules.filter((m) => m.type === "agent" && m.pipelineCategory !== "niche_pipeline");
+  const automations = modules.filter((m) => m.type === "automation" && m.pipelineCategory !== "niche_pipeline");
 
   const mName = (m: Module) => (isAr && m.name_ar) ? m.name_ar : m.name;
   const mTagline = (m: Module) => (isAr && m.tagline_ar) ? m.tagline_ar : m.tagline;
@@ -330,7 +330,7 @@ function ModuleCard({ module, onInfo, lang, isAr }: {
 }) {
   const [hovered, setHovered] = useState(false);
   const [infoHovered, setInfoHovered] = useState(false);
-  const href = module.moduleType === "automation"
+  const href = module.type === "automation"
     ? `/automations/${module.slug}`
     : `/agents/${module.slug}`;
   const name = (isAr && module.name_ar) ? module.name_ar : module.name;
@@ -371,7 +371,7 @@ function ModuleCard({ module, onInfo, lang, isAr }: {
           <h3 className="mb-0.75 text-sm leading-tight font-bold text-foreground">
             {name}
           </h3>
-          {module.moduleType === "automation" && (
+          {module.type === "automation" && (
             <span className="inline-flex items-center gap-0.75 rounded-full border border-primary/20 bg-primary/10 px-1.75 py-0.25 text-[10px] font-semibold text-[#a78bfa]">
               <Zap size={8} /> Automation
             </span>
@@ -423,7 +423,7 @@ function InfoModal({ module, onClose, isAr, lang }: {
     };
   }, [onClose]);
 
-  const href = module.moduleType === "automation"
+  const href = module.type === "automation"
     ? `/automations/${module.slug}`
     : `/agents/${module.slug}`;
 

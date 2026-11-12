@@ -36,25 +36,23 @@ interface Module {
   description: string;
   tagline: string;
   category: string;
-  moduleType: string;
+  type: string;
   pipelineType: string;
   pipelineCategory: string;
   nicheSlug: string;
   availableIn: string[];
   components: string[];
-  outputType: string;
   icon: string;
   color: string;
   badge: string;
   capabilities: string[];
-  isActive: boolean;
-  isComingSoon: boolean;
+  status: "active" | "inactive" | "coming_soon";
   sortOrder: number;
   estimatedCostPerRun: string;
   platforms: string[];
   requiredApiKeys: string[];
   heroStats: HeroStat[];
-  features: Feature[];
+  featureCards: Feature[];
   howItWorks: HowItWorksStep[];
   faq: FaqItem[];
   testimonials: Testimonial[];
@@ -71,10 +69,6 @@ const PIPELINE_TYPES = [
   "lead_generation", "content_repurposing", "custom",
 ];
 
-const OUTPUT_TYPES = [
-  "video", "audio", "messages", "leads",
-  "posts", "emails", "content", "reports",
-];
 
 const API_KEY_OPTIONS = [
   "openai", "atlas", "seedance", "youtube",
@@ -113,16 +107,16 @@ const formatLabel = (val: string) =>
 
 const emptyForm = {
   name: "", slug: "", description: "", tagline: "",
-  category: "youtube", moduleType: "agent",
-  pipelineType: "youtube", outputType: "video",
+  category: "youtube", type: "agent",
+  pipelineType: "youtube",
   pipelineCategory: "standalone", nicheSlug: "content_social",
   availableIn: ["UAE"] as string[], components: "",
   icon: "🤖", color: "#7c3aed", badge: "Coming Soon",
   capabilities: "", requiredApiKeys: [] as string[],
-  isActive: true, isComingSoon: true, sortOrder: 1,
+  status: "coming_soon", sortOrder: 1,
   estimatedCostPerRun: "", platforms: "",
   demoVideoUrl: "",
-  heroStats: "", features: "", howItWorks: "",
+  heroStats: "", featureCards: "", howItWorks: "",
   faq: "", testimonials: "",
   pricingMonthly: "49", pricingAnnual: "39", pricingFeatures: "",
   // Chatbot-only tiered pricing (Basic/Pro) — see backend CLAUDE.md "Tiered chatbot pricing"
@@ -173,13 +167,10 @@ export function AdminModules() {
   const fetchModules = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/modules/admin/all");
-      setModules(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      const res = await api.get("/services/admin/all?limit=200");
+      setModules(res.data?.data || []);
     } catch {
-      try {
-        const res = await api.get("/modules?limit=100");
-        setModules(res.data?.data || res.data || []);
-      } catch {}
+      toast.error("Failed to load services");
     }
     setLoading(false);
   };
@@ -198,16 +189,14 @@ export function AdminModules() {
       description: m.description || "",
       tagline: m.tagline || "",
       category: m.category || "youtube",
-      moduleType: m.moduleType || "agent",
+      type: m.type || "agent",
       pipelineType: m.pipelineType || "youtube",
-      outputType: m.outputType || "video",
       icon: m.icon || "🤖",
       color: m.color || "#7c3aed",
       badge: m.badge || "Coming Soon",
       capabilities: (m.capabilities || []).join(", "),
       requiredApiKeys: m.requiredApiKeys || [],
-      isActive: m.isActive ?? true,
-      isComingSoon: m.isComingSoon ?? false,
+      status: m.status || "active",
       sortOrder: m.sortOrder || 1,
       estimatedCostPerRun: m.estimatedCostPerRun || "",
       platforms: (m.platforms || []).join(", "),
@@ -218,8 +207,8 @@ export function AdminModules() {
       demoVideoUrl: m.demoVideoUrl || "",
       heroStats: m.heroStats?.length
         ? m.heroStats.map(s => `${s.label}|${s.value}`).join("\n") : "",
-      features: m.features?.length
-        ? m.features.map(f => `${f.icon}|${f.title}|${f.description}`).join("\n") : "",
+      featureCards: m.featureCards?.length
+        ? m.featureCards.map(f => `${f.icon}|${f.title}|${f.description}`).join("\n") : "",
       howItWorks: m.howItWorks?.length
         ? m.howItWorks.map(s => `${s.step}|${s.title}|${s.description}`).join("\n") : "",
       faq: m.faq?.length
@@ -297,9 +286,8 @@ export function AdminModules() {
         description: form.description.trim(),
         tagline: form.tagline.trim(),
         category: form.category,
-        moduleType: form.moduleType,
+        type: form.type,
         pipelineType: form.pipelineType,
-        outputType: form.outputType,
         icon: form.icon.trim(),
         color: form.color.trim(),
         badge: form.badge.trim(),
@@ -307,8 +295,7 @@ export function AdminModules() {
         nicheSlug: form.nicheSlug,
         availableIn: form.availableIn,
         components: form.components.split("\n").map(c => c.trim()).filter(Boolean),
-        isActive: form.isActive,
-        isComingSoon: form.isComingSoon,
+        status: form.status,
         sortOrder: Number(form.sortOrder),
         estimatedCostPerRun: form.estimatedCostPerRun.trim(),
         demoVideoUrl: form.demoVideoUrl.trim(),
@@ -316,11 +303,11 @@ export function AdminModules() {
         platforms: form.platforms.split(",").map(p => p.trim()).filter(Boolean),
         requiredApiKeys: form.requiredApiKeys,
         heroStats: form.heroStats.trim() ? parseHeroStats(form.heroStats) : [],
-        features: form.features.trim() ? parseFeatures(form.features) : [],
+        featureCards: form.featureCards.trim() ? parseFeatures(form.featureCards) : [],
         howItWorks: form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [],
         faq: form.faq.trim() ? parseFaq(form.faq) : [],
         testimonials: form.testimonials.trim() ? parseTestimonials(form.testimonials) : [],
-        pricing: form.moduleType === "chatbot"
+        pricing: form.type === "chatbot"
           ? {
               monthly: Number(form.tierBasicMonthly),
               annual: Number(form.tierBasicAnnual),
@@ -339,7 +326,7 @@ export function AdminModules() {
         capabilities_ar: form.capabilities_ar.split(",").map(c => c.trim()).filter(Boolean),
       };
 
-      if (form.moduleType === "chatbot") {
+      if (form.type === "chatbot") {
         payload.pricingTiers = [
           {
             key: "basic",
@@ -359,10 +346,10 @@ export function AdminModules() {
       }
 
       if (editingId) {
-        await api.patch(`/modules/${editingId}`, payload);
+        await api.patch(`/services/${editingId}`, payload);
         toast.success("Module updated");
       } else {
-        await api.post("/modules", payload);
+        await api.post("/services", payload);
         toast.success("Module created");
       }
       setShowForm(false);
@@ -377,7 +364,7 @@ export function AdminModules() {
     if (!deleteTarget) return;
     setDeleteLoading(deleteTarget._id);
     try {
-      await api.delete(`/modules/${deleteTarget._id}`);
+      await api.delete(`/services/${deleteTarget._id}`);
       toast.success("Deleted");
       fetchModules();
     } catch {
@@ -411,7 +398,7 @@ export function AdminModules() {
       m.name.toLowerCase().includes(q) ||
       m.slug.toLowerCase().includes(q) ||
       (m.description || "").toLowerCase().includes(q);
-    const matchType = !filterType || m.moduleType === filterType;
+    const matchType = !filterType || m.type === filterType;
     const matchCat = !filterCategory || m.category === filterCategory;
     return matchSearch && matchType && matchCat;
   });
@@ -535,10 +522,10 @@ export function AdminModules() {
                   />
                 </div>
                 <div className="mb-3.5">
-                  {fieldLabel("Module Type")}
+                  {fieldLabel("Type")}
                   <Combobox
-                    value={form.moduleType}
-                    onChange={(v) => setForm(f => ({ ...f, moduleType: v }))}
+                    value={form.type}
+                    onChange={(v) => setForm(f => ({ ...f, type: v }))}
                     options={[
                       { value: "agent", label: "Agent" },
                       { value: "automation", label: "Automation" },
@@ -573,15 +560,17 @@ export function AdminModules() {
                   {fieldLabel("Demo Video URL")}
                   <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="https://youtu.be/..." />
                 </div>
-                <div className="col-span-full flex gap-6">
-                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
-                    <Checkbox checked={form.isActive} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isActive: !!v }))} />
-                    Active (visible to users)
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
-                    <Checkbox checked={form.isComingSoon} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isComingSoon: !!v }))} />
-                    Coming Soon
-                  </label>
+                <div className="mb-3.5">
+                  {fieldLabel("Status", "inactive = hidden from the public catalog")}
+                  <Combobox
+                    value={form.status}
+                    onChange={(v) => setForm(f => ({ ...f, status: v as typeof f.status }))}
+                    options={[
+                      { value: "active", label: "Active" },
+                      { value: "coming_soon", label: "Coming soon" },
+                      { value: "inactive", label: "Inactive (hidden)" },
+                    ]}
+                  />
                 </div>
               </div>
             )}
@@ -595,14 +584,6 @@ export function AdminModules() {
                     value={form.pipelineType}
                     onChange={(v) => setForm(f => ({ ...f, pipelineType: v }))}
                     options={PIPELINE_TYPES.map(p => ({ value: p, label: formatLabel(p) }))}
-                  />
-                </div>
-                <div className="mb-3.5">
-                  {fieldLabel("Output Type")}
-                  <Combobox
-                    value={form.outputType}
-                    onChange={(v) => setForm(f => ({ ...f, outputType: v }))}
-                    options={OUTPUT_TYPES.map(o => ({ value: o, label: formatLabel(o) }))}
                   />
                 </div>
                 <div className="mb-3.5">
@@ -698,8 +679,8 @@ export function AdminModules() {
                 <div className="mb-3.5">
                   {fieldLabel("Features", "one per line: emoji|Title|Description")}
                   <Textarea
-                    value={form.features}
-                    onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
+                    value={form.featureCards}
+                    onChange={e => setForm(f => ({ ...f, featureCards: e.target.value }))}
                     rows={7}
                     placeholder={"⚡|Viral hook generation|Generates psychological hooks...\n📝|AI scriptwriting|Full 8-12 minute scripts..."}
                     className={monoTextareaClass}
@@ -730,7 +711,7 @@ export function AdminModules() {
 
             {/* PRICING TAB */}
             {activeTab === "pricing" && (
-              form.moduleType === "chatbot" ? (
+              form.type === "chatbot" ? (
                 <div>
                   <div className="mb-4 rounded-lg border border-primary/15 bg-primary/[0.06] p-3.5">
                     <p className="mb-1 text-xs font-semibold text-[#a78bfa]">Basic / Pro tiered pricing</p>
@@ -912,7 +893,7 @@ export function AdminModules() {
                       dir="rtl"
                     />
                   </div>
-                  {form.moduleType === "chatbot" ? (
+                  {form.type === "chatbot" ? (
                     <>
                       <div className="col-span-full mb-3.5">
                         {fieldLabel("Basic Features (AR)", "one per line in Arabic")}
@@ -1002,7 +983,7 @@ export function AdminModules() {
                   <div>
                     <div className="mb-0.5 flex items-center gap-1.5">
                       <p className="text-sm font-semibold text-foreground">{m.name}</p>
-                      {m.isActive
+                      {m.status !== "inactive"
                         ? <CheckCircle2 size={12} className="text-[#22c55e]" />
                         : <XCircle size={12} className="text-destructive" />}
                     </div>
@@ -1015,16 +996,16 @@ export function AdminModules() {
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                     style={{
-                      background: m.isComingSoon ? "rgba(245,158,11,0.1)" : m.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.08)",
-                      color: m.isComingSoon ? "#f59e0b" : m.badge === "Live" ? "#22c55e" : "#a78bfa",
+                      background: m.status === "coming_soon" ? "rgba(245,158,11,0.1)" : m.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.08)",
+                      color: m.status === "coming_soon" ? "#f59e0b" : m.badge === "Live" ? "#22c55e" : "#a78bfa",
                     }}
                   >
-                    {m.isComingSoon ? "Coming Soon" : m.badge || "Active"}
+                    {m.status === "coming_soon" ? "Coming Soon" : m.badge || "Active"}
                   </span>
                   <span className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                    {formatLabel(m.moduleType || "agent")}
+                    {formatLabel(m.type || "agent")}
                   </span>
-                  {!m.isActive && (
+                  {m.status === "inactive" && (
                     <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
                       Hidden
                     </span>

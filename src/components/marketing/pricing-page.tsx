@@ -15,7 +15,7 @@ interface Module {
   name: string;
   slug: string;
   tagline?: string;
-  moduleType: string;
+  type: string;
   pipelineCategory?: string;
   nicheSlug?: string;
   icon: string;
@@ -29,7 +29,7 @@ interface Module {
     hasCustomPlan?: boolean;
     customLabel?: string;
   };
-  isComingSoon: boolean;
+  status: "active" | "inactive" | "coming_soon";
 }
 
 type FilterType = "all" | "industries" | "agents" | "automations" | "chatbots";
@@ -62,7 +62,7 @@ export function PricingPage() {
   const fetchModules = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const data = await apiClient.get<{ data: Module[] }>("/modules");
+      const data = await apiClient.get<{ data: Module[] }>("/services", { limit: "100" });
       setModules((data as any).data || (data as any));
     } catch {
       setError("Failed to load pricing. Please try again.");
@@ -80,9 +80,9 @@ export function PricingPage() {
 
   const filtered = withPricing.filter((m) => {
     if (filter === "industries") return m.pipelineCategory === "niche_pipeline";
-    if (filter === "agents")     return m.moduleType === "agent" && m.pipelineCategory !== "niche_pipeline";
-    if (filter === "automations") return m.moduleType === "automation";
-    if (filter === "chatbots")   return m.moduleType === "chatbot";
+    if (filter === "agents")     return m.type === "agent" && m.pipelineCategory !== "niche_pipeline";
+    if (filter === "automations") return m.type === "automation";
+    if (filter === "chatbots")   return m.type === "chatbot";
     return true;
   });
 
@@ -184,8 +184,8 @@ export function PricingPage() {
                   ? Math.round(module.pricing.monthly * (1 - annualSaving / 100))
                   : module.pricing.monthly;
                 const isBundle = module.pipelineCategory === "niche_pipeline";
-                const isAuto = module.moduleType === "automation";
-                const isBot = module.moduleType === "chatbot";
+                const isAuto = module.type === "automation";
+                const isBot = module.type === "chatbot";
                 const href = isBot ? `/chatbots/${module.slug}` : isAuto ? `/automations/${module.slug}` : `/agents/${module.slug}`;
 
                 return (
@@ -357,7 +357,7 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
         </Link>
       </div>
 
-      {module.isComingSoon && (
+      {module.status === "coming_soon" && (
         <div className={cn("absolute inset-0 flex items-center justify-center rounded-2xl backdrop-blur-[2px]", isDark ? "bg-black/70" : "bg-white/85")}>
           <span className={cn("rounded-full border px-4.5 py-2 text-[13px] font-semibold text-muted-foreground", isDark ? "bg-white/5" : "bg-white")}>
             Coming soon

@@ -24,8 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const apiUrl = "https://api.logicmate.io/api/v1";
     const [agentsRes, automationsRes] = await Promise.all([
-      fetch(`${apiUrl}/modules?moduleType=agent&limit=50`, { next: { revalidate: 3600 } }),
-      fetch(`${apiUrl}/modules?moduleType=automation&limit=50`, { next: { revalidate: 3600 } }),
+      fetch(`${apiUrl}/services?type=agent&limit=50`, { next: { revalidate: 3600 } }),
+      fetch(`${apiUrl}/services?type=automation&limit=50`, { next: { revalidate: 3600 } }),
     ]);
 
     if (agentsRes.ok) {

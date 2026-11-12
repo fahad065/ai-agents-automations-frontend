@@ -23,7 +23,7 @@ interface AgentTemplate {
   color: string;
   badge: string;
   capabilities: string[];
-  isActive: boolean;
+  status: "active" | "inactive" | "coming_soon";
   pricing?: { monthly: number; annual: number };
 }
 
@@ -46,7 +46,7 @@ export function AgentsListPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiUrl}/modules?moduleType=agent`, {
+      const res = await fetch(`${apiUrl}/services?type=agent`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error("Failed to fetch");

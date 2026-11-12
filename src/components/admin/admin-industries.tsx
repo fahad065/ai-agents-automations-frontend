@@ -18,7 +18,7 @@ interface Module {
   name: string;
   slug: string;
   icon: string;
-  moduleType: string;
+  type: string;
 }
 
 interface Industry {
@@ -61,7 +61,7 @@ export function AdminIndustries() {
     try {
       const [indRes, modRes] = await Promise.all([
         api.get("/industries"),
-        api.get("/modules?limit=200"),
+        api.get("/services?limit=200"),
       ]);
       setIndustries(indRes.data || []);
       setAllModules((modRes.data?.data || modRes.data) || []);
@@ -389,7 +389,7 @@ export function AdminIndustries() {
                         <span className="text-base">{m.icon}</span>
                         <div className="flex-1">
                           <p className="text-[13px] font-medium text-foreground">{m.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{m.moduleType} · {m.slug}</p>
+                          <p className="text-[11px] text-muted-foreground">{m.type} · {m.slug}</p>
                         </div>
                         {selected && <Globe size={13} className="text-primary" />}
                       </div>

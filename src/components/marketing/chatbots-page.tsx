@@ -121,7 +121,7 @@ export function ChatbotsPage() {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    fetch(`${apiUrl}/modules?moduleType=chatbot`)
+    fetch(`${apiUrl}/services?type=chatbot`)
       .then((res) => (res.ok ? res.json() : { data: [] }))
       .then((json) => setTemplates(json.data || json || []))
       .catch(() => setTemplates([]));

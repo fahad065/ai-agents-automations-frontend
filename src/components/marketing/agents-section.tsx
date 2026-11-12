@@ -23,7 +23,7 @@ interface AgentTemplate {
   description: string;
   description_ar?: string;
   category: string;
-  moduleType: string;
+  type: string;
   icon: string;
   color: string;
   badge: string;
@@ -45,17 +45,17 @@ export function AgentsSection() {
     const fetchAgents = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        // /modules has no combined "agent+automation" filter (only a single
-        // moduleType), and its sort is a global sortOrder shared across all
+        // /services has no combined "agent+automation" filter (only a single
+        // type), and its sort is a global sortOrder shared across all
         // module types — chatbot templates also start at sortOrder 1, so an
         // unfiltered fetch can genuinely surface a chatbot here. That would
         // be a real bug, not a cosmetic one: this section links to
         // /agents/:slug, which doesn't exist for a chatbot's slug (those
         // live at /chatbots/:slug) — so it's filtered out client-side.
-        const res = await fetch(`${apiUrl}/modules?limit=20`);
+        const res = await fetch(`${apiUrl}/services?limit=20`);
         const data = await res.json();
         const list = (data.data || data) as AgentTemplate[];
-        setAgents(list.filter((m) => m.moduleType !== "chatbot").slice(0, 6));
+        setAgents(list.filter((m) => m.type !== "chatbot").slice(0, 6));
       } catch {}
       finally { setLoading(false); }
     };
@@ -137,7 +137,7 @@ export function AgentsSection() {
                         {agent.icon}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {agent.moduleType === "automation" && (
+                        {agent.type === "automation" && (
                           <span className="rounded border border-[#22c55e]/20 bg-[#22c55e]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#22c55e]">
                             <Zap size={8} className="mr-0.5 inline" />
                             AUTO

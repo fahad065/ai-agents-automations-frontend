@@ -32,14 +32,14 @@ interface AutomationTemplate {
   capabilities: string[];
   capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
-  features: { title: string; description: string; icon: string }[];
+  featureCards: { title: string; description: string; icon: string }[];
   howItWorks: { step: string; title: string; description: string }[];
   testimonials: { name: string; role: string; avatar: string; text: string; rating: number }[];
   pricing: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   faq: { question: string; answer: string }[];
   integrations: { name: string; icon: string; description: string }[];
   demoVideoUrl?: string;
-  isComingSoon?: boolean;
+  status?: "active" | "inactive" | "coming_soon";
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -77,7 +77,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     const fetchAutomation = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/modules/${slug}`);
+        const res = await fetch(`${apiUrl}/services/${slug}`);
         if (!res.ok) throw new Error("Not found");
         const data = await res.json();
         setAutomation(data);
@@ -226,7 +226,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       </section>
 
       {/* Coming Soon */}
-      {automation.isComingSoon && (
+      {automation.status === "coming_soon" && (
         <section className="border-b px-6 py-8" style={{ background: `${automation.color}08`, borderColor: `${automation.color}20` }}>
           <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
@@ -313,7 +313,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       )}
 
       {/* Features */}
-      {automation.features?.length > 0 && (
+      {automation.featureCards?.length > 0 && (
         <section className="border-b px-6 py-20">
           <div className="mx-auto max-w-[1100px]">
             <div className="mb-12 text-center">
@@ -325,7 +325,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
               </p>
             </div>
             <div ref={featuresRef} className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-              {automation.features.map((feature) => (
+              {automation.featureCards.map((feature) => (
                 <div key={feature.title} className="rounded-xl border bg-foreground/[0.015] p-5.5">
                   <div className="mb-3 text-2xl">{feature.icon}</div>
                   <h3 className="mb-2 text-[15px] font-semibold text-foreground">

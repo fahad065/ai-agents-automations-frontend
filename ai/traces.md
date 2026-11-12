@@ -496,3 +496,32 @@ Industries pages (`/industries`, `/industries/:slug`,
 `/dashboard/industries`) intentionally untouched until Phase 1/2.
 Verified: tsc + build clean, Playwright confirmed the marketplace grid and
 niche pills render with no `/niches` request.
+
+## 2026-11-12 — Phase 1: catalog readers switched to `/services`
+
+Companion to the backend traces.md entry of the same date. Every catalog
+reader moved from `/modules` to `/services` with the renamed fields
+(`moduleType`→`type`, `features`→`featureCards`, `isActive`/`isComingSoon`
+→`status`): agents/automations/chatbots list + detail pages, the three
+`[slug]/page.tsx` metadata fetchers, `/pricing`, `industry-detail-page`,
+homepage `agents-section`/`automations-section`, `sitemap.ts`,
+`dashboard-api.ts`, the dashboard marketplace (`modules-page.tsx` — it
+still sends `moduleType` to `/usermodules/activate`, since that's the
+UserModule field name, now sourced from `module.type`), and
+`admin-industries.tsx`'s module picker.
+
+Admin editor (`admin-modules.tsx`): the two contradictory "Active" /
+"Coming Soon" checkboxes became one Status Combobox (active / coming
+soon / inactive); the dead Output Type field was removed; endpoints moved
+to `/services` and `/services/admin/all?limit=200`.
+
+Pre-existing bug fixed: `/pricing` and the admin list both showed only 20
+of the 22 catalog entries (default page size). Still open: the editor's
+Testimonials tab never persisted anything (no such field on the schema).
+
+Verified: tsc + build clean; Playwright against mock data generated from
+the real compiled backend seed + mapper — /pricing renders all 22 with 11
+coming-soon overlays, agent feature cards and chatbot $39/$79 tiers render,
+the admin list shows 22 of 22, the edit dialog has the Status picker, and
+saving PATCHes `/services/:id` with only the new field names. Zero calls
+to `/modules`.

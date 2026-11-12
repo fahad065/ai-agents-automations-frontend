@@ -34,13 +34,13 @@ interface AgentTemplate {
   capabilities: string[];
   capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
-  features: { title: string; description: string; icon: string }[];
+  featureCards: { title: string; description: string; icon: string }[];
   howItWorks: { step: string; title: string; description: string }[];
   testimonials: { name: string; role: string; avatar: string; text: string; rating: number }[];
   pricing: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   faq: { question: string; answer: string }[];
   demoVideoUrl?: string;
-  isComingSoon?: boolean;
+  status?: "active" | "inactive" | "coming_soon";
 }
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -82,7 +82,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
     const fetchAgent = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-        const res = await fetch(`${apiUrl}/modules/${slug}`);
+        const res = await fetch(`${apiUrl}/services/${slug}`);
         if (!res.ok) throw new Error("Agent not found");
         const data = await res.json();
         setAgent(data);
@@ -250,7 +250,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {agent.slug === "youtube-agent" && !agent.isComingSoon && (
+      {agent.slug === "youtube-agent" && agent.status !== "coming_soon" && (
         <section className="border-b bg-card px-6 py-12">
           <div className="mx-auto max-w-[900px]">
             <div className="mb-8 text-center">
@@ -307,7 +307,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
         </section>
       )}
 
-      {agent.isComingSoon && (
+      {agent.status === "coming_soon" && (
         <section className="border-b px-6 py-8" style={{ background: `${agent.color}08`, borderColor: `${agent.color}20` }}>
           <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
@@ -397,7 +397,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
       )}
 
       {/* Features */}
-      {agent.features?.length > 0 && (
+      {agent.featureCards?.length > 0 && (
         <section className="border-b px-6 py-20">
           <div className="mx-auto max-w-[1100px]">
             <div className="mb-12 text-center">
@@ -410,7 +410,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             </div>
 
             <div ref={featuresRef} className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-              {agent.features.map((feature) => (
+              {agent.featureCards.map((feature) => (
                 <div key={feature.title} className="rounded-xl border bg-foreground/[0.015] p-5.5">
                   <div className="mb-3 text-2xl">
                     {feature.icon}
