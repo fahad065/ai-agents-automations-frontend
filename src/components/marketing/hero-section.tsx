@@ -152,10 +152,10 @@ export function HeroSection() {
           <Button
             nativeButton={false}
             variant="outline"
-            render={<Link href="/industries" />}
+            render={<Link href="/services" />}
             className="gap-2 rounded-[10px] px-7 py-6 text-[15px] font-medium backdrop-blur-sm"
           >
-            <Play size={14} /> {isAr ? "استكشف القطاعات" : "Explore industries"}
+            <Play size={14} /> {isAr ? "استكشف الخدمات" : "Explore services"}
           </Button>
         </div>
 
@@ -190,7 +190,7 @@ export function HeroSection() {
             {INDUSTRIES.map((n, i) => (
               <Link
                 key={n.label}
-                href={`/industries/${n.slug}`}
+                href={`/services?niche=${n.slug}`}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground no-underline transition-all",
                   isDark ? "border-white/8 bg-white/4" : "border-black/8 bg-black/3"

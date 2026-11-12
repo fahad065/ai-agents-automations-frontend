@@ -77,7 +77,7 @@ const t = {
     ar: "انضم إلى الشركات حول العالم التي تنشر وكلاء ذكاء اصطناعي وأتمتة وشات بوتات تتولى المحتوى والمبيعات والدعم والتسويق على مدار 24 ساعة.",
   },
   ctaPrimary: { en: "Get started free", ar: "ابدأ مجاناً" },
-  ctaSecondaryIndustries: { en: "Browse industries", ar: "تصفح القطاعات" },
+  ctaSecondaryServices: { en: "Browse services", ar: "تصفح الخدمات" },
   trustNoCard: { en: "No credit card required", ar: "لا حاجة لبطاقة ائتمان" },
   trust30Day: { en: "30-day free trial", ar: "30 يوم تجريب مجاني" },
   trustCancel: { en: "Cancel anytime", ar: "إلغاء في أي وقت" },

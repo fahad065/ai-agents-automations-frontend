@@ -22,7 +22,6 @@ export function Footer() {
     [isAr ? "الخدمات" : "Services"]: [
       { label: isAr ? "كل الخدمات" : "All services", href: ALL_SERVICES_HREF },
       ...SERVICE_TYPES.map((t) => ({ label: isAr ? t.label_ar : t.label, href: t.href })),
-      { label: isAr ? "حسب القطاع" : "By industry", href: "/industries" },
     ],
     [tr("footerCompany", lang)]: [
       { label: isAr ? "عن الشركة" : "About", href: "/about" },

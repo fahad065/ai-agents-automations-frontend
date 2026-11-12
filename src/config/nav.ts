@@ -51,7 +51,6 @@ export const navSections: NavSection[] = [
   {
     label: "Administration",
     items: [
-      { title: "Industries", url: "/dashboard/industries", icon: Package, adminOnly: true },
       { title: "Modules", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
       { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },

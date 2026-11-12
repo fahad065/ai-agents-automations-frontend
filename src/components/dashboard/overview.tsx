@@ -10,7 +10,7 @@ import {
   Bot, Zap, Users, Package, TrendingUp,
   Eye, Trash2, FileText,
   ChevronLeft, ChevronRight,
-  CreditCard, Activity, Video, DollarSign, Key, Building2, MessageCircle,
+  CreditCard, Activity, Video, DollarSign, Key, MessageCircle,
 } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { Combobox } from "@/components/ui/combobox";
@@ -172,7 +172,7 @@ function BarChart({ data, color, label }: {
 }
 
 interface SubscribedItem {
-  key: string; name: string; type: "industry" | "agent" | "automation" | "chatbot";
+  key: string; name: string; type: "agent" | "automation" | "chatbot";
   status: string; href: string;
 }
 
@@ -200,7 +200,7 @@ export function DashboardOverview() {
   }>({ videosByDay: [], usersByDay: [] });
 
   const [userStats, setUserStats] = useState({
-    totalAgents: 0, totalAutomations: 0, totalChatbots: 0, totalIndustries: 0,
+    totalAgents: 0, totalAutomations: 0, totalChatbots: 0,
     totalApiKeys: 0, totalBilled: 0, totalRuns: 0,
   });
   const [subscribedItems, setSubscribedItems] = useState<SubscribedItem[]>([]);
@@ -245,12 +245,11 @@ export function DashboardOverview() {
           setChartData({ agents: overview.stats.totalAgents || 0, automations: 0 });
         }
       } else {
-        const [agentsRes, automationsRes, chatbotsRes, apiKeysRes, industriesRes, billRes, runsRes, recentBillRes] = await Promise.all([
+        const [agentsRes, automationsRes, chatbotsRes, apiKeysRes, billRes, runsRes, recentBillRes] = await Promise.all([
           api.get("/usermodules/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/usermodules/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/chatbots").catch(() => ({ data: [] })),
           api.get("/api-keys").catch(() => ({ data: [] })),
-          api.get("/industry-subscriptions").catch(() => ({ data: [] })),
           api.get("/usermodules/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
           api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),
           api.get("/billing?limit=5").catch(() => ({ data: { data: [] } })),
@@ -260,14 +259,12 @@ export function DashboardOverview() {
         const automations = automationsRes.data?.data || [];
         const chatbots = Array.isArray(chatbotsRes.data) ? chatbotsRes.data : [];
         const apiKeys = Array.isArray(apiKeysRes.data) ? apiKeysRes.data : [];
-        const industries = Array.isArray(industriesRes.data) ? industriesRes.data : [];
         const billing = billRes.data || {};
 
         setUserStats({
           totalAgents: agents.length,
           totalAutomations: automations.length,
           totalChatbots: chatbots.length,
-          totalIndustries: industries.length,
           totalApiKeys: apiKeys.length,
           totalBilled: billing.total || 0,
           totalRuns: runsRes.data?.total || 0,
@@ -276,10 +273,6 @@ export function DashboardOverview() {
         setRecentBilling(recentBillRes.data?.data || []);
 
         const items: SubscribedItem[] = [
-          ...industries.map((i: any) => ({
-            key: `industry-${i._id}`, name: i.industryName || i.industrySlug || "Industry",
-            type: "industry" as const, status: i.status || "active", href: "/dashboard/industries",
-          })),
           ...agents.map((a: any) => ({
             key: `agent-${a._id}`, name: a.name || a.moduleName, type: "agent" as const,
             status: a.status || "active", href: "/dashboard/modules",
@@ -325,11 +318,10 @@ export function DashboardOverview() {
   const hour = new Date().getHours();
   const daypart = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const firstName = user?.name?.split(" ")[0] || "there";
-  const totalSubscribed = userStats.totalIndustries + userStats.totalAgents + userStats.totalAutomations + userStats.totalChatbots;
+  const totalSubscribed = userStats.totalAgents + userStats.totalAutomations + userStats.totalChatbots;
 
 
   const TYPE_META: Record<SubscribedItem["type"], { label: string; color: string; icon: any }> = {
-    industry: { label: "Industry", color: "#3b82f6", icon: Building2 },
     agent: { label: "Agent", color: "#7c3aed", icon: Bot },
     automation: { label: "Automation", color: "#22c55e", icon: Zap },
     chatbot: { label: "Chatbot", color: "#ec4899", icon: MessageCircle },
@@ -474,7 +466,7 @@ export function DashboardOverview() {
           <StatCard
             label="Subscribed Modules"
             value={loading ? "—" : totalSubscribed}
-            sub={loading ? undefined : `Industries: ${userStats.totalIndustries} · Agents: ${userStats.totalAgents} · Automations: ${userStats.totalAutomations} · Chatbots: ${userStats.totalChatbots}`}
+            sub={loading ? undefined : `Agents: ${userStats.totalAgents} · Automations: ${userStats.totalAutomations} · Chatbots: ${userStats.totalChatbots}`}
             icon={Package} color="#7c3aed" loading={loading}
             onClick={() => router.push("/dashboard/modules")} />
           <StatCard

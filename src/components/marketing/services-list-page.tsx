@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/hooks/use-lang";
+import { industryName } from "@/lib/translations";
 import { ArrowRight, Loader2, Search, Sparkles } from "lucide-react";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ interface Service {
   tagline_ar?: string;
   description?: string;
   description_ar?: string;
+  nicheSlug?: string;
   icon: string;
   color: string;
   badge?: string;
@@ -51,16 +53,20 @@ function entryPrice(s: Service): number | null {
 }
 
 export function ServicesListPage() {
-  const { isAr } = useLang();
+  const { isAr, lang } = useLang();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type");
+  const initialNiche = searchParams.get("niche") || "";
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [type, setType] = useState<string>(TYPES.includes(initialType as ServiceType) ? initialType! : "");
+  // Industry filter — replaces the old /industries pages. The homepage's
+  // industry links land here as /services?niche=<nicheSlug>.
+  const [niche, setNiche] = useState<string>(initialNiche);
   const [hovered, setHovered] = useState<string | null>(null);
 
   const fetchServices = useCallback(async () => {
@@ -83,11 +89,24 @@ export function ServicesListPage() {
     fetchServices();
   }, [fetchServices]);
 
-  // Keep the filter in the URL so a filtered view can be linked/shared.
-  const changeType = (next: string) => {
-    setType(next);
-    router.replace(next ? `/services?type=${next}` : "/services", { scroll: false });
+  // Keep the filters in the URL so a filtered view can be linked/shared.
+  const syncUrl = (nextType: string, nextNiche: string) => {
+    const qs = new URLSearchParams();
+    if (nextType) qs.set("type", nextType);
+    if (nextNiche) qs.set("niche", nextNiche);
+    router.replace(qs.size ? `/services?${qs}` : "/services", { scroll: false });
   };
+  const changeType = (next: string) => { setType(next); syncUrl(next, niche); };
+  const changeNiche = (next: string) => { setNiche(next); syncUrl(type, next); };
+
+  // Only industries that actually have services, plus whichever one the URL
+  // asked for (so a link to an industry with nothing yet still shows its name).
+  const nicheSlugs = Array.from(new Set(
+    [...services.map((s) => s.nicheSlug), niche].filter(Boolean) as string[],
+  ));
+  const nicheOptions: ComboboxOption[] = nicheSlugs
+    .map((slug) => ({ value: slug, label: industryName(slug, lang) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   const typeOptions: ComboboxOption[] = SERVICE_TYPES.map((t) => {
     const Icon = t.icon;
@@ -102,13 +121,14 @@ export function ServicesListPage() {
   const q = search.trim().toLowerCase();
   const filtered = services.filter((s) => {
     const matchesType = !type || s.type === type;
+    const matchesNiche = !niche || s.nicheSlug === niche;
     const matchesSearch =
       !q ||
       s.name.toLowerCase().includes(q) ||
       (s.name_ar || "").includes(search.trim()) ||
       (s.description || "").toLowerCase().includes(q) ||
       (s.tagline || "").toLowerCase().includes(q);
-    return matchesType && matchesSearch;
+    return matchesType && matchesNiche && matchesSearch;
   });
 
   return (
@@ -172,7 +192,7 @@ export function ServicesListPage() {
         </h2>
 
         {/* Filters */}
-        <div className="mx-auto mb-8 flex max-w-[720px] flex-col gap-2.5 sm:flex-row">
+        <div className="mx-auto mb-8 flex max-w-[880px] flex-col gap-2.5 sm:flex-row">
           <div className="relative flex-1">
             <Search size={15} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -188,6 +208,14 @@ export function ServicesListPage() {
             options={typeOptions}
             placeholder={isAr ? "كل الأنواع" : "All types"}
             searchPlaceholder={isAr ? "ابحث..." : "Search types..."}
+            className="sm:w-[200px]"
+          />
+          <Combobox
+            value={niche}
+            onChange={changeNiche}
+            options={nicheOptions}
+            placeholder={isAr ? "كل القطاعات" : "All industries"}
+            searchPlaceholder={isAr ? "ابحث عن قطاع..." : "Search industries..."}
             className="sm:w-[220px]"
           />
         </div>
@@ -309,8 +337,18 @@ export function ServicesListPage() {
             {filtered.length === 0 && (
               <div className="p-15 text-center">
                 <p className="text-[15px] text-muted-foreground">
-                  {isAr ? "ما لقينا خدمات تطابق بحثك." : "No services match your filters."}
+                  {niche && !search && !type
+                    ? isAr
+                      ? `ما عندنا خدمات جاهزة لقطاع ${industryName(niche, lang)} بعد.`
+                      : `No ready-made services for ${industryName(niche, lang)} yet.`
+                    : isAr ? "ما لقينا خدمات تطابق بحثك." : "No services match your filters."}
                 </p>
+                {niche && !search && !type && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {isAr ? "نقدر نبني لك حل مخصص — " : "We can build one for you — "}
+                    <Link href="/contact" className="font-medium text-primary">{isAr ? "تواصل معنا" : "get in touch"}</Link>
+                  </p>
+                )}
               </div>
             )}
           </>

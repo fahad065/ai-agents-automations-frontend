@@ -132,7 +132,7 @@ export function NichesSection() {
             const isHovered = hovered === n.slug;
             return (
               <Link
-                href={`/industries/${n.slug}`}
+                href={`/services?niche=${n.slug}`}
                 className="niche-card block rounded-[14px] border p-5 no-underline transition-all"
                 key={n.slug}
                 onMouseEnter={() => setHovered(n.slug)}
@@ -177,8 +177,8 @@ export function NichesSection() {
         </div>
 
         <div className="mt-12 text-center">
-          <Button nativeButton={false} variant="outline" render={<Link href="/industries" />} className="gap-2">
-            {isAr ? "تصفح كل القطاعات" : "Browse all industries"} <ArrowRight size={14} />
+          <Button nativeButton={false} variant="outline" render={<Link href="/services" />} className="gap-2">
+            {isAr ? "تصفح كل الخدمات" : "Browse all services"} <ArrowRight size={14} />
           </Button>
         </div>
       </div>

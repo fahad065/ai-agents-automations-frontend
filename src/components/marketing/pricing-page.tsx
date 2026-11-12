@@ -32,18 +32,18 @@ interface Module {
   status: "active" | "inactive" | "coming_soon";
 }
 
-type FilterType = "all" | "industries" | "agents" | "automations" | "chatbots";
+type FilterType = "all" | "pipelines" | "agents" | "automations" | "chatbots";
 
 const FILTER_TABS_EN = [
   { id: "all" as FilterType,         label: "All",         icon: <Star size={13} /> },
-  { id: "industries" as FilterType,  label: "Industries",  icon: <Package size={13} /> },
+  { id: "pipelines" as FilterType,   label: "Pipelines",   icon: <Package size={13} /> },
   { id: "agents" as FilterType,      label: "AI Agents",   icon: <Bot size={13} /> },
   { id: "automations" as FilterType, label: "Automations", icon: <Zap size={13} /> },
   { id: "chatbots" as FilterType,    label: "Chatbots",    icon: <MessageCircle size={13} /> },
 ];
 const FILTER_TABS_AR = [
   { id: "all" as FilterType,         label: "الكل",        icon: <Star size={13} /> },
-  { id: "industries" as FilterType,  label: "القطاعات",    icon: <Package size={13} /> },
+  { id: "pipelines" as FilterType,   label: "الحزم المتكاملة", icon: <Package size={13} /> },
   { id: "agents" as FilterType,      label: "الوكلاء",     icon: <Bot size={13} /> },
   { id: "automations" as FilterType, label: "الأتمتة",     icon: <Zap size={13} /> },
   { id: "chatbots" as FilterType,    label: "الشات بوت",   icon: <MessageCircle size={13} /> },
@@ -79,7 +79,7 @@ export function PricingPage() {
   const withPricing = modules.filter((m) => m.pricing?.monthly > 0);
 
   const filtered = withPricing.filter((m) => {
-    if (filter === "industries") return m.pipelineCategory === "niche_pipeline";
+    if (filter === "pipelines") return m.pipelineCategory === "niche_pipeline";
     if (filter === "agents")     return m.type === "agent" && m.pipelineCategory !== "niche_pipeline";
     if (filter === "automations") return m.type === "automation";
     if (filter === "chatbots")   return m.type === "chatbot";
@@ -254,7 +254,7 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const typeLabel = isBundle ? "Industry Bundle" : isBot ? "Chatbot" : isAuto ? "Automation" : "AI Agent";
+  const typeLabel = isBundle ? "Pipeline" : isBot ? "Chatbot" : isAuto ? "Automation" : "AI Agent";
   const typeColor = isBundle ? "#f59e0b" : isBot ? "#a78bfa" : isAuto ? "#a78bfa" : module.color;
   const TypeIcon = isBundle ? Package : isBot ? MessageCircle : isAuto ? Zap : Bot;
 

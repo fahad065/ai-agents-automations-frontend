@@ -596,3 +596,32 @@ breadcrumbs correct on all three landing pages and detail pages; tiles show
 9 / 4 / 9; card → /agents/youtube-agent; /services/restaurant-chatbot →
 /chatbots/restaurant-chatbot; unknown slug 404s; footer columns as above;
 mobile menu expands, navigates and closes; no mobile overflow.
+
+## 2026-11-12 — industries removed from the site
+
+Deleted `/industries`, `/industries/[slug]`, `/dashboard/industries`, and
+`industries-list-page.tsx` / `industry-detail-page.tsx` / `admin-industries.tsx`;
+removed the admin nav entry, the footer "By industry" link, and the dashboard
+overview's `/industry-subscriptions` fetch + "Industry" items.
+
+The homepage still sells "built for 12 industries" (positioning, not the
+collection), so those links now go to `/services?niche=<nicheSlug>` — new
+industry filter on `/services` (Combobox, synced to `?niche=`, stacks with
+`?type=`). An industry with no services yet shows "No ready-made services
+for X yet — get in touch" instead of an empty grid. Hero "Explore industries"
+→ "Explore services"; niches section + CTA "Browse all industries" →
+"Browse all services". `next.config.ts` 308-redirects old URLs:
+`/industries` → `/services`, `/industries/:slug` → `/services?niche=:slug`,
+`/dashboard/industries` → `/dashboard/cms-modules`.
+
+Pricing's "Industries" tab never used the industries collection (it showed
+`niche_pipeline` services) — renamed "Pipelines" so it doesn't read as the
+removed concept.
+
+Noticed, not changed: the CMS catch-all `/[slug]` route answers unknown URLs
+with a "not found" message but HTTP 200 (a soft 404) — pre-existing.
+
+Verified: build clean (42 routes); Playwright vs mock API: old URLs redirect
+as above, `?niche=real_estate` → 4 services, `+type=chatbot` → 1,
+`?niche=logistics` → contact empty state, no `/industries` links on the
+homepage or footer, pricing tabs All/Pipelines/AI Agents/Automations/Chatbots.

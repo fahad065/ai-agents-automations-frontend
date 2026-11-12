@@ -66,10 +66,10 @@ export function CtaSection() {
           <Button
             nativeButton={false}
             variant="outline"
-            render={<Link href="/industries" />}
+            render={<Link href="/services" />}
             className="gap-2 rounded-[10px] px-7 py-6 text-[15px] font-medium"
           >
-            <Bot size={15} /> {tr("ctaSecondaryIndustries", lang)}
+            <Bot size={15} /> {tr("ctaSecondaryServices", lang)}
           </Button>
         </div>
 
