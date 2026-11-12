@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
@@ -14,7 +15,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight, Star, ChevronDown, ChevronUp,
   CheckCircle2, Play, Loader2,
-  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -270,9 +270,13 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
           style={{ background: `${agent.color}07` }}
         />
         <div className="relative mx-auto max-w-[1100px]">
-          <Link href="/chatbots" className="mb-10 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline opacity-70">
-            <ArrowLeft size={13} /> {isAr ? "كل الشات بوتات" : "All chatbots"}
-          </Link>
+          <div className="mb-10">
+            <BreadcrumbNav items={[
+              { label: isAr ? "الخدمات" : "Services", href: "/services" },
+              { label: isAr ? "الشات بوت" : "Chatbots", href: "/chatbots" },
+              { label: (isAr && agent.name_ar) ? agent.name_ar : agent.name },
+            ]} />
+          </div>
 
           <div className="grid items-center gap-14" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
             {/* Left */}

@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
-import { Menu, X, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, ChevronDown, Globe, ArrowRight, LayoutGrid } from "lucide-react";
+import { SERVICE_TYPES, ALL_SERVICES_HREF, isServicesPath } from "@/config/service-types";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -28,13 +29,40 @@ export function Navbar() {
   const { isDark, colors } = useTheme();
   const { isAr } = useLang();
 
+  // "Services" is a menu (see SERVICE_TYPES), not a plain link — it's the
+  // one entry point to everything LogicMate sells.
   const NAV_LINKS = [
-    { label: isAr ? "الخدمات" : "Services", href: "/services" },
-    { label: isAr ? "الشات بوت" : "Chatbots", href: "/chatbots" },
     { label: tr("navAbout", lang as "en" | "ar"), href: "/about" },
     { label: tr("navPricing", lang as "en" | "ar"), href: "/pricing" },
   ];
+  const servicesLabel = isAr ? "الخدمات" : "Services";
   const langRef = useRef<HTMLDivElement>(null);
+  const servicesRef = useRef<HTMLDivElement>(null);
+  const [servicesOpen, setServicesOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openServices = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setServicesOpen(true);
+  };
+  // Small delay so moving the pointer from the trigger into the panel
+  // doesn't flicker it shut.
+  const scheduleCloseServices = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setServicesOpen(false), 150);
+  };
+
+  useEffect(() => {
+    setServicesOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setServicesOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const savedLang = localStorage.getItem("lm_lang");
@@ -52,6 +80,7 @@ export function Navbar() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      if (servicesRef.current && !servicesRef.current.contains(e.target as Node)) setServicesOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -99,6 +128,93 @@ export function Navbar() {
 
           {/* Desktop nav links */}
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+            {/* Services menu */}
+            <div
+              ref={servicesRef}
+              style={{ position: "relative" }}
+              onMouseEnter={openServices}
+              onMouseLeave={scheduleCloseServices}
+            >
+              <button
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={servicesOpen}
+                onClick={() => setServicesOpen((o) => !o)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  padding: "7px 11px 7px 13px", borderRadius: "8px", border: "none", cursor: "pointer",
+                  fontSize: "14px", fontWeight: 500, fontFamily: "inherit",
+                  color: isServicesPath(pathname) || servicesOpen ? "#a78bfa" : colors.textMuted,
+                  background: isServicesPath(pathname) ? "rgba(124,58,237,0.1)" : "transparent",
+                }}
+              >
+                {servicesLabel}
+                <ChevronDown size={14} style={{ transition: "transform 0.15s", transform: servicesOpen ? "rotate(180deg)" : "none" }} />
+              </button>
+
+              {servicesOpen && (
+                <div
+                  role="menu"
+                  style={{
+                    position: "absolute", top: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
+                    width: "380px", padding: "8px",
+                    background: dropdownBg, border: `1px solid ${dropdownBorder}`, borderRadius: "14px",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.16)", zIndex: 100,
+                  }}
+                >
+                  {SERVICE_TYPES.map((t) => {
+                    const Icon = t.icon;
+                    const active = pathname === t.href || pathname.startsWith(t.href + "/");
+                    return (
+                      <Link
+                        key={t.key}
+                        href={t.href}
+                        role="menuitem"
+                        className="lm-menu-item"
+                        style={{
+                          display: "flex", alignItems: "flex-start", gap: "12px",
+                          padding: "10px 12px", borderRadius: "10px", textDecoration: "none",
+                          background: active ? "rgba(124,58,237,0.08)" : undefined,
+                        }}
+                      >
+                        <span style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                          width: "34px", height: "34px", borderRadius: "9px",
+                          background: `${t.color}14`, border: `1px solid ${t.color}30`, color: t.color,
+                        }}>
+                          <Icon size={17} />
+                        </span>
+                        <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>
+                            {isAr ? t.label_ar : t.label}
+                          </span>
+                          <span style={{ fontSize: "12px", lineHeight: 1.45, color: colors.textMuted }}>
+                            {isAr ? t.description_ar : t.description}
+                          </span>
+                        </span>
+                      </Link>
+                    );
+                  })}
+                  <div style={{ height: "1px", margin: "6px 4px", background: dropdownBorder }} />
+                  <Link
+                    href={ALL_SERVICES_HREF}
+                    role="menuitem"
+                    className="lm-menu-item"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "10px 12px", borderRadius: "10px", textDecoration: "none",
+                      fontSize: "13px", fontWeight: 600, color: "#a78bfa",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <LayoutGrid size={15} /> {isAr ? "كل الخدمات" : "View all services"}
+                    </span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
               return (
@@ -201,7 +317,46 @@ export function Navbar() {
           backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
           padding: "16px 24px 24px",
+          maxHeight: "calc(100vh - 64px)", overflowY: "auto",
         }}>
+          {/* Services — expandable group */}
+          <button
+            type="button"
+            aria-expanded={mobileServicesOpen}
+            onClick={() => setMobileServicesOpen((o) => !o)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+              padding: "13px 0", border: "none", background: "transparent", cursor: "pointer",
+              fontSize: "15px", fontWeight: 500, fontFamily: "inherit",
+              color: isServicesPath(pathname) ? "#a78bfa" : colors.textMuted,
+              borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+            }}
+          >
+            {servicesLabel}
+            <ChevronDown size={16} style={{ transition: "transform 0.15s", transform: mobileServicesOpen ? "rotate(180deg)" : "none" }} />
+          </button>
+          {mobileServicesOpen && (
+            <div style={{ padding: "6px 0 8px" }}>
+              {SERVICE_TYPES.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <Link key={t.key} href={t.href} onClick={() => setMobileOpen(false)} style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "10px 4px", textDecoration: "none", fontSize: "14px", color: colors.text,
+                  }}>
+                    <Icon size={16} color={t.color} /> {isAr ? t.label_ar : t.label}
+                  </Link>
+                );
+              })}
+              <Link href={ALL_SERVICES_HREF} onClick={() => setMobileOpen(false)} style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "10px 4px", textDecoration: "none", fontSize: "14px", fontWeight: 600, color: "#a78bfa",
+              }}>
+                <LayoutGrid size={16} /> {isAr ? "كل الخدمات" : "View all services"}
+              </Link>
+            </div>
+          )}
+
           {NAV_LINKS.map((link) => (
             <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} style={{
               display: "block", padding: "13px 0",
@@ -246,6 +401,7 @@ export function Navbar() {
       )}
 
       <style>{`
+        .lm-menu-item:hover { background: ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.035)"}; }
         @media (max-width: 900px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: flex !important; }

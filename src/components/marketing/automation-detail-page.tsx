@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { useLang } from "@/hooks/use-lang";
 import { useAuthStore } from "@/store/auth.store";
 import { gsap } from "gsap";
@@ -9,7 +10,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight, Star, ChevronDown, ChevronUp,
   CheckCircle2, Play, Loader2, ExternalLink,
-  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -148,9 +148,13 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       {/* Hero */}
       <section ref={heroRef} className="border-b px-6 pt-25 pb-18">
         <div className="mx-auto max-w-[1100px]">
-          <Link href="/automations" className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline">
-            <ArrowLeft size={14} /> {isAr ? "كل الأتمتة" : "All automations"}
-          </Link>
+          <div className="mb-10">
+            <BreadcrumbNav items={[
+              { label: isAr ? "الخدمات" : "Services", href: "/services" },
+              { label: isAr ? "الأتمتة" : "Automations", href: "/automations" },
+              { label: (isAr && automation.name_ar) ? automation.name_ar : automation.name },
+            ]} />
+          </div>
 
           <div className="grid items-center gap-12" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
             {/* Left */}

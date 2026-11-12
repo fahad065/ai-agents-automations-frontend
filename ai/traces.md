@@ -554,3 +554,45 @@ not Industries; landing shows 22; filters give 9 / 4 / 9 with the URL
 updating; `?type=automation` deep link works; agent, chatbot and
 automation detail pages render under `/services/`; unknown slug 404s; no
 mobile overflow at 390px.
+
+## 2026-11-12 — Marketing site navigation restructured around Services
+
+User asked for a top bar where visitors immediately understand what LogicMate
+offers, with the footer and the landing/detail pages matching.
+
+**Structure (single source: `src/config/service-types.ts`)**
+- `/services` — every service, with search + type filter, plus a "browse by
+  type" row of three tiles (AI Agents / Automations / Chatbots, with live
+  counts) linking to each type's landing page.
+- `/agents`, `/automations`, `/chatbots` — one landing page per type.
+- `/agents/<slug>`, `/automations/<slug>`, `/chatbots/<slug>` — the ONLY
+  detail URLs. `/services/<slug>` now permanently redirects (308) to the
+  canonical one (it briefly rendered the detail page itself, which meant two
+  URLs per page). `/services` cards link straight to canonical URLs.
+- Breadcrumbs everywhere follow the same tree:
+  `Services › AI Agents › Youtube Agent` (detail pages' "← All agents" back
+  links replaced; `/chatbots` gained a breadcrumb it never had).
+
+**Top bar:** `Services ▾` · `About` · `Pricing`. Services opens (hover or
+click; Escape / outside click / navigation close it) a menu with the three
+types — icon + one-line description each — and "View all services". Mobile:
+Services is an expandable group. The standalone "Chatbots" link is gone (it's
+under Services now). Services highlights on any `/services`, `/agents`,
+`/automations`, `/chatbots` path.
+
+**Footer:** Services (All services, AI Agents, Automations, Chatbots, By
+industry) · Company (About, Pricing, Blog, Contact, FAQ) · Legal. "By
+industry" keeps the `/industries` pages reachable until they become bundles.
+
+**Sitemap:** now lists `/chatbots` and every chatbot detail page (it only had
+agents + automations), built from one `/services` fetch via the shared URL
+helper; API host now comes from `NEXT_PUBLIC_API_URL` like the rest of the
+site instead of a hardcoded one.
+
+Verified with Playwright against a mock API on :4000 (data from the real
+compiled seed + mapper): top bar = Services/About/Pricing; menu lists the 3
+types + View all; Escape closes; menu → /agents with Services highlighted;
+breadcrumbs correct on all three landing pages and detail pages; tiles show
+9 / 4 / 9; card → /agents/youtube-agent; /services/restaurant-chatbot →
+/chatbots/restaurant-chatbot; unknown slug 404s; footer columns as above;
+mobile menu expands, navigates and closes; no mobile overflow.

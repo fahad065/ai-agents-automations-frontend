@@ -81,7 +81,7 @@ export function AgentsListPage() {
     <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
       <div className="mx-auto max-w-[1280px] px-6 pt-22.5">
-        <BreadcrumbNav items={[{ label: "Agents" }]} />
+        <BreadcrumbNav items={[{ label: isAr ? "الخدمات" : "Services", href: "/services" }, { label: isAr ? "الوكلاء الذكيون" : "AI Agents" }]} />
       </div>
 
       {/* Hero */}

@@ -68,7 +68,7 @@ export function AutomationsListPage() {
     <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
       <div className="mx-auto max-w-[1280px] px-6 pt-22.5">
-        <BreadcrumbNav items={[{ label: "Automations" }]} />
+        <BreadcrumbNav items={[{ label: isAr ? "الخدمات" : "Services", href: "/services" }, { label: isAr ? "الأتمتة" : "Automations" }]} />
       </div>
 
       {/* Hero */}

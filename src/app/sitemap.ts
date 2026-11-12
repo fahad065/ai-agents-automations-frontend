@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { SERVICE_TYPES, SERVICE_TYPE_BY_KEY, serviceDetailHref, type ServiceTypeKey } from "@/config/service-types";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.logicmate.io";
@@ -6,8 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
     { url: baseUrl, priority: 1.0, changeFrequency: "weekly" as const },
     { url: `${baseUrl}/services`, priority: 0.9, changeFrequency: "weekly" as const },
-    { url: `${baseUrl}/agents`, priority: 0.9, changeFrequency: "weekly" as const },
-    { url: `${baseUrl}/automations`, priority: 0.9, changeFrequency: "weekly" as const },
+    ...SERVICE_TYPES.map((t) => ({ url: `${baseUrl}${t.href}`, priority: 0.9, changeFrequency: "weekly" as const })),
     { url: `${baseUrl}/pricing`, priority: 0.9, changeFrequency: "weekly" as const },
     { url: `${baseUrl}/about`, priority: 0.7, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/contact`, priority: 0.7, changeFrequency: "monthly" as const },
@@ -19,36 +19,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/cookies`, priority: 0.3, changeFrequency: "yearly" as const },
   ].map(page => ({ ...page, lastModified: new Date() }));
 
-  let agentPages: MetadataRoute.Sitemap = [];
-  let automationPages: MetadataRoute.Sitemap = [];
-
+  // One canonical detail URL per service (agents, automations and chatbots).
+  let servicePages: MetadataRoute.Sitemap = [];
   try {
-    const apiUrl = "https://api.logicmate.io/api/v1";
-    const [agentsRes, automationsRes] = await Promise.all([
-      fetch(`${apiUrl}/services?type=agent&limit=50`, { next: { revalidate: 3600 } }),
-      fetch(`${apiUrl}/services?type=automation&limit=50`, { next: { revalidate: 3600 } }),
-    ]);
-
-    if (agentsRes.ok) {
-      const data = await agentsRes.json();
-      agentPages = (data.data || data || []).map((a: any) => ({
-        url: `${baseUrl}/agents/${a.slug}`,
-        lastModified: new Date(a.updatedAt || a.createdAt || Date.now()),
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      }));
-    }
-
-    if (automationsRes.ok) {
-      const data = await automationsRes.json();
-      automationPages = (data.data || data || []).map((a: any) => ({
-        url: `${baseUrl}/automations/${a.slug}`,
-        lastModified: new Date(a.updatedAt || a.createdAt || Date.now()),
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      }));
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.logicmate.io/api/v1";
+    const res = await fetch(`${apiUrl}/services?limit=200`, { next: { revalidate: 3600 } });
+    if (res.ok) {
+      const data = await res.json();
+      servicePages = (data.data || [])
+        .filter((s: any) => SERVICE_TYPE_BY_KEY[s.type as ServiceTypeKey])
+        .map((s: any) => ({
+          url: `${baseUrl}${serviceDetailHref(s.type, s.slug)}`,
+          lastModified: new Date(s.updatedAt || s.createdAt || Date.now()),
+          changeFrequency: "weekly" as const,
+          priority: 0.8,
+        }));
     }
   } catch {}
 
-  return [...staticPages, ...agentPages, ...automationPages];
+  return [...staticPages, ...servicePages];
 }

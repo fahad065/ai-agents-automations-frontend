@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/hooks/use-lang";
-import { ArrowRight, Bot, Loader2, MessageCircle, Search, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Loader2, Search, Sparkles } from "lucide-react";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { SERVICE_TYPES, SERVICE_TYPE_BY_KEY, serviceDetailHref, type ServiceTypeKey } from "@/config/service-types";
 
-type ServiceType = "agent" | "automation" | "chatbot";
+type ServiceType = ServiceTypeKey;
 
 interface Service {
   _id: string;
@@ -32,12 +33,14 @@ interface Service {
   pricingTiers?: { key: string; monthly: number }[];
 }
 
-const TYPES: ServiceType[] = ["agent", "automation", "chatbot"];
+const TYPES: ServiceType[] = SERVICE_TYPES.map((t) => t.key);
 
-const TYPE_META: Record<ServiceType, { en: string; ar: string; icon: typeof Bot; color: string }> = {
-  agent: { en: "AI Agent", ar: "وكيل ذكي", icon: Bot, color: "#7c3aed" },
-  automation: { en: "Automation", ar: "أتمتة", icon: Zap, color: "#f59e0b" },
-  chatbot: { en: "Chatbot", ar: "شات بوت", icon: MessageCircle, color: "#06b6d4" },
+// Singular badge text on each card ("AI Agent"), vs the plural section
+// labels in SERVICE_TYPES ("AI Agents").
+const SINGULAR: Record<ServiceType, { en: string; ar: string }> = {
+  agent: { en: "AI Agent", ar: "وكيل ذكي" },
+  automation: { en: "Automation", ar: "أتمتة" },
+  chatbot: { en: "Chatbot", ar: "شات بوت" },
 };
 
 // Chatbots price per tier — the entry price is the lowest tier.
@@ -86,14 +89,15 @@ export function ServicesListPage() {
     router.replace(next ? `/services?type=${next}` : "/services", { scroll: false });
   };
 
-  const typeOptions: ComboboxOption[] = TYPES.map((t) => {
-    const Icon = TYPE_META[t].icon;
+  const typeOptions: ComboboxOption[] = SERVICE_TYPES.map((t) => {
+    const Icon = t.icon;
     return {
-      value: t,
-      label: isAr ? TYPE_META[t].ar : `${TYPE_META[t].en}s`,
-      icon: <Icon className="size-4" style={{ color: TYPE_META[t].color }} />,
+      value: t.key,
+      label: isAr ? t.label_ar : t.label,
+      icon: <Icon className="size-4" style={{ color: t.color }} />,
     };
   });
+  const countByType = (key: ServiceType) => services.filter((s) => s.type === key).length;
 
   const q = search.trim().toLowerCase();
   const filtered = services.filter((s) => {
@@ -133,6 +137,40 @@ export function ServicesListPage() {
       </section>
 
       <div className="mx-auto max-w-[1280px] px-6 pb-24">
+        {/* Browse by type — the three things LogicMate offers, each with its own landing page */}
+        <div className="mb-12 grid gap-3 sm:grid-cols-3">
+          {SERVICE_TYPES.map((t) => {
+            const Icon = t.icon;
+            const n = countByType(t.key);
+            return (
+              <Link
+                key={t.key}
+                href={t.href}
+                className="group flex items-start gap-3.5 rounded-[14px] border bg-card p-5 no-underline transition-colors hover:bg-muted/40"
+              >
+                <span
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl border"
+                  style={{ background: `${t.color}14`, borderColor: `${t.color}30`, color: t.color }}
+                >
+                  <Icon size={20} />
+                </span>
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="text-[15px] font-bold text-foreground">{isAr ? t.label_ar : t.label}</span>
+                  <span className="text-[13px] leading-snug text-muted-foreground">{isAr ? t.description_ar : t.description}</span>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium" style={{ color: t.color }}>
+                    {loading ? (isAr ? "استكشف" : "Explore") : isAr ? `استكشف ${n}` : `Explore ${n}`}
+                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <h2 className="mb-5 text-center text-xl font-bold text-foreground">
+          {isAr ? "كل الخدمات" : "All services"}
+        </h2>
+
         {/* Filters */}
         <div className="mx-auto mb-8 flex max-w-[720px] flex-col gap-2.5 sm:flex-row">
           <div className="relative flex-1">
@@ -179,7 +217,7 @@ export function ServicesListPage() {
             <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
               {filtered.map((s) => {
                 const isHovered = hovered === s._id;
-                const meta = TYPE_META[s.type as ServiceType];
+                const meta = SERVICE_TYPE_BY_KEY[s.type as ServiceType];
                 const TypeIcon = meta.icon;
                 const comingSoon = s.status === "coming_soon";
                 const price = entryPrice(s);
@@ -190,7 +228,7 @@ export function ServicesListPage() {
                 return (
                   <Link
                     key={s._id}
-                    href={`/services/${s.slug}`}
+                    href={serviceDetailHref(s.type, s.slug)}
                     className="no-underline"
                     onMouseEnter={() => setHovered(s._id)}
                     onMouseLeave={() => setHovered(null)}
@@ -215,7 +253,7 @@ export function ServicesListPage() {
                             className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.75 text-[11px] font-semibold"
                             style={{ color: meta.color, background: `${meta.color}12`, borderColor: `${meta.color}30` }}
                           >
-                            <TypeIcon size={11} /> {isAr ? meta.ar : meta.en}
+                            <TypeIcon size={11} /> {isAr ? SINGULAR[meta.key].ar : SINGULAR[meta.key].en}
                           </span>
                           {comingSoon && (
                             <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-0.75 text-[11px] font-semibold text-amber-600">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
+import { SERVICE_TYPES, ALL_SERVICES_HREF } from "@/config/service-types";
 import { FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
 
 const SOCIALS = [
@@ -17,15 +18,15 @@ export function Footer() {
   const { lang, isAr } = useLang();
 
   const LINKS = {
-    [tr("footerProduct", lang)]: [
-      { label: isAr ? "القطاعات" : "Industries", href: "/industries" },
-      { label: isAr ? "الوكلاء الذكيون" : "AI Agents", href: "/agents" },
-      { label: isAr ? "الأتمتة" : "Automations", href: "/automations" },
-      { label: isAr ? "الشات بوت" : "Chatbots", href: "/chatbots" },
-      { label: isAr ? "الأسعار" : "Pricing", href: "/pricing" },
+    // Same three types, same order, as the navbar's Services menu.
+    [isAr ? "الخدمات" : "Services"]: [
+      { label: isAr ? "كل الخدمات" : "All services", href: ALL_SERVICES_HREF },
+      ...SERVICE_TYPES.map((t) => ({ label: isAr ? t.label_ar : t.label, href: t.href })),
+      { label: isAr ? "حسب القطاع" : "By industry", href: "/industries" },
     ],
     [tr("footerCompany", lang)]: [
       { label: isAr ? "عن الشركة" : "About", href: "/about" },
+      { label: isAr ? "الأسعار" : "Pricing", href: "/pricing" },
       { label: isAr ? "المدونة" : "Blog", href: "/blog" },
       { label: isAr ? "تواصل معنا" : "Contact", href: "/contact" },
       { label: isAr ? "الأسئلة الشائعة" : "FAQ", href: "/faq" },

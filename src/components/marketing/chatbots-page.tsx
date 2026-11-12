@@ -12,6 +12,7 @@ import {
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 
 const GENERAL_DEMO_URL = "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/logicmate-chatbots-product-demo.mp4";
 
@@ -129,8 +130,12 @@ export function ChatbotsPage() {
 
   return (
     <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-background">
+      <div className="mx-auto max-w-[1280px] px-6 pt-22.5">
+        <BreadcrumbNav items={[{ label: isAr ? "الخدمات" : "Services", href: "/services" }, { label: isAr ? "الشات بوت" : "Chatbots" }]} />
+      </div>
+
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative mx-auto max-w-[820px] overflow-hidden px-6 pt-30 pb-20 text-center">
+      <section className="relative mx-auto max-w-[820px] overflow-hidden px-6 pt-6 pb-20 text-center">
         <div className="pointer-events-none absolute top-1/2 left-1/2 size-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.06] blur-[100px]" />
 
         <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/[0.08] px-4 py-1.5 text-[13px] font-medium text-primary">
