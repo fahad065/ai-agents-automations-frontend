@@ -22,7 +22,6 @@ interface AgentTemplate {
   tagline_ar?: string;
   description: string;
   description_ar?: string;
-  category: string;
   type: string;
   icon: string;
   color: string;

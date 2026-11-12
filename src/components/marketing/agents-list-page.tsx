@@ -18,7 +18,7 @@ interface AgentTemplate {
   tagline_ar?: string;
   description: string;
   description_ar?: string;
-  category: string;
+  nicheSlug?: string;
   icon: string;
   color: string;
   badge: string;
@@ -65,7 +65,7 @@ export function AgentsListPage() {
 
   const categories = [
     "all",
-    ...Array.from(new Set(agents.map((a) => a.category))),
+    ...Array.from(new Set(agents.map((a) => a.nicheSlug).filter(Boolean) as string[])),
   ];
 
   const filtered = agents.filter((a) => {
@@ -73,7 +73,7 @@ export function AgentsListPage() {
       !search ||
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       a.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = category === "all" || a.category === category;
+    const matchesCategory = category === "all" || a.nicheSlug === category;
     return matchesSearch && matchesCategory;
   });
 

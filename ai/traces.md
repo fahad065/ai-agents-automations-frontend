@@ -525,3 +525,32 @@ coming-soon overlays, agent feature cards and chatbot $39/$79 tiers render,
 the admin list shows 22 of 22, the edit dialog has the Status picker, and
 saving PATCHes `/services/:id` with only the new field names. Zero calls
 to `/modules`.
+
+## 2026-11-12 — Services landing page; navbar Industries -> Services; schema trims
+
+- Navbar: "Industries" replaced with "Services" -> `/services` (same
+  `NAV_LINKS` array feeds desktop and mobile menus). `/industries` pages
+  still exist and are still linked from the footer and homepage —
+  intentionally untouched until industries become bundle services.
+- New `/services` (`services-list-page.tsx`): fetches all services, search
+  + a type `Combobox` (AI Agents / Automations / Chatbots), filter synced
+  to `?type=` so filtered views are linkable. Chatbot cards show "From
+  $X" (lowest tier). Cards link to `/services/<slug>`.
+- New `/services/[slug]`: server-side lookup of the service's type, then
+  renders the existing `AgentDetailPage`/`AutomationDetailPage`/
+  `ChatbotDetailPage` — no duplicated detail code; unknown slug -> 404.
+  Old `/agents|/automations|/chatbots/<slug>` URLs still work.
+- Services trimmed to the UML: `/agents` and `/automations` filter by
+  `nicheSlug` instead of `category`; marketplace lost its country picker
+  and per-run cost line; admin editor lost Category / Available In /
+  Est. Cost fields (niche filter replaces the category filter).
+- `User` types: removed `totalVideosGenerated`/`totalCreditsUsed`/
+  `trialReminderSent` (dropped from the backend schema).
+
+Verified: tsc + build clean; Playwright against a mock API on :4000
+serving data generated from the real compiled seed + mapper (needed
+because `/services/[slug]` fetches server-side): navbar shows Services,
+not Industries; landing shows 22; filters give 9 / 4 / 9 with the URL
+updating; `?type=automation` deep link works; agent, chatbot and
+automation detail pages render under `/services/`; unknown slug 404s; no
+mobile overflow at 390px.

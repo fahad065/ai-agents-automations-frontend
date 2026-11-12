@@ -11,9 +11,6 @@ export interface User {
     isFreeForever?: boolean;
     trialStartDate?: string;
     trialEndDate?: string;
-    trialReminderSent?: boolean;
-    totalVideosGenerated?: number;
-    totalCreditsUsed?: number;
     totalBilled?: number;
   }
   

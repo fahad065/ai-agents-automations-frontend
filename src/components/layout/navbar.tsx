@@ -29,7 +29,7 @@ export function Navbar() {
   const { isAr } = useLang();
 
   const NAV_LINKS = [
-    { label: isAr ? "القطاعات" : "Industries", href: "/industries" },
+    { label: isAr ? "الخدمات" : "Services", href: "/services" },
     { label: isAr ? "الشات بوت" : "Chatbots", href: "/chatbots" },
     { label: tr("navAbout", lang as "en" | "ar"), href: "/about" },
     { label: tr("navPricing", lang as "en" | "ar"), href: "/pricing" },

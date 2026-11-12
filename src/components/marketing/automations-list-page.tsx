@@ -18,7 +18,7 @@ interface AutomationTemplate {
   tagline_ar?: string;
   description: string;
   description_ar?: string;
-  category: string;
+  nicheSlug?: string;
   icon: string;
   color: string;
   badge: string;
@@ -56,12 +56,12 @@ export function AutomationsListPage() {
 
   useEffect(() => { fetchAutomations(); }, [fetchAutomations]);
 
-  const categories = ["all", ...Array.from(new Set(automations.map((a) => a.category)))];
+  const categories = ["all", ...Array.from(new Set(automations.map((a) => a.nicheSlug).filter(Boolean) as string[]))];
   const filtered = automations.filter((a) => {
     const matchesSearch = !search ||
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       a.description.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch && (category === "all" || a.category === category);
+    return matchesSearch && (category === "all" || a.nicheSlug === category);
   });
 
   return (

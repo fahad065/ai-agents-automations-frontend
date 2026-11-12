@@ -43,9 +43,8 @@ interface UserModule {
   totalCost?: number;
   createdAt: string;
   moduleId?: {
-    name: string; slug: string; category: string;
+    name: string; slug: string;
     icon: string; color: string; capabilities: string[];
-    estimatedCostPerRun?: string;
   };
 }
 
@@ -66,15 +65,14 @@ const CHATBOT_TEMPLATE_ENUM: Record<string, string> = {
 
 interface AvailableModule {
   _id: string; name: string; slug: string; tagline?: string; description?: string;
-  type: string; category: string; pipelineType: string;
+  type: string; pipelineType: string;
   pipelineCategory: string; nicheSlug: string;
   icon: string; color: string; badge?: string;
   capabilities: string[]; requiredApiKeys: string[];
-  platforms: string[]; estimatedCostPerRun?: string;
+  platforms: string[];
   pricing?: { monthly: number; annual: number };
   status: "active" | "inactive" | "coming_soon";
   components?: { key: string; name: string; description: string; icon: string; isRequired: boolean; sortOrder: number }[];
-  availableIn: string[];
 }
 
 // Niche filter pills are derived from the loaded modules' own nicheSlug
@@ -83,11 +81,6 @@ interface AvailableModule {
 // removed; services.nicheSlug is the one source of truth for this now.
 const nicheLabel = (slug: string) =>
   slug.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-
-const COUNTRIES = [
-  { code: 'UAE',   label: 'UAE',   flag: '🇦🇪' },
-  { code: 'Kenya', label: 'Kenya', flag: '🇰🇪' },
-];
 
 const STATUS_CONFIG: Record<string, string> = {
   active:    "bg-[#22c55e]/10 text-[#22c55e]",
@@ -187,8 +180,8 @@ function AddChatbotModal({ module, onClose, onSuccess }: {
 }
 
 // ── Subscribe Modal ───────────────────────────────────────────
-function SubscribeModal({ module, country, onClose, onSuccess }: {
-  module: AvailableModule; country: string; onClose: () => void; onSuccess: () => void;
+function SubscribeModal({ module, onClose, onSuccess }: {
+  module: AvailableModule; onClose: () => void; onSuccess: () => void;
 }) {
   const isNichePipeline = module.pipelineCategory === "niche_pipeline";
   const [step, setStep] = useState<"overview" | "setup">("overview");
@@ -210,7 +203,7 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
         moduleType: module.type, pipelineType: module.pipelineType,
         name: form.name, niche: form.niche, apiKeyMode: form.apiKeyMode,
         scheduleFrequency: form.scheduleFrequency, scheduleTime: form.scheduleTime,
-        country, nicheSlug: module.nicheSlug, pipelineCategory: module.pipelineCategory,
+        nicheSlug: module.nicheSlug, pipelineCategory: module.pipelineCategory,
       });
       toast.success(isNichePipeline ? "Pipeline activated — 30-day trial started!" : "Module added — 30-day trial started!");
       onSuccess(); onClose();
@@ -222,7 +215,6 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
 
   const needsYouTube = module.pipelineType === "youtube" || module.platforms?.includes("youtube");
   const needsInstagram = module.pipelineType === "instagram" || module.platforms?.includes("instagram");
-  const countryFlag = country === "UAE" ? "🇦🇪" : "🇰🇪";
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -239,10 +231,7 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
                   <span className="rounded px-1.5 py-0.5 text-[9px] font-bold" style={{ background: `${module.color}20`, color: module.color, border: `1px solid ${module.color}30` }}>PIPELINE</span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-xs text-muted-foreground">30-day free trial · No credit card</p>
-                <span className="rounded border bg-secondary px-1.5 py-0.25 text-[11px] text-muted-foreground">{countryFlag} {country}</span>
-              </div>
+              <p className="text-xs text-muted-foreground">30-day free trial · No credit card</p>
             </div>
           </div>
           <div className="mt-3 flex gap-0.5 rounded-lg bg-background p-0.75">
@@ -315,9 +304,6 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
                     {module.pricing?.monthly ? `$${module.pricing.monthly}/mo` : "Free"}
                   </p>
                 </div>
-                {module.estimatedCostPerRun && (
-                  <p className="text-xs text-muted-foreground">+ ~{module.estimatedCostPerRun} in API costs per run</p>
-                )}
                 <p className="mt-1.5 text-xs font-medium text-[#22c55e]">✓ 30-day free trial included</p>
               </div>
             </div>
@@ -326,15 +312,6 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
           {/* ── SETUP ── */}
           {step === "setup" && (
             <div className="flex flex-col gap-3.5">
-              {/* Country confirmation */}
-              <div className="flex items-center justify-between rounded-lg border bg-background px-3.5 py-2.5">
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Country</p>
-                  <p className="text-[11px] text-muted-foreground">Module will be set up for this market</p>
-                </div>
-                <span className="text-sm font-bold text-foreground">{countryFlag} {country}</span>
-              </div>
-
               {/* For niche pipelines: show component summary instead of niche field */}
               {isNichePipeline ? (
                 <div className="rounded-lg border p-3.5" style={{ background: `${module.color}08`, borderColor: `${module.color}20` }}>
@@ -440,9 +417,8 @@ function SubscribeModal({ module, country, onClose, onSuccess }: {
 }
 
 // ── Marketplace Modal ─────────────────────────────────────────
-function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, initialSlug }: {
-  onClose: () => void; onSubscribed: () => void;
-  country: string; onCountryChange: (c: string) => void; initialSlug?: string | null;
+function MarketplaceModal({ onClose, onSubscribed, initialSlug }: {
+  onClose: () => void; onSubscribed: () => void; initialSlug?: string | null;
 }) {
   const [modules, setModules] = useState<AvailableModule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -454,7 +430,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
   useEffect(() => {
     setLoading(true);
     setActiveNiche("all");
-    api.get(`/services?limit=100&country=${country}`).then((modRes) => {
+    api.get("/services?limit=100").then((modRes) => {
       const mods: AvailableModule[] = modRes.data?.data || [];
       setModules(mods);
       setLoading(false);
@@ -467,7 +443,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
         if (match) setSelected(match);
       }
     }).catch(() => setLoading(false));
-  }, [country, initialSlug]);
+  }, [initialSlug]);
 
   const nicheSlugs = Array.from(new Set(modules.map(m => m.nicheSlug).filter(Boolean))) as string[];
 
@@ -481,7 +457,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
     if (selected.type === "chatbot") {
       return <AddChatbotModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
     }
-    return <SubscribeModal module={selected} country={country} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
+    return <SubscribeModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
   }
 
   return (
@@ -493,13 +469,6 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
               <DialogTitle>Module Marketplace</DialogTitle>
               <p className="mt-1 text-xs text-muted-foreground">Choose a module to add to your account</p>
             </div>
-            {/* Country selector */}
-            <Combobox
-              value={country}
-              onChange={onCountryChange}
-              options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
-              className="w-auto min-w-[140px]"
-            />
           </div>
 
           {/* Search */}
@@ -575,7 +544,7 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
                             <span className="rounded border border-primary/30 bg-primary/15 px-1.25 py-0.25 text-[9px] font-bold text-[#a78bfa]">CHATBOT</span>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground capitalize">{m.type} · {m.category}</p>
+                        <p className="text-[11px] text-muted-foreground capitalize">{m.type}{m.nicheSlug ? ` · ${nicheLabel(m.nicheSlug)}` : ""}</p>
                       </div>
                       {m.status === "coming_soon" ? (
                         <span className="rounded-full bg-secondary px-1.75 py-0.5 text-[10px] font-semibold text-muted-foreground">Soon</span>
@@ -628,7 +597,6 @@ export function MyModulesPage() {
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [editModule, setEditModule] = useState<UserModule | null>(null);
   const [runningModuleId, setRunningModuleId] = useState<string | null>(null);
-  const [country, setCountry] = useState("UAE");
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserModule | null>(null);
 
@@ -707,13 +675,6 @@ export function MyModulesPage() {
           <p className="text-sm text-muted-foreground">Manage your subscribed agents and automations.</p>
         </div>
         <div className="flex items-center gap-2.5">
-          {/* Country selector */}
-          <Combobox
-            value={country}
-            onChange={setCountry}
-            options={COUNTRIES.map(c => ({ value: c.code, label: c.label, icon: <span className="text-sm">{c.flag}</span> }))}
-            className="w-auto min-w-[150px]"
-          />
           <Button onClick={() => setShowMarketplace(true)} className="gap-2">
             <Plus size={15} /> Add Module
           </Button>
@@ -860,8 +821,6 @@ export function MyModulesPage() {
         <MarketplaceModal
           onClose={() => { setShowMarketplace(false); setPendingSlug(null); }}
           onSubscribed={fetchModules}
-          country={country}
-          onCountryChange={setCountry}
           initialSlug={pendingSlug}
         />
       )}

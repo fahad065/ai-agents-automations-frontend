@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Combobox } from "@/components/ui/combobox";
 import {
@@ -35,12 +34,10 @@ interface Module {
   slug: string;
   description: string;
   tagline: string;
-  category: string;
   type: string;
   pipelineType: string;
   pipelineCategory: string;
   nicheSlug: string;
-  availableIn: string[];
   components: string[];
   icon: string;
   color: string;
@@ -48,7 +45,6 @@ interface Module {
   capabilities: string[];
   status: "active" | "inactive" | "coming_soon";
   sortOrder: number;
-  estimatedCostPerRun: string;
   platforms: string[];
   requiredApiKeys: string[];
   heroStats: HeroStat[];
@@ -76,13 +72,6 @@ const API_KEY_OPTIONS = [
   "linkedin", "twitter", "facebook",
 ];
 
-const CATEGORY_OPTIONS = [
-  "youtube", "instagram", "tiktok", "arabic",
-  "podcast", "sales", "real_estate", "support",
-  "social", "social_media", "email", "content", "marketing",
-  "operations", "finance", "custom",
-];
-
 const BADGE_OPTIONS = ["Live", "Coming Soon", "New", "Beta", "Popular"];
 
 const NICHE_OPTIONS = [
@@ -100,21 +89,19 @@ const NICHE_OPTIONS = [
   { slug: "internal_copilot", name: "Internal Copilot" },
 ];
 
-const COUNTRY_OPTIONS = ["UAE", "Kenya"];
-
 const formatLabel = (val: string) =>
   val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 const emptyForm = {
   name: "", slug: "", description: "", tagline: "",
-  category: "youtube", type: "agent",
+  type: "agent",
   pipelineType: "youtube",
   pipelineCategory: "standalone", nicheSlug: "content_social",
-  availableIn: ["UAE"] as string[], components: "",
+  components: "",
   icon: "🤖", color: "#7c3aed", badge: "Coming Soon",
   capabilities: "", requiredApiKeys: [] as string[],
   status: "coming_soon", sortOrder: 1,
-  estimatedCostPerRun: "", platforms: "",
+  platforms: "",
   demoVideoUrl: "",
   heroStats: "", featureCards: "", howItWorks: "",
   faq: "", testimonials: "",
@@ -160,7 +147,7 @@ export function AdminModules() {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>("basic");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
+  const [filterNiche, setFilterNiche] = useState("");
 
   useEffect(() => { fetchModules(); }, []);
 
@@ -188,7 +175,6 @@ export function AdminModules() {
       slug: m.slug || "",
       description: m.description || "",
       tagline: m.tagline || "",
-      category: m.category || "youtube",
       type: m.type || "agent",
       pipelineType: m.pipelineType || "youtube",
       icon: m.icon || "🤖",
@@ -198,11 +184,9 @@ export function AdminModules() {
       requiredApiKeys: m.requiredApiKeys || [],
       status: m.status || "active",
       sortOrder: m.sortOrder || 1,
-      estimatedCostPerRun: m.estimatedCostPerRun || "",
       platforms: (m.platforms || []).join(", "),
       pipelineCategory: m.pipelineCategory || "standalone",
       nicheSlug: m.nicheSlug || "content_social",
-      availableIn: m.availableIn?.length ? m.availableIn : ["UAE"],
       components: (m.components || []).join("\n"),
       demoVideoUrl: m.demoVideoUrl || "",
       heroStats: m.heroStats?.length
@@ -285,7 +269,6 @@ export function AdminModules() {
         slug: form.slug.trim(),
         description: form.description.trim(),
         tagline: form.tagline.trim(),
-        category: form.category,
         type: form.type,
         pipelineType: form.pipelineType,
         icon: form.icon.trim(),
@@ -293,11 +276,9 @@ export function AdminModules() {
         badge: form.badge.trim(),
         pipelineCategory: form.pipelineCategory,
         nicheSlug: form.nicheSlug,
-        availableIn: form.availableIn,
         components: form.components.split("\n").map(c => c.trim()).filter(Boolean),
         status: form.status,
         sortOrder: Number(form.sortOrder),
-        estimatedCostPerRun: form.estimatedCostPerRun.trim(),
         demoVideoUrl: form.demoVideoUrl.trim(),
         capabilities: form.capabilities.split(",").map(c => c.trim()).filter(Boolean),
         platforms: form.platforms.split(",").map(p => p.trim()).filter(Boolean),
@@ -374,14 +355,6 @@ export function AdminModules() {
     setDeleteTarget(null);
   };
 
-  const toggleCountry = (c: string) => {
-    setForm(f => ({
-      ...f,
-      availableIn: f.availableIn.includes(c)
-        ? f.availableIn.filter(x => x !== c)
-        : [...f.availableIn, c],
-    }));
-  };
 
   const toggleApiKey = (key: string) => {
     setForm(f => ({
@@ -399,7 +372,7 @@ export function AdminModules() {
       m.slug.toLowerCase().includes(q) ||
       (m.description || "").toLowerCase().includes(q);
     const matchType = !filterType || m.type === filterType;
-    const matchCat = !filterCategory || m.category === filterCategory;
+    const matchCat = !filterNiche || m.nicheSlug === filterNiche;
     return matchSearch && matchType && matchCat;
   });
 
@@ -442,15 +415,15 @@ export function AdminModules() {
           className="w-auto min-w-[150px]"
         />
         <Combobox
-          value={filterCategory}
-          onChange={setFilterCategory}
-          options={CATEGORY_OPTIONS.map((c) => ({ value: c, label: formatLabel(c) }))}
-          placeholder="All categories"
-          searchPlaceholder="Search categories..."
+          value={filterNiche}
+          onChange={setFilterNiche}
+          options={NICHE_OPTIONS.map((n) => ({ value: n.slug, label: n.name }))}
+          placeholder="All niches"
+          searchPlaceholder="Search niches..."
           className="w-auto min-w-[170px]"
         />
-        {(search || filterType || filterCategory) && (
-          <Button variant="outline" onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}>
+        {(search || filterType || filterNiche) && (
+          <Button variant="outline" onClick={() => { setSearch(""); setFilterType(""); setFilterNiche(""); }}>
             Clear
           </Button>
         )}
@@ -533,17 +506,7 @@ export function AdminModules() {
                     ]}
                   />
                 </div>
-                <div className="mb-3.5">
-                  {fieldLabel("Category")}
-                  <Combobox
-                    value={form.category}
-                    onChange={(v) => setForm(f => ({ ...f, category: v }))}
-                    options={CATEGORY_OPTIONS.map(c => ({ value: c, label: formatLabel(c) }))}
-                    searchPlaceholder="Search categories..."
-                  />
-                </div>
                 <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
-                <div className="mb-3.5">{fieldLabel("Est. Cost Per Run")}<Input value={form.estimatedCostPerRun} onChange={e => setForm(f => ({ ...f, estimatedCostPerRun: e.target.value }))} placeholder="$3-5 Per Video" /></div>
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Description")}
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
@@ -605,17 +568,6 @@ export function AdminModules() {
                     options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
                     searchPlaceholder="Search niches..."
                   />
-                </div>
-                <div className="col-span-full mb-3.5">
-                  {fieldLabel("Available In", "select countries")}
-                  <div className="flex gap-3">
-                    {COUNTRY_OPTIONS.map(c => (
-                      <label key={c} className="flex cursor-pointer items-center gap-1.5 text-[13px] text-foreground">
-                        <Checkbox checked={form.availableIn.includes(c)} onCheckedChange={() => toggleCountry(c)} />
-                        {c}
-                      </label>
-                    ))}
-                  </div>
                 </div>
                 {form.pipelineCategory === "niche_pipeline" && (
                   <div className="col-span-full mb-3.5">
@@ -961,7 +913,7 @@ export function AdminModules() {
         <div className="rounded-xl border bg-card p-10 text-center">
           <p className="mb-2.5 text-sm text-muted-foreground">No modules match your filters</p>
           <button
-            onClick={() => { setSearch(""); setFilterType(""); setFilterCategory(""); }}
+            onClick={() => { setSearch(""); setFilterType(""); setFilterNiche(""); }}
             className="border-none bg-transparent text-[13px] text-[#a78bfa] underline"
           >
             Clear filters
@@ -1021,19 +973,9 @@ export function AdminModules() {
 
               {/* Info badges */}
               <div className="mb-3 flex flex-wrap gap-1.5">
-                {m.category && (
-                  <span className="rounded-md border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                    {formatLabel(m.category)}
-                  </span>
-                )}
                 {m.pipelineType && (
                   <span className="rounded-md border border-blue-500/15 bg-blue-500/[0.08] px-2 py-0.5 text-[10px] text-blue-400">
                     {formatLabel(m.pipelineType)}
-                  </span>
-                )}
-                {m.estimatedCostPerRun && (
-                  <span className="rounded-md border border-[#22c55e]/15 bg-[#22c55e]/[0.06] px-2 py-0.5 text-[10px] text-[#22c55e]">
-                    {m.estimatedCostPerRun}
                   </span>
                 )}
                 {m.pricing?.monthly ? (
@@ -1046,11 +988,6 @@ export function AdminModules() {
                     {formatLabel(m.nicheSlug)}
                   </span>
                 )}
-                {m.availableIn?.length ? (
-                  <span className="rounded-md border border-cyan-500/20 bg-cyan-500/[0.08] px-2 py-0.5 text-[10px] text-cyan-600">
-                    {m.availableIn.join(" · ")}
-                  </span>
-                ) : null}
               </div>
 
               {/* Actions */}

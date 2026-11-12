@@ -1,0 +1,283 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useLang } from "@/hooks/use-lang";
+import { ArrowRight, Bot, Loader2, MessageCircle, Search, Sparkles, Zap } from "lucide-react";
+import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+
+type ServiceType = "agent" | "automation" | "chatbot";
+
+interface Service {
+  _id: string;
+  type: ServiceType | "bundle";
+  name: string;
+  name_ar?: string;
+  slug: string;
+  tagline?: string;
+  tagline_ar?: string;
+  description?: string;
+  description_ar?: string;
+  icon: string;
+  color: string;
+  badge?: string;
+  capabilities: string[];
+  capabilities_ar?: string[];
+  status: "active" | "inactive" | "coming_soon";
+  pricing?: { monthly: number; annual: number };
+  pricingTiers?: { key: string; monthly: number }[];
+}
+
+const TYPES: ServiceType[] = ["agent", "automation", "chatbot"];
+
+const TYPE_META: Record<ServiceType, { en: string; ar: string; icon: typeof Bot; color: string }> = {
+  agent: { en: "AI Agent", ar: "وكيل ذكي", icon: Bot, color: "#7c3aed" },
+  automation: { en: "Automation", ar: "أتمتة", icon: Zap, color: "#f59e0b" },
+  chatbot: { en: "Chatbot", ar: "شات بوت", icon: MessageCircle, color: "#06b6d4" },
+};
+
+// Chatbots price per tier — the entry price is the lowest tier.
+function entryPrice(s: Service): number | null {
+  const tierPrices = (s.pricingTiers || []).map((t) => t.monthly).filter((p) => p > 0);
+  if (tierPrices.length) return Math.min(...tierPrices);
+  return s.pricing?.monthly ? s.pricing.monthly : null;
+}
+
+export function ServicesListPage() {
+  const { isAr } = useLang();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialType = searchParams.get("type");
+
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState<string>(TYPES.includes(initialType as ServiceType) ? initialType! : "");
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiUrl}/services?limit=100`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setServices((data.data || []).filter((s: Service) => TYPES.includes(s.type as ServiceType)));
+    } catch {
+      setError(isAr ? "تعذّر تحميل الخدمات. حاول مرة ثانية." : "Failed to load services. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [isAr]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
+
+  // Keep the filter in the URL so a filtered view can be linked/shared.
+  const changeType = (next: string) => {
+    setType(next);
+    router.replace(next ? `/services?type=${next}` : "/services", { scroll: false });
+  };
+
+  const typeOptions: ComboboxOption[] = TYPES.map((t) => {
+    const Icon = TYPE_META[t].icon;
+    return {
+      value: t,
+      label: isAr ? TYPE_META[t].ar : `${TYPE_META[t].en}s`,
+      icon: <Icon className="size-4" style={{ color: TYPE_META[t].color }} />,
+    };
+  });
+
+  const q = search.trim().toLowerCase();
+  const filtered = services.filter((s) => {
+    const matchesType = !type || s.type === type;
+    const matchesSearch =
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      (s.name_ar || "").includes(search.trim()) ||
+      (s.description || "").toLowerCase().includes(q) ||
+      (s.tagline || "").toLowerCase().includes(q);
+    return matchesType && matchesSearch;
+  });
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-[1280px] px-6 pt-22.5">
+        <BreadcrumbNav items={[{ label: isAr ? "الخدمات" : "Services" }]} />
+      </div>
+
+      <section className="relative mx-auto max-w-[760px] overflow-hidden px-6 pt-6 pb-12 text-center">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.06] blur-[100px]" />
+        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] px-4 py-1.5 text-[13px] font-medium text-primary">
+          <Sparkles size={12} /> {isAr ? "كل خدمات LogicMate" : "Every LogicMate service"}
+        </div>
+        <h1 className="mb-4.5 text-[clamp(34px,5.5vw,60px)] leading-[1.05] font-extrabold tracking-[-0.04em] text-foreground">
+          {isAr ? "وكلاء، أتمتة وشات بوت" : "Agents, automations"}
+          <br />
+          <span className="bg-gradient-to-br from-[#c4b5fd] via-[#a78bfa] to-[#7c3aed] bg-clip-text text-transparent">
+            {isAr ? "في مكان واحد." : "and chatbots."}
+          </span>
+        </h1>
+        <p className="mx-auto max-w-[520px] text-[17px] leading-[1.7] text-muted-foreground">
+          {isAr
+            ? "اختر الخدمة المناسبة لعملك، اشترك، وخلّها تشتغل عنك 24/7."
+            : "Pick the service that fits your business, subscribe, and let it run for you 24/7."}
+        </p>
+      </section>
+
+      <div className="mx-auto max-w-[1280px] px-6 pb-24">
+        {/* Filters */}
+        <div className="mx-auto mb-8 flex max-w-[720px] flex-col gap-2.5 sm:flex-row">
+          <div className="relative flex-1">
+            <Search size={15} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={isAr ? "ابحث عن خدمة..." : "Search services..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Combobox
+            value={type}
+            onChange={changeType}
+            options={typeOptions}
+            placeholder={isAr ? "كل الأنواع" : "All types"}
+            searchPlaceholder={isAr ? "ابحث..." : "Search types..."}
+            className="sm:w-[220px]"
+          />
+        </div>
+
+        {loading && (
+          <div className="p-20 text-center">
+            <Loader2 size={32} className="mx-auto mb-4 animate-spin text-primary" />
+            <p className="text-muted-foreground">{isAr ? "جاري التحميل..." : "Loading services..."}</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="p-15 text-center">
+            <p className="mb-4 text-sm text-destructive">{error}</p>
+            <Button onClick={fetchServices}>{isAr ? "حاول مرة ثانية" : "Try again"}</Button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <p className="mb-5 text-center text-[13px] text-muted-foreground">
+              {isAr
+                ? `${filtered.length} خدمة`
+                : `${filtered.length} service${filtered.length !== 1 ? "s" : ""}`}
+            </p>
+
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+              {filtered.map((s) => {
+                const isHovered = hovered === s._id;
+                const meta = TYPE_META[s.type as ServiceType];
+                const TypeIcon = meta.icon;
+                const comingSoon = s.status === "coming_soon";
+                const price = entryPrice(s);
+                const name = isAr && s.name_ar ? s.name_ar : s.name;
+                const tagline = isAr && s.tagline_ar ? s.tagline_ar : s.tagline;
+                const description = isAr && s.description_ar ? s.description_ar : s.description;
+                const caps = isAr && s.capabilities_ar?.length ? s.capabilities_ar : s.capabilities || [];
+                return (
+                  <Link
+                    key={s._id}
+                    href={`/services/${s.slug}`}
+                    className="no-underline"
+                    onMouseEnter={() => setHovered(s._id)}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    <div
+                      className="flex h-full cursor-pointer flex-col rounded-[14px] border p-5.5 transition-all"
+                      style={{
+                        background: isHovered ? `${s.color}06` : undefined,
+                        borderColor: isHovered ? s.color + "30" : undefined,
+                        boxShadow: isHovered ? `0 0 30px ${s.color}10` : undefined,
+                      }}
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-2">
+                        <div
+                          className="flex size-12 items-center justify-center rounded-xl border text-[22px]"
+                          style={{ background: `${s.color}15`, borderColor: `${s.color}30` }}
+                        >
+                          {s.icon}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.75 text-[11px] font-semibold"
+                            style={{ color: meta.color, background: `${meta.color}12`, borderColor: `${meta.color}30` }}
+                          >
+                            <TypeIcon size={11} /> {isAr ? meta.ar : meta.en}
+                          </span>
+                          {comingSoon && (
+                            <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-0.75 text-[11px] font-semibold text-amber-600">
+                              {isAr ? "قريباً" : "Coming soon"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <h2 className="mb-1.5 text-[17px] font-bold text-foreground">{name}</h2>
+                      {tagline && (
+                        <p className="mb-2.5 text-[13px] font-medium" style={{ color: s.color }}>{tagline}</p>
+                      )}
+                      {description && (
+                        <p className="mb-4 line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
+                      )}
+
+                      <div className="mb-4.5 flex flex-wrap gap-1.5">
+                        {caps.slice(0, 3).map((cap) => (
+                          <span key={cap} className="rounded-full border bg-secondary px-2 py-0.75 text-[11px] text-muted-foreground">
+                            {cap}
+                          </span>
+                        ))}
+                        {caps.length > 3 && (
+                          <span className="rounded-full border bg-secondary px-2 py-0.75 text-[11px] text-muted-foreground">
+                            +{caps.length - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-auto flex items-center justify-between">
+                        {price ? (
+                          <div>
+                            {s.pricingTiers?.length ? (
+                              <span className="mr-1 text-xs text-muted-foreground">{isAr ? "من" : "From"}</span>
+                            ) : null}
+                            <span className="text-xl font-bold text-foreground">${price}</span>
+                            <span className="text-xs text-muted-foreground">/mo</span>
+                          </div>
+                        ) : (
+                          <span className="text-[13px] text-muted-foreground">{isAr ? "السعر قريباً" : "Pricing TBA"}</span>
+                        )}
+                        <div className="flex items-center gap-1 text-[13px] font-medium" style={{ color: s.color }}>
+                          {isAr ? "عرض التفاصيل" : "View details"} <ArrowRight size={13} />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="p-15 text-center">
+                <p className="text-[15px] text-muted-foreground">
+                  {isAr ? "ما لقينا خدمات تطابق بحثك." : "No services match your filters."}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

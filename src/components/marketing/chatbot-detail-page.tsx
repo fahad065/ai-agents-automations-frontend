@@ -44,7 +44,6 @@ interface ChatbotModule {
   tagline_ar?: string;
   description: string;
   description_ar?: string;
-  category: string;
   icon: string;
   color: string;
   badge: string;
