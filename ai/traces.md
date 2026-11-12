@@ -439,3 +439,47 @@ Preferences and Appearance, not a separate page), an existing document
 row displays correctly, the document-type Combobox shows the UAE presets
 for a UAE-country user, the delete `AlertDialog` opens with the right
 document name, and there's zero horizontal overflow at 390px.
+
+## 2026-11-12 — `users` module aligned to the finalized backend schema
+
+Companion to the backend's matching traces.md entry (see
+`ai-agents-automations-backend/ai/architecture.md`'s `users` section for
+the full detail) — user asked to implement the complete users module,
+frontend and backend, per the finalized schema in that redesign's
+`architecture.md`.
+
+- `users-page.tsx` (admin users CRUD): `isActive: boolean` → `status:
+  'active'|'inactive'` throughout (interface, edit-form state, the
+  Account Active `Switch`, the status filter `Combobox` — options changed
+  from `true`/`false` to `active`/`inactive`, the query param sent to
+  `GET /users` changed from `isActive=` to `status=`). The "Modules"
+  column now sums `totalAgents + totalAutomations + totalChatbots` — the
+  backend's admin list response gained `totalChatbots` alongside the
+  (still-present-in-the-API-response, now-computed-not-stored)
+  `totalAgents`/`totalAutomations`.
+- `settings-page.tsx`'s Notifications tab: local `notifs` state keys
+  renamed to match the backend's new nested shape 1:1
+  (`onComplete`/`onFail`/`trialExpiry`/`billing`/`emailUpdates` instead of
+  `notifyOnComplete`/etc.), read from `u.notifyPreferences?.x` instead of
+  flat top-level fields, and the save call now sends
+  `{notifyPreferences: notifs}` instead of 5 flat keys.
+- `usage-page.tsx`'s `TenantUsage` interface: `isActive?: boolean` → the
+  real `status?: 'active'|'inactive'` (was declared but never actually
+  rendered anywhere — a type-only fix).
+- `types/index.ts` and `auth.store.ts`'s `User` interfaces: `planType` was
+  typed `"trial" | "lifetime" | "pro" | "free"` — none of the last three
+  match the real backend `PlanType` enum
+  (`trial|paid|free_forever|expired`), confirmed via grep this was pure
+  type drift with no runtime logic actually depending on the wrong values.
+  Fixed both to the real enum, and added `isActive`→`status` there too
+  (`types/index.ts`'s `User` turned out to be dead/unused — nothing
+  imports it — fixed anyway for correctness since it was cheap).
+
+Verified: `tsc --noEmit` + `npm run build` clean (44 routes), and a
+Playwright pass against mocked `GET /users` / `PATCH /users/profile`
+confirmed: the Modules column sums all three counts correctly, the
+Account Active switch reflects `status === "active"` for an active user,
+the status filter dropdown offers Active/Inactive, and saving
+notification preferences posts the correct nested
+`{notifyPreferences: {...}}` body and the toggles render the mocked
+values correctly on load.

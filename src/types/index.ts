@@ -5,9 +5,9 @@ export interface User {
     role: "user" | "admin";
     avatar?: string;
     provider: "local" | "google";
-    isActive: boolean;
+    status: "active" | "inactive";
     createdAt: string;
-    planType?: "trial" | "lifetime" | "pro" | "free";
+    planType?: "trial" | "paid" | "free_forever" | "expired";
     isFreeForever?: boolean;
     trialStartDate?: string;
     trialEndDate?: string;

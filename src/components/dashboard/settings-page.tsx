@@ -58,8 +58,8 @@ export function SettingsPage() {
   const [pendingDeletionAt, setPendingDeletionAt] = useState<string | null>(null);
 
   const [notifs, setNotifs] = useState({
-    notifyOnComplete: true, notifyOnFail: true,
-    notifyTrialExpiry: true, notifyBilling: true, emailUpdates: false,
+    onComplete: true, onFail: true,
+    trialExpiry: true, billing: true, emailUpdates: false,
   });
 
   const [passwords, setPasswords] = useState({
@@ -116,12 +116,13 @@ export function SettingsPage() {
     try {
       const res = await api.get("/users/profile");
       const u = res.data?.user || res.data;
+      const prefs = u.notifyPreferences || {};
       setNotifs({
-        notifyOnComplete: u.notifyOnComplete ?? true,
-        notifyOnFail: u.notifyOnFail ?? true,
-        notifyTrialExpiry: u.notifyTrialExpiry ?? true,
-        notifyBilling: u.notifyBilling ?? true,
-        emailUpdates: u.emailUpdates ?? false,
+        onComplete: prefs.onComplete ?? true,
+        onFail: prefs.onFail ?? true,
+        trialExpiry: prefs.trialExpiry ?? true,
+        billing: prefs.billing ?? true,
+        emailUpdates: prefs.emailUpdates ?? false,
       });
     } catch {}
     setLoading(false);
@@ -187,7 +188,7 @@ export function SettingsPage() {
   const saveNotifications = async () => {
     setSaving(true);
     try {
-      await api.patch("/users/profile", notifs);
+      await api.patch("/users/profile", { notifyPreferences: notifs });
       toast.success("Notification preferences saved")
     } catch {
       toast.error("Failed to save preferences");
@@ -278,10 +279,10 @@ export function SettingsPage() {
 
                 <div className="flex flex-col divide-y divide-border rounded-lg border">
                   {[
-                    { key: "notifyOnComplete", label: "Pipeline Completed", desc: "When a video or content is successfully uploaded" },
-                    { key: "notifyOnFail", label: "Pipeline Failed", desc: "When a pipeline run encounters an error" },
-                    { key: "notifyTrialExpiry", label: "Trial Expiry", desc: "3 days before your free trial expires" },
-                    { key: "notifyBilling", label: "Billing Updates", desc: "Invoices, payment confirmations, subscription changes" },
+                    { key: "onComplete", label: "Pipeline Completed", desc: "When a video or content is successfully uploaded" },
+                    { key: "onFail", label: "Pipeline Failed", desc: "When a pipeline run encounters an error" },
+                    { key: "trialExpiry", label: "Trial Expiry", desc: "3 days before your free trial expires" },
+                    { key: "billing", label: "Billing Updates", desc: "Invoices, payment confirmations, subscription changes" },
                     { key: "emailUpdates", label: "Product Updates", desc: "Occasional emails about new features" },
                   ].map(({ key, label: rowLabel, desc }) => (
                     <div key={key} className="flex items-center justify-between gap-4 px-4 py-3.5">

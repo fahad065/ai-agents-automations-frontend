@@ -19,7 +19,7 @@ interface TenantUsage {
   email: string;
   planType?: string;
   trialEndDate?: string;
-  isActive?: boolean;
+  status?: "active" | "inactive";
   modulesByStatus: Record<string, number>;
   pipelines: {
     totalRuns: number;

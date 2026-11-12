@@ -29,13 +29,14 @@ interface UserData {
   name: string;
   email: string;
   role: string;
-  isActive: boolean;
+  status: "active" | "inactive";
   isDeleted: boolean;
   planType: string;
   phoneNumber?: string;
   country?: string;
   totalAgents?: number;
   totalAutomations?: number;
+  totalChatbots?: number;
   totalBilled?: number;
   trialEndDate?: string;
   createdAt: string;
@@ -64,7 +65,7 @@ function UserModal({ user, onClose, onSave }: {
     name: user.name || "",
     phoneNumber: user.phoneNumber || "",
     country: user.country || "",
-    isActive: user.isActive,
+    status: user.status,
     planType: user.planType || "trial",
     role: user.role || "user",
   });
@@ -162,10 +163,13 @@ function UserModal({ user, onClose, onSave }: {
                 <div>
                   <p className="text-[13px] font-medium text-foreground">Account Active</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {form.isActive ? "User can login and use the platform" : "User is deactivated"}
+                    {form.status === "active" ? "User can login and use the platform" : "User is deactivated"}
                   </p>
                 </div>
-                <Switch checked={form.isActive} onCheckedChange={(v: boolean) => setForm(f => ({ ...f, isActive: v }))} />
+                <Switch
+                  checked={form.status === "active"}
+                  onCheckedChange={(v: boolean) => setForm(f => ({ ...f, status: v ? "active" : "inactive" }))}
+                />
               </div>
             </div>
           )}
@@ -280,7 +284,7 @@ export function UsersPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(), limit: limit.toString(),
-        ...(statusFilter !== "all" && { isActive: statusFilter }),
+        ...(statusFilter !== "all" && { status: statusFilter }),
         ...(planFilter !== "all" && { planType: planFilter }),
         ...(search && { search }),
       });
@@ -351,8 +355,8 @@ export function UsersPage() {
           onChange={(v) => { setStatusFilter(v); setPage(1); }}
           options={[
             { value: "all", label: "All Status" },
-            { value: "true", label: "Active" },
-            { value: "false", label: "Inactive" },
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
           ]}
           className="min-w-[150px]"
         />
@@ -445,7 +449,7 @@ export function UsersPage() {
 
                     {/* Modules */}
                     <p className="text-center text-xs text-muted-foreground">
-                      {(u.totalAgents || 0) + (u.totalAutomations || 0)}
+                      {(u.totalAgents || 0) + (u.totalAutomations || 0) + (u.totalChatbots || 0)}
                     </p>
 
                     {/* Billed */}

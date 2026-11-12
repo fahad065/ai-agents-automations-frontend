@@ -9,7 +9,8 @@ interface User {
   avatar?: string;
   provider: string;
   isEmailVerified?: boolean;
-  planType?: "trial" | "lifetime" | "pro" | "free";
+  status?: "active" | "inactive";
+  planType?: "trial" | "paid" | "free_forever" | "expired";
   isFreeForever?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
