@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AgentDetailPage } from "@/components/marketing/agent-detail-page";
+import { ensureServiceRoute, serviceMetadata } from "@/lib/service-route";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -7,27 +8,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    const res = await fetch(`${apiUrl}/services/${slug}`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return { title: "Agent — LogicMate" };
-    const agent = await res.json();
-    return {
-      title: `${agent.name} — LogicMate`,
-      description: agent.description,
-      openGraph: {
-        title: `${agent.name} — LogicMate`,
-        description: agent.description,
-      },
-    };
-  } catch {
-    return { title: "Agent — LogicMate" };
-  }
+  return serviceMetadata(slug, "AI Agent");
 }
 
-export default async function AgentPage({ params }: Props) {
+export default async function Page({ params }: Props) {
   const { slug } = await params;
+  await ensureServiceRoute(slug, "agent");
   return <AgentDetailPage slug={slug} />;
 }

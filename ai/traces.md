@@ -625,3 +625,42 @@ Verified: build clean (42 routes); Playwright vs mock API: old URLs redirect
 as above, `?niche=real_estate` → 4 services, `+type=chatbot` → 1,
 `?niche=logistics` → contact empty state, no `/industries` links on the
 homepage or footer, pricing tabs All/Pipelines/AI Agents/Automations/Chatbots.
+
+## 2026-11-12 — Cookie consent (gates Google Analytics) + real 404s
+
+**Cookie consent.** Google Analytics (`G-5SCNDRMQ38`, via
+`@next/third-parties`) used to load unconditionally from the root layout on
+every page — setting `_ga`/`_ga_<id>` before any consent. Now
+`components/consent/cookie-consent.tsx` owns GA: it renders
+`<GoogleAnalytics>` ONLY when the stored consent has `analytics: true`
+("basic" consent mode — the script isn't loaded at all until opt-in).
+Banner on first visit: "Reject non-essential" and "Accept all" with equal
+weight (refusing must be as easy as agreeing), "Manage settings" (Essential
+always on / Analytics toggle), link to the CMS `/cookies` policy. Footer →
+Legal → "Cookie settings" reopens it. Opting out after opting in expires
+`_ga*`/`_gid`/`_gat` on every parent domain and reloads (GA's script is
+already running in the page otherwise). Stored in localStorage
+`lm_cookie_consent` `{version, analytics, decidedAt}`; bump `CONSENT_VERSION`
+in `lib/cookie-consent.ts` when a new non-essential tracker is added so
+everyone is asked again. Essential storage (accessToken cookie, sidebar
+cookie, auth tokens, lm_lang, banner-dismiss flags) needs no consent.
+Sentry sets no cookies (replay off).
+
+**404s.** New `app/not-found.tsx` (navbar + footer, links home / services /
+each type / contact, `noindex`). Dynamic routes now return real 404s via
+`lib/fetch-content.ts` `lookupContent()` — only an API 404 means "missing";
+an API outage still renders the page. Applied to the CMS catch-all `/[slug]`
+(was a soft 404 for every mistyped URL), `/blog/[slug]`, and
+`/agents|automations|chatbots/[slug]` (shared `lib/service-route.ts`, which
+also 308-redirects a service opened under the wrong type, e.g.
+`/agents/<chatbot slug>`). Also fixed: service detail titles were
+"X — LogicMate — LogicMate" (route set the suffix AND the root title
+template added it).
+
+Verified with Playwright vs mock API: unknown page/blog/agent/chatbot/
+automation URLs → 404 "Page not found"; real ones → 200;
+`/agents/restaurant-chatbot` → `/chatbots/restaurant-chatbot`. Consent:
+first visit shows banner and makes zero GA requests; Reject + reload → no
+banner, no GA; footer link reopens in manage mode; opting in loads
+`gtag/js?id=G-5SCNDRMQ38`; opting out reloads with `_ga` cookies removed;
+"Accept all" loads GA; mobile banner fits (x 12, w 366 at 390px), no overflow.

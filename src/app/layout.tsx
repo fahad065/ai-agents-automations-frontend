@@ -4,7 +4,7 @@ import { Providers } from "@/components/layout/providers";
 import { Toaster } from "sonner";
 import { KeepAlive } from "@/components/keep-alive";
 import Script from "next/script";
-import { GoogleAnalytics } from '@next/third-parties/google'
+import { CookieConsent } from "@/components/consent/cookie-consent";
 
 export const metadata: Metadata = {
   title: {
@@ -93,7 +93,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        <GoogleAnalytics gaId="G-5SCNDRMQ38" />
+        {/* Loads Google Analytics only after the visitor accepts analytics cookies. */}
+        <CookieConsent gaId="G-5SCNDRMQ38" />
       </body>
     </html>
   );

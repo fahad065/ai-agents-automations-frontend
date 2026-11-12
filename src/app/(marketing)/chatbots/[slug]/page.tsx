@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ChatbotDetailPage } from "@/components/marketing/chatbot-detail-page";
+import { ensureServiceRoute, serviceMetadata } from "@/lib/service-route";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -7,27 +8,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-    const res = await fetch(`${apiUrl}/services/${slug}`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return { title: "Chatbot — LogicMate" };
-    const chatbot = await res.json();
-    return {
-      title: `${chatbot.name} — LogicMate`,
-      description: chatbot.description,
-      openGraph: {
-        title: `${chatbot.name} — LogicMate`,
-        description: chatbot.description,
-      },
-    };
-  } catch {
-    return { title: "Chatbot — LogicMate" };
-  }
+  return serviceMetadata(slug, "Chatbot");
 }
 
-export default async function ChatbotTemplatePage({ params }: Props) {
+export default async function Page({ params }: Props) {
   const { slug } = await params;
+  await ensureServiceRoute(slug, "chatbot");
   return <ChatbotDetailPage slug={slug} />;
 }

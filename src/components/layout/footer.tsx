@@ -5,6 +5,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import { tr } from "@/lib/translations";
 import { SERVICE_TYPES, ALL_SERVICES_HREF } from "@/config/service-types";
+import { openCookieSettings } from "@/lib/cookie-consent";
 import { FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
 
 const SOCIALS = [
@@ -35,6 +36,8 @@ export function Footer() {
       { label: isAr ? "شروط الخدمة" : "Terms of Service", href: "/terms" },
       { label: isAr ? "سياسة ملفات تعريف الارتباط" : "Cookie Policy", href: "/cookies" },
       { label: isAr ? "سياسة الاسترداد" : "Refund Policy", href: "/refund" },
+      // Reopens the consent banner (lib/cookie-consent.ts) instead of navigating.
+      { label: isAr ? "إعدادات ملفات تعريف الارتباط" : "Cookie settings", href: "#cookie-settings" },
     ],
   };
   const border = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
@@ -108,12 +111,21 @@ export function Footer() {
               <ul style={{ listStyle: "none", padding: 0 }}>
                 {items.map((item) => (
                   <li key={item.label} style={{ marginBottom: "10px" }}>
-                    <Link href={item.href} style={{
-                      color: colors.textMuted, fontSize: "13px",
-                      textDecoration: "none", lineHeight: 1,
-                    }}>
-                      {item.label}
-                    </Link>
+                    {item.href === "#cookie-settings" ? (
+                      <button type="button" onClick={openCookieSettings} style={{
+                        color: colors.textMuted, fontSize: "13px", lineHeight: 1,
+                        background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
+                      }}>
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link href={item.href} style={{
+                        color: colors.textMuted, fontSize: "13px",
+                        textDecoration: "none", lineHeight: 1,
+                      }}>
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
