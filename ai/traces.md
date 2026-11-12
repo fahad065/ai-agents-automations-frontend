@@ -483,3 +483,16 @@ the status filter dropdown offers Active/Inactive, and saving
 notification preferences posts the correct nested
 `{notifyPreferences: {...}}` body and the toggles render the mocked
 values correctly on load.
+
+## 2026-11-12 — Phase 0 frontend cleanup
+
+Companion to the backend traces.md entry of the same date.
+`modules-page.tsx`'s marketplace no longer calls `GET /niches` — that
+route was never registered on the backend, so the request 404'd, rejected
+the `Promise.all`, and left the "+ Add Module" grid empty. Niche filter
+pills are now derived from the loaded modules' `nicheSlug` values.
+Removed the dead trends/content-ideas helpers from `dashboard-api.ts`.
+Industries pages (`/industries`, `/industries/:slug`,
+`/dashboard/industries`) intentionally untouched until Phase 1/2.
+Verified: tsc + build clean, Playwright confirmed the marketplace grid and
+niche pills render with no `/niches` request.

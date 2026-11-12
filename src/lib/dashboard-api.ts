@@ -33,30 +33,6 @@ export const dashboardApi = {
     return res.data;
   },
 
-  // Trends
-  discoverTrend: async (agentId: string, niche: string) => {
-    const res = await api.post("/trends/discover", { agentId, niche });
-    return res.data;
-  },
-
-  // Content ideas
-  generateIdea: async (agentId: string, topic: string, trendId?: string) => {
-    const res = await api.post("/content-ideas/generate", {
-      agentId, topic, trendId,
-    });
-    return res.data;
-  },
-
-  getIdeas: async (agentId: string) => {
-    const res = await api.get(`/content-ideas/${agentId}`);
-    return res.data;
-  },
-
-  runPipeline: async (ideaId: string) => {
-    const res = await api.post(`/content-ideas/${ideaId}/run-pipeline`);
-    return res.data;
-  },
-
   // API Keys
   getApiKeys: async () => {
     const res = await api.get("/api-keys");

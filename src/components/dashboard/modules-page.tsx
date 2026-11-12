@@ -77,9 +77,12 @@ interface AvailableModule {
   availableIn: string[];
 }
 
-interface Niche {
-  slug: string; name: string; icon: string; color: string; availableIn: string[];
-}
+// Niche filter pills are derived from the loaded modules' own nicheSlug
+// values — the separate `niches` collection/endpoint was dead code (never
+// registered in app.module.ts, so GET /niches always 404'd) and has been
+// removed; services.nicheSlug is the one source of truth for this now.
+const nicheLabel = (slug: string) =>
+  slug.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
 const COUNTRIES = [
   { code: 'UAE',   label: 'UAE',   flag: '🇦🇪' },
@@ -442,7 +445,6 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
   country: string; onCountryChange: (c: string) => void; initialSlug?: string | null;
 }) {
   const [modules, setModules] = useState<AvailableModule[]>([]);
-  const [niches, setNiches] = useState<Niche[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeNiche, setActiveNiche] = useState("all");
@@ -452,13 +454,9 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
   useEffect(() => {
     setLoading(true);
     setActiveNiche("all");
-    Promise.all([
-      api.get(`/modules?limit=100&country=${country}`),
-      api.get(`/niches?country=${country}`),
-    ]).then(([modRes, nicheRes]) => {
+    api.get(`/modules?limit=100&country=${country}`).then((modRes) => {
       const mods: AvailableModule[] = modRes.data?.data || [];
       setModules(mods);
-      setNiches(nicheRes.data || []);
       setLoading(false);
       // Coming from a marketing page's "Get started" via the signup redirect
       // (or an already-logged-in user's own "Get started" link) — open this
@@ -470,6 +468,8 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
       }
     }).catch(() => setLoading(false));
   }, [country, initialSlug]);
+
+  const nicheSlugs = Array.from(new Set(modules.map(m => m.nicheSlug).filter(Boolean))) as string[];
 
   const filtered = modules.filter(m => {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
@@ -519,14 +519,16 @@ function MarketplaceModal({ onClose, onSubscribed, country, onCountryChange, ini
             >
               All
             </button>
-            {niches.map(n => (
+            {nicheSlugs.map(slug => (
               <button
-                key={n.slug}
-                onClick={() => setActiveNiche(n.slug)}
-                className="rounded-full border px-3 py-1.25 text-[11px] font-semibold whitespace-nowrap"
-                style={activeNiche === n.slug ? { borderColor: n.color, background: `${n.color}15`, color: n.color } : undefined}
+                key={slug}
+                onClick={() => setActiveNiche(slug)}
+                className={cn(
+                  "rounded-full border px-3 py-1.25 text-[11px] font-semibold whitespace-nowrap",
+                  activeNiche === slug ? "border-primary/60 bg-primary/10 text-[#a78bfa]" : "text-muted-foreground"
+                )}
               >
-                {n.icon} {n.name}
+                {nicheLabel(slug)}
               </button>
             ))}
           </div>
