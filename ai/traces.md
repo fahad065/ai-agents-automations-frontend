@@ -691,3 +691,6 @@ EN tab = email/support email/X/LinkedIn/address, AR tab = Arabic address.
 Saves the whole object (spread on edit, since the backend `$set`s
 `pageMeta.contactInfo` as one value). Playwright with mocked API: PUT body
 carried the existing twitter value plus the new email/supportEmail/address_ar.
+Fix (same day): the block was gated on slug "contact", but the real page slug
+is `contact-us` (CmsPageSlug.CONTACT) — so it never showed in production.
+Gate corrected; re-verified with the real slug.

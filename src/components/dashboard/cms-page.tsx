@@ -286,7 +286,7 @@ function PageEditModal({ item, onClose, onSave }: {
               {/* Contact page only: the details shown in its "Contact details"
                   column. Saved as one contactInfo object, so every edit spreads
                   the existing values to avoid wiping the other fields. */}
-              {pageData?.slug === "contact" && (
+              {pageData?.slug === "contact-us" && (
                 <div className="rounded-lg border bg-background p-3.5">
                   <p className="mb-1 text-[13px] font-medium text-foreground">
                     {isAr ? "تفاصيل التواصل" : "Contact details"}
