@@ -671,3 +671,12 @@ the payment help line now point to `billing@logicmate.io`. Homepage hero
 mockup URL `app.logicmate.ai/...` → `logicmate.io/...`. No `.ai` addresses
 remain. Matches backend's role-based mailboxes (see backend traces).
 tsc + build clean.
+
+## 2026-11-13 — About timeline + Contact spacing
+/about "How we got here": 5 narrow side-by-side cards wrapped every line to
+2–3 words and stretched to the tallest card. Rebuilt as a vertical timeline
+(`<ol>`, numbered nodes, per-step connector that stops at the last step,
+logical `start-` positioning so it flips correctly in Arabic/RTL), max-w-2xl,
+latest milestone highlighted. /contact: content section gained `mt-6 sm:mt-10`
+so "Contact details"/"Send a message" no longer sit against the hero glow.
+tsc + build clean; Playwright 1440/390 on both pages, no overflow.

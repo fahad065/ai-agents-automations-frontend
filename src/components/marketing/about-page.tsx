@@ -152,31 +152,32 @@ export function AboutPage() {
         <h2 className="mb-12 text-center text-[clamp(24px,3.5vw,36px)] font-extrabold tracking-tight text-foreground">
           {isAr ? "كيف وصلنا لهنا" : "How we got here"}
         </h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-5">
+        <ol className="relative mx-auto max-w-2xl">
           {TIMELINE.map((t, i) => {
             const isLast = i === TIMELINE.length - 1;
             return (
-              <div
-                key={t.year}
-                className="rounded-2xl border p-7 text-center"
-                style={isLast ? { borderColor: "rgba(124,58,237,0.35)" } : undefined}
-              >
-                <div
-                  className="mx-auto mb-3.5 flex size-9 items-center justify-center rounded-full border-2 text-sm font-extrabold"
-                  style={{
-                    background: isLast ? "rgba(124,58,237,0.15)" : undefined,
-                    borderColor: isLast ? "#7c3aed" : "rgba(124,58,237,0.25)",
-                    color: isLast ? "#a78bfa" : undefined,
-                  }}
+              <li key={t.year} className="relative flex gap-5 pb-8 last:pb-0">
+                {/* Connector to the next milestone — stops at the last one */}
+                {!isLast && <span aria-hidden className="absolute top-8 bottom-0 start-[15px] w-px bg-primary/25" />}
+                <span
+                  className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border-2 bg-background text-xs font-bold ${
+                    isLast ? "border-primary bg-primary text-primary-foreground" : "border-primary/30 text-primary"
+                  }`}
                 >
-                  <span className={isLast ? "" : "text-muted-foreground"}>{i + 1}</span>
+                  {i + 1}
+                </span>
+                <div
+                  className={`flex-1 rounded-xl border px-5 py-4 ${
+                    isLast ? "border-primary/35 bg-primary/[0.04]" : "bg-card"
+                  }`}
+                >
+                  <p className="mb-1 text-sm font-bold text-primary">{t.year}</p>
+                  <p className="text-[15px] leading-relaxed text-muted-foreground">{t.event}</p>
                 </div>
-                <p className="mb-2 text-[13px] font-bold text-primary">{t.year}</p>
-                <p className="text-[13px] leading-relaxed text-muted-foreground">{t.event}</p>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </section>
 
       {/* CTA */}

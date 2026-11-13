@@ -100,7 +100,7 @@ export function ContactPage() {
       </section>
 
       {/* Content */}
-      <section className="mx-auto max-w-4xl px-6 pb-24">
+      <section className="mx-auto mt-6 max-w-4xl px-6 pb-24 sm:mt-10">
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-2">
           {/* Contact info */}
           <div>
