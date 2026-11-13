@@ -283,6 +283,44 @@ function PageEditModal({ item, onClose, onSave }: {
                 />
               </div>
 
+              {/* Contact page only: the details shown in its "Contact details"
+                  column. Saved as one contactInfo object, so every edit spreads
+                  the existing values to avoid wiping the other fields. */}
+              {pageData?.slug === "contact" && (
+                <div className="rounded-lg border bg-background p-3.5">
+                  <p className="mb-1 text-[13px] font-medium text-foreground">
+                    {isAr ? "تفاصيل التواصل" : "Contact details"}
+                  </p>
+                  <p className="mb-3 text-[11px] text-muted-foreground">
+                    {isAr
+                      ? "العنوان بالعربي فقط. باقي الحقول من تبويب الإنجليزي."
+                      : "Shown in the Contact details column. Leave a field empty to hide it."}
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {(isAr
+                      ? [["address_ar", "العنوان (عربي)", "دبي، الإمارات العربية المتحدة"]]
+                      : [
+                          ["email", "Email", "hello@logicmate.io"],
+                          ["supportEmail", "Support email", "support@logicmate.io"],
+                          ["twitter", "X / Twitter URL", "https://x.com/..."],
+                          ["linkedin", "LinkedIn URL", "https://linkedin.com/company/..."],
+                          ["address", "Address", "Dubai, United Arab Emirates"],
+                        ]
+                    ).map(([key, label, placeholder]) => (
+                      <div key={key}>
+                        {fieldLabel(label)}
+                        <Input
+                          dir={isAr ? "rtl" : undefined}
+                          value={pageData?.contactInfo?.[key] || ""}
+                          onChange={(e) => set("contactInfo", { ...(pageData?.contactInfo || {}), [key]: e.target.value })}
+                          placeholder={placeholder}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {!isAr && (
                 <div className="flex items-center justify-between rounded-lg border bg-background px-3.5 py-3">
                   <div>

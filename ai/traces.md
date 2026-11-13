@@ -680,3 +680,14 @@ logical `start-` positioning so it flips correctly in Arabic/RTL), max-w-2xl,
 latest milestone highlighted. /contact: content section gained `mt-6 sm:mt-10`
 so "Contact details"/"Send a message" no longer sit against the hero glow.
 tsc + build clean; Playwright 1440/390 on both pages, no overflow.
+
+## 2026-11-13 — CMS editor: Contact details fields
+The public /contact page renders `contactInfo` (email, supportEmail, twitter,
+linkedin, address, address_ar) and the backend already stores/saves it
+(`pageMeta.contactInfo`), but the dashboard page editor had no inputs for it —
+only reachable by seed data, so the live page showed no email at all. Added a
+"Contact details" block to `PageEditModal` (only when slug === "contact"):
+EN tab = email/support email/X/LinkedIn/address, AR tab = Arabic address.
+Saves the whole object (spread on edit, since the backend `$set`s
+`pageMeta.contactInfo` as one value). Playwright with mocked API: PUT body
+carried the existing twitter value plus the new email/supportEmail/address_ar.
