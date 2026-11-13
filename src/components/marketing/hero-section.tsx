@@ -238,7 +238,7 @@ export function HeroSection() {
             </div>
             <div className={cn("mx-2 flex h-[22px] flex-1 items-center rounded-[5px] pl-2.5", isDark ? "bg-white/4" : "bg-black/4")}>
               <span className="text-[11px] text-muted-foreground opacity-60">
-                app.logicmate.ai/dashboard/modules
+                logicmate.io/dashboard/modules
               </span>
             </div>
           </div>

@@ -661,7 +661,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       setNotifySent(true);
       toast.success("Payment notification sent — we'll verify and activate within 24 hours");
     } catch {
-      toast.error("Failed to send. Email hello@logicmate.io directly.");
+      toast.error("Failed to send. Email billing@logicmate.io directly.");
     }
     setNotifySending(false);
   };
@@ -2086,7 +2086,7 @@ function BillingTab({
       setUpgradeSent(true);
       toast.success("Upgrade request sent — we'll confirm and switch you to Pro within 24 hours");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send. Email hello@logicmate.io directly.");
+      toast.error(err?.response?.data?.message || "Failed to send. Email billing@logicmate.io directly.");
     }
     setUpgradeSending(false);
   };

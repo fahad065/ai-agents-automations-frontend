@@ -664,3 +664,10 @@ first visit shows banner and makes zero GA requests; Reject + reload → no
 banner, no GA; footer link reopens in manage mode; opting in loads
 `gtag/js?id=G-5SCNDRMQ38`; opting out reloads with `_ga` cookies removed;
 "Accept all" loads GA; mobile banner fits (x 12, w 366 at 390px), no overflow.
+
+## 2026-11-13 — Contact addresses: billing@ for payments, no .ai domain
+Payment-failure toasts (chatbot Billing tab, payment-instructions page) and
+the payment help line now point to `billing@logicmate.io`. Homepage hero
+mockup URL `app.logicmate.ai/...` → `logicmate.io/...`. No `.ai` addresses
+remain. Matches backend's role-based mailboxes (see backend traces).
+tsc + build clean.

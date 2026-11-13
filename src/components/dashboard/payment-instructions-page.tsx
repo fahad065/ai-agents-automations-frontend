@@ -66,7 +66,7 @@ export function PaymentInstructionsPage() {
       setSent(true);
       toast.success("Payment notification sent! We'll activate your account within 24 hours.");
     } catch {
-      toast.error("Failed to send. Please email us directly at hello@logicmate.io");
+      toast.error("Failed to send. Please email us directly at billing@logicmate.io");
     }
     setSending(false);
   };
@@ -215,9 +215,9 @@ export function PaymentInstructionsPage() {
       <div className="flex items-center gap-3 rounded-lg border bg-card p-4">
         <CreditCard size={18} className="shrink-0 text-muted-foreground" />
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Questions? Email us at{" "}
-          <a href="mailto:hello@logicmate.io" className="text-[#a78bfa] no-underline">
-            hello@logicmate.io
+          Payment questions? Email us at{" "}
+          <a href="mailto:billing@logicmate.io" className="text-[#a78bfa] no-underline">
+            billing@logicmate.io
           </a>
           {" "}and we'll get back to you within a few hours.
         </p>
