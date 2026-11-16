@@ -10,6 +10,7 @@ import { tr } from "@/lib/translations";
 import { ArrowRight, Bot, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toServiceViews, serviceStatusLabel } from "@/lib/service-view";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,7 +26,7 @@ interface AgentTemplate {
   type: string;
   icon: string;
   color: string;
-  badge: string;
+  status?: string;
   capabilities: string[];
   pricing?: { monthly: number };
 }
@@ -53,7 +54,7 @@ export function AgentsSection() {
         // live at /chatbots/:slug) — so it's filtered out client-side.
         const res = await fetch(`${apiUrl}/services?limit=20`);
         const data = await res.json();
-        const list = (data.data || data) as AgentTemplate[];
+        const list = toServiceViews<AgentTemplate>(data.data || data);
         setAgents(list.filter((m) => m.type !== "chatbot").slice(0, 6));
       } catch {}
       finally { setLoading(false); }
@@ -145,12 +146,12 @@ export function AgentsSection() {
                         <span
                           className="rounded-full border px-2.25 py-0.75 text-[10px] font-semibold"
                           style={{
-                            background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
-                            color: agent.badge === "Live" ? "#22c55e" : agent.color,
-                            borderColor: agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25",
+                            background: agent.status === "active" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
+                            color: agent.status === "active" ? "#22c55e" : agent.color,
+                            borderColor: agent.status === "active" ? "rgba(34,197,94,0.2)" : agent.color + "25",
                           }}
                         >
-                          {agent.badge || "Active"}
+                          {serviceStatusLabel(agent.status, isAr)}
                         </span>
                       </div>
                     </div>

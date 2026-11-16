@@ -708,3 +708,28 @@ Chatbot page fixed copy: "runs inside the agent" → "inside your chatbot",
 Custom card's label + 4 bullets now have Arabic. Verified with Playwright +
 mock API: AR page shows all 8 Arabic strings; admin round-trip keeps existing
 AR and saves edits to the right item.
+
+## 2026-11-16 — frontend for the users + services regroup
+Backend now returns users as `{name,email,role,status,profile,auth,plan,…}`
+and services as `{type,name,slug,status,content,seo,display,pipeline,pricing}`
+(see backend traces). Frontend:
+- `auth.store.ts` `User` type is the grouped shape (types/index.ts and
+  lib/auth.ts re-use it). Persist `version: 1` + `migrate` regroups a flat user
+  saved by the previous release; new `RefreshCurrentUser` (dashboard shell)
+  re-reads GET /auth/me once per visit so the stored copy never goes stale.
+  Readers updated: verify/trial/profile-completion banners, site header
+  avatar, overview, profile page (saves `{name, profile:{…}}`), admin users
+  page (spreads groups into its table rows; regroups on save).
+- Services: new `lib/service-view.ts` — `toServiceView(s)` flattens a grouped
+  service back to the shape every page component already used (incl.
+  `pricingTiers` from `pricing.tiers`), applied at each of the 14 fetch sites;
+  `toServicePayload()` regroups the admin form before POST/PATCH;
+  `serviceStatusLabel()` replaces `badge` everywhere (Live / Coming Soon from
+  `status`). Badge field removed from the admin form; pricing page's dead
+  "Popular/Hot" pill removed (no service ever had those badges).
+  `service-route.ts` reads `content.description` for page metadata.
+- Verified: tsc + next build clean; Playwright against a mock API returning
+  the grouped shapes, 22/22 checks — detail/list/pricing/services pages,
+  AR detail page, old-flat stored user regrouped, banners, profile load +
+  grouped save body, admin users page, admin service form loads + saves a
+  grouped body with no badge/pricingTiers and Arabic list fields intact.

@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
+import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -47,7 +48,6 @@ interface ChatbotModule {
   description_ar?: string;
   icon: string;
   color: string;
-  badge: string;
   capabilities: string[];
   capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
@@ -114,7 +114,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         const res = await fetch(`${apiUrl}/services/${slug}`);
         if (!res.ok) throw new Error("Chatbot template not found");
         const data = await res.json();
-        setAgent(data);
+        setAgent(toServiceView(data));
         setVideoError(false);
       } catch {
         setError("Chatbot template not found or failed to load.");
@@ -292,12 +292,12 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
                 <span
                   className="rounded-full border px-3 py-1 text-[11px] font-bold"
                   style={{
-                    background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
-                    color: agent.badge === "Live" ? "#22c55e" : agent.color,
-                    borderColor: agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25",
+                    background: agent.status === "active" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
+                    color: agent.status === "active" ? "#22c55e" : agent.color,
+                    borderColor: agent.status === "active" ? "rgba(34,197,94,0.2)" : agent.color + "25",
                   }}
                 >
-                  {agent.badge}
+                  {serviceStatusLabel(agent.status, isAr)}
                 </span>
               </div>
 
@@ -710,12 +710,12 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
             {isAr ? `جاهز تطلق ${(isAr && agent.name_ar) ? agent.name_ar : agent.name}؟` : `Ready to launch ${agent.name}?`}
           </h2>
           <p className="mb-7 text-base leading-[1.7] text-muted-foreground">
-            {agent.badge === "Live"
+            {agent.status === "active"
               ? (isAr ? "30 يوم تجربة مجانية. بدون بطاقة ائتمان." : "30-day free trial. No credit card required.")
               : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
-          {agent.badge === "Live" ? (
+          {agent.status === "active" ? (
             <Button nativeButton={false} render={<a href="#pricing" />} className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
               {isAr ? "شوف الأسعار" : "See pricing"}
               <ArrowRight size={15} />

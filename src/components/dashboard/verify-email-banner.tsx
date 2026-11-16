@@ -28,7 +28,7 @@ export function VerifyEmailBanner() {
     if (sessionStorage.getItem("verify-email-banner-dismissed")) setDismissed(true);
   }, []);
 
-  if (!user || user.isEmailVerified || dismissed) return null;
+  if (!user || user.auth?.isEmailVerified || dismissed) return null;
 
   const handleDismiss = () => {
     sessionStorage.setItem("verify-email-banner-dismissed", "1");

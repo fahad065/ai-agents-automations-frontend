@@ -1,14 +1,8 @@
 import { api } from "./api";
+import type { User } from "@/store/auth.store";
 
 export interface LoginResponse {
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-    role: "user" | "admin";
-    avatar?: string;
-    provider: string;
-  };
+  user: User;
   accessToken: string;
   refreshToken: string;
 }

@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useTheme } from "@/hooks/use-theme";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { toServiceViews, serviceStatusLabel } from "@/lib/service-view";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,7 +18,7 @@ interface AutomationTemplate {
   description: string;
   icon: string;
   color: string;
-  badge: string;
+  status?: string;
   capabilities: string[];
   pricing?: { monthly: number };
 }
@@ -43,7 +44,7 @@ export function AutomationsSection() {
         cache: "no-store",
       });
       const data = await res.json();
-      setAutomations(data.data || data);
+      setAutomations(toServiceViews(data.data || data));
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -231,13 +232,13 @@ export function AutomationsSection() {
                         <span style={{
                           fontSize: "11px", fontWeight: 600,
                           padding: "3px 10px", borderRadius: "9999px",
-                          background: item.badge === "Live"
+                          background: item.status === "active"
                             ? "rgba(34,197,94,0.1)" : "rgba(128,128,128,0.08)",
-                          color: item.badge === "Live" ? "#22c55e" : colors.textMuted,
-                          border: `1px solid ${item.badge === "Live"
+                          color: item.status === "active" ? "#22c55e" : colors.textMuted,
+                          border: `1px solid ${item.status === "active"
                             ? "rgba(34,197,94,0.2)" : colors.border}`,
                         }}>
-                          {item.badge}
+                          {serviceStatusLabel(item.status)}
                         </span>
                       </div>
 

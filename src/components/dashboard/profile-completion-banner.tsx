@@ -18,7 +18,7 @@ export function ProfileCompletionBanner() {
 
     api.get("/users/profile").then((res) => {
       const u = res.data?.user || res.data;
-      const isIncomplete = !u.phoneNumber || !u.country || !u.onboarding?.contentNiche;
+      const isIncomplete = !u.profile?.phoneNumber || !u.profile?.country || !u.onboarding?.contentNiche;
       if (isIncomplete) setShow(true);
     }).catch(() => {});
   }, [pathname]);

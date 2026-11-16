@@ -6,7 +6,7 @@ import { serviceDetailHref, type ServiceTypeKey } from "@/config/service-types";
 interface ServiceSummary {
   type: string;
   name: string;
-  description?: string;
+  content?: { description?: string };
 }
 
 const lookupService = (slug: string) => lookupContent<ServiceSummary>(`/services/${slug}`, 3600);
@@ -15,7 +15,8 @@ export async function serviceMetadata(slug: string, fallbackTitle: string): Prom
   const result = await lookupService(slug);
   if (result.state === "missing") return NOT_FOUND_METADATA;
   if (result.state !== "found") return { title: fallbackTitle };
-  const { name, description } = result.data;
+  const { name } = result.data;
+  const description = result.data.content?.description;
   return {
     title: name,
     description,

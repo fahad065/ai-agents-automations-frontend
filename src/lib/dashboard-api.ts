@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { toServiceViews } from "@/lib/service-view";
 
 export const dashboardApi = {
   // Agents
@@ -30,7 +31,7 @@ export const dashboardApi = {
   // Templates
   getTemplates: async () => {
     const res = await api.get("/services?type=agent");
-    return res.data;
+    return { ...res.data, data: toServiceViews(res.data?.data) };
   },
 
   // API Keys

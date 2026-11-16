@@ -8,6 +8,7 @@ import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toServiceViews, serviceStatusLabel } from "@/lib/service-view";
 
 interface AutomationTemplate {
   _id: string;
@@ -21,7 +22,7 @@ interface AutomationTemplate {
   nicheSlug?: string;
   icon: string;
   color: string;
-  badge: string;
+  status?: string;
   capabilities: string[];
   pricing?: { monthly: number; annual: number };
 }
@@ -46,7 +47,7 @@ export function AutomationsListPage() {
       const res = await fetch(`${apiUrl}/services?type=automation`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setAutomations(data.data || data);
+      setAutomations(toServiceViews(data.data || data));
     } catch {
       setError("Failed to load automations. Please try again.");
     } finally {
@@ -163,12 +164,12 @@ export function AutomationsListPage() {
                         <span
                           className="rounded-full border px-2.25 py-0.75 text-[10px] font-semibold"
                           style={{
-                            background: automation.badge === "Live" ? "rgba(34,197,94,0.1)" : `${automation.color}12`,
-                            color: automation.badge === "Live" ? "#22c55e" : automation.color,
-                            borderColor: automation.badge === "Live" ? "rgba(34,197,94,0.2)" : automation.color + "25",
+                            background: automation.status === "active" ? "rgba(34,197,94,0.1)" : `${automation.color}12`,
+                            color: automation.status === "active" ? "#22c55e" : automation.color,
+                            borderColor: automation.status === "active" ? "rgba(34,197,94,0.2)" : automation.color + "25",
                           }}
                         >
-                          {automation.badge || "Active"}
+                          {serviceStatusLabel(automation.status, isAr)}
                         </span>
                       </div>
 

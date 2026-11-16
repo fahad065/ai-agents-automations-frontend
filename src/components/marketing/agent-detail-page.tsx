@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
+import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -30,7 +31,6 @@ interface AgentTemplate {
   description_ar?: string;
   icon: string;
   color: string;
-  badge: string;
   capabilities: string[];
   capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
@@ -85,7 +85,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
         const res = await fetch(`${apiUrl}/services/${slug}`);
         if (!res.ok) throw new Error("Agent not found");
         const data = await res.json();
-        setAgent(data);
+        setAgent(toServiceView(data));
       } catch {
         setError("Agent not found or failed to load.");
       } finally {
@@ -189,12 +189,12 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                 <span
                   className="rounded-full border px-3 py-1 text-[11px] font-bold"
                   style={{
-                    background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
-                    color: agent.badge === "Live" ? "#22c55e" : agent.color,
-                    borderColor: agent.badge === "Live" ? "rgba(34,197,94,0.2)" : agent.color + "25",
+                    background: agent.status === "active" ? "rgba(34,197,94,0.1)" : `${agent.color}12`,
+                    color: agent.status === "active" ? "#22c55e" : agent.color,
+                    borderColor: agent.status === "active" ? "rgba(34,197,94,0.2)" : agent.color + "25",
                   }}
                 >
-                  {agent.badge}
+                  {serviceStatusLabel(agent.status, isAr)}
                 </span>
               </div>
 
@@ -552,7 +552,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                   ))}
                 </ul>
                 <Button nativeButton={false} variant="outline" render={<Link href={getStartedHref} />} className="w-full">
-                  {agent.badge === "Live" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                  {agent.status === "active" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                 </Button>
               </div>
 
@@ -578,7 +578,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                   ))}
                 </ul>
                 <Button nativeButton={false} render={<Link href={getStartedHref} />} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
-                  {agent.badge === "Live" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                  {agent.status === "active" ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                   <ArrowRight size={14} />
                 </Button>
                 <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
@@ -639,13 +639,13 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             {isAr ? `هل أنت مستعد لنشر ${(isAr && agent.name_ar) ? agent.name_ar : agent.name}؟` : `Ready To Deploy ${agent.name}?`}
           </h2>
           <p className="mb-7 text-base leading-[1.7] text-muted-foreground">
-            {agent.badge === "Live"
+            {agent.status === "active"
               ? (isAr ? "ابدأ في دقائق. لا يلزم إعداد تقني." : "Get started in minutes. No technical setup required.")
               : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
           <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
-            {agent.badge === "Live"
+            {agent.status === "active"
               ? (isAuthenticated ? (isAr ? "إضافة للوحة التحكم" : "Add to my dashboard") : (isAr ? "ابدأ مجاناً" : "Start free"))
               : (isAr ? "انضم للقائمة" : "Join waitlist")
             }

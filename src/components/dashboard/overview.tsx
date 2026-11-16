@@ -182,7 +182,7 @@ export function DashboardOverview() {
   const { user } = useAuthStore();
   const router = useRouter();
   const isAdmin = user?.role === "admin";
-  const isVerified = !!user?.isEmailVerified;
+  const isVerified = !!user?.auth?.isEmailVerified;
 
   const [loading, setLoading] = useState(true);
 

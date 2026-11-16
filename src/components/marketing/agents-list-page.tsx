@@ -8,6 +8,7 @@ import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toServiceViews, serviceStatusLabel } from "@/lib/service-view";
 
 interface AgentTemplate {
   _id: string;
@@ -21,7 +22,6 @@ interface AgentTemplate {
   nicheSlug?: string;
   icon: string;
   color: string;
-  badge: string;
   capabilities: string[];
   status: "active" | "inactive" | "coming_soon";
   pricing?: { monthly: number; annual: number };
@@ -51,7 +51,7 @@ export function AgentsListPage() {
       });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setAgents(data.data || data);
+      setAgents(toServiceViews(data.data || data));
     } catch {
       setError("Failed to load agents. Please try again.");
     } finally {
@@ -183,12 +183,12 @@ export function AgentsListPage() {
                         <span
                           className="rounded-full border px-2.5 py-0.75 text-[11px] font-semibold"
                           style={{
-                            background: agent.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
-                            color: agent.badge === "Live" ? "#22c55e" : undefined,
-                            borderColor: agent.badge === "Live" ? "rgba(34,197,94,0.2)" : undefined,
+                            background: agent.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
+                            color: agent.status === "active" ? "#22c55e" : undefined,
+                            borderColor: agent.status === "active" ? "rgba(34,197,94,0.2)" : undefined,
                           }}
                         >
-                          {agent.badge}
+                          {serviceStatusLabel(agent.status, isAr)}
                         </span>
                       </div>
 

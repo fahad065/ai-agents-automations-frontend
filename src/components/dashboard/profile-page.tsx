@@ -210,8 +210,8 @@ export function ProfilePage() {
       const res = await api.get("/users/profile");
       const u = res.data?.user || res.data;
       setProfile({
-        name: u.name || "", email: u.email || "", phoneNumber: u.phoneNumber || "",
-        country: u.country || "", timezone: u.timezone || "", company: u.company || "",
+        name: u.name || "", email: u.email || "", phoneNumber: u.profile?.phoneNumber || "",
+        country: u.profile?.country || "", timezone: u.profile?.timezone || "", company: u.profile?.company || "",
         niche: u.onboarding?.contentNiche || "", role: u.onboarding?.role || "",
         primaryGoal: u.onboarding?.primaryGoal || "", experienceLevel: u.onboarding?.experienceLevel || "",
         heardAboutUs: u.onboarding?.heardAboutUs || "",
@@ -224,8 +224,11 @@ export function ProfilePage() {
     setSaving(true);
     try {
       await api.patch("/users/profile", {
-        name: profile.name, phoneNumber: profile.phoneNumber, country: profile.country,
-        timezone: profile.timezone, company: profile.company,
+        name: profile.name,
+        profile: {
+          phoneNumber: profile.phoneNumber, country: profile.country,
+          timezone: profile.timezone, company: profile.company,
+        },
         onboarding: {
           contentNiche: profile.niche, role: profile.role, primaryGoal: profile.primaryGoal,
           experienceLevel: profile.experienceLevel, heardAboutUs: profile.heardAboutUs,

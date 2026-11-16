@@ -19,6 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { toServiceViews, toServicePayload, serviceStatusLabel } from "@/lib/service-view";
 
 interface HeroStat { label: string; value: string; label_ar?: string; value_ar?: string; }
 interface Feature { title: string; description: string; icon: string; title_ar?: string; description_ar?: string; }
@@ -61,7 +62,6 @@ interface Module {
   components: string[];
   icon: string;
   color: string;
-  badge: string;
   capabilities: string[];
   status: "active" | "inactive" | "coming_soon";
   sortOrder: number;
@@ -92,7 +92,6 @@ const API_KEY_OPTIONS = [
   "linkedin", "twitter", "facebook",
 ];
 
-const BADGE_OPTIONS = ["Live", "Coming Soon", "New", "Beta", "Popular"];
 
 const NICHE_OPTIONS = [
   { slug: "content_social",   name: "Content & Social Media" },
@@ -118,7 +117,7 @@ const emptyForm = {
   pipelineType: "youtube",
   pipelineCategory: "standalone", nicheSlug: "content_social",
   components: "",
-  icon: "🤖", color: "#7c3aed", badge: "Coming Soon",
+  icon: "🤖", color: "#7c3aed",
   capabilities: "", requiredApiKeys: [] as string[],
   status: "coming_soon", sortOrder: 1,
   platforms: "",
@@ -176,7 +175,7 @@ export function AdminModules() {
     setLoading(true);
     try {
       const res = await api.get("/services/admin/all?limit=200");
-      setModules(res.data?.data || []);
+      setModules(toServiceViews<Module>(res.data?.data));
     } catch {
       toast.error("Failed to load services");
     }
@@ -200,7 +199,6 @@ export function AdminModules() {
       pipelineType: m.pipelineType || "youtube",
       icon: m.icon || "🤖",
       color: m.color || "#7c3aed",
-      badge: m.badge || "Coming Soon",
       capabilities: (m.capabilities || []).join(", "),
       requiredApiKeys: m.requiredApiKeys || [],
       status: m.status || "active",
@@ -298,7 +296,6 @@ export function AdminModules() {
         pipelineType: form.pipelineType,
         icon: form.icon.trim(),
         color: form.color.trim(),
-        badge: form.badge.trim(),
         pipelineCategory: form.pipelineCategory,
         nicheSlug: form.nicheSlug,
         components: form.components.split("\n").map(c => c.trim()).filter(Boolean),
@@ -352,10 +349,10 @@ export function AdminModules() {
       }
 
       if (editingId) {
-        await api.patch(`/services/${editingId}`, payload);
+        await api.patch(`/services/${editingId}`, toServicePayload(payload));
         toast.success("Module updated");
       } else {
-        await api.post("/services", payload);
+        await api.post("/services", toServicePayload(payload));
         toast.success("Module created");
       }
       setShowForm(false);
@@ -510,14 +507,6 @@ export function AdminModules() {
                     />
                     <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="flex-1" />
                   </div>
-                </div>
-                <div className="mb-3.5">
-                  {fieldLabel("Badge")}
-                  <Combobox
-                    value={form.badge}
-                    onChange={(v) => setForm(f => ({ ...f, badge: v }))}
-                    options={BADGE_OPTIONS.map(b => ({ value: b, label: b }))}
-                  />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Type")}
@@ -994,11 +983,11 @@ export function AdminModules() {
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                     style={{
-                      background: m.status === "coming_soon" ? "rgba(245,158,11,0.1)" : m.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.08)",
-                      color: m.status === "coming_soon" ? "#f59e0b" : m.badge === "Live" ? "#22c55e" : "#a78bfa",
+                      background: m.status === "coming_soon" ? "rgba(245,158,11,0.1)" : m.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.08)",
+                      color: m.status === "coming_soon" ? "#f59e0b" : m.status === "active" ? "#22c55e" : "#a78bfa",
                     }}
                   >
-                    {m.status === "coming_soon" ? "Coming Soon" : m.badge || "Active"}
+                    {serviceStatusLabel(m.status)}
                   </span>
                   <span className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                     {formatLabel(m.type || "agent")}

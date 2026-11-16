@@ -166,7 +166,7 @@ export function SiteHeader() {
             render={
               <button className="ml-1 rounded-full" aria-label="Account menu">
                 <Avatar className="size-8">
-                  <AvatarImage src={user?.avatar || ""} alt={user?.name || ""} />
+                  <AvatarImage src={user?.profile?.avatar || ""} alt={user?.name || ""} />
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
               </button>
@@ -176,7 +176,7 @@ export function SiteHeader() {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="flex items-center gap-2.5 py-2">
                 <Avatar className="size-9">
-                  <AvatarImage src={user?.avatar || ""} alt={user?.name || ""} />
+                  <AvatarImage src={user?.profile?.avatar || ""} alt={user?.name || ""} />
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <span className="flex flex-col overflow-hidden">

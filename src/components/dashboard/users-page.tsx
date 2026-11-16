@@ -289,7 +289,12 @@ export function UsersPage() {
         ...(search && { search }),
       });
       const res = await api.get(`/users?${params}`);
-      setUsers(res.data?.users || res.data?.data || []);
+      // The API returns the grouped user (profile/auth/plan); this table
+      // works on a flat row, so spread the groups out here once.
+      const rows = (res.data?.users || res.data?.data || []).map((u: any) => ({
+        ...u, ...u.profile, ...u.plan, provider: u.auth?.provider,
+      }));
+      setUsers(rows);
       setTotal(res.data?.total || 0);
     } catch {}
     setLoading(false);
@@ -299,7 +304,17 @@ export function UsersPage() {
 
   const handleSave = async (userId: string, data: Partial<UserData>) => {
     try {
-      await api.patch(`/users/${userId}`, data);
+      // Regroup the flat form fields into the shape PATCH /users/:id takes.
+      const { phoneNumber, country, planType, trialEndDate, isFreeForever, ...top } = data as any;
+      const pick = (o: Record<string, any>) =>
+        Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+      const profile = pick({ phoneNumber, country });
+      const plan = pick({ planType, trialEndDate, isFreeForever });
+      await api.patch(`/users/${userId}`, {
+        ...top,
+        ...(Object.keys(profile).length && { profile }),
+        ...(Object.keys(plan).length && { plan }),
+      });
       toast.success("Updated successfully");
       fetchUsers();
     } catch {

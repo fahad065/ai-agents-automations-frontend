@@ -23,8 +23,8 @@ export function TrialBanner() {
     }
 
     // Calculate days left
-    if (user.isFreeForever || user.planType !== "trial") return;
-    const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
+    if (user.plan?.isFreeForever || user.plan?.planType !== "trial") return;
+    const trialEnd = user.plan?.trialEndDate ? new Date(user.plan.trialEndDate) : null;
     if (!trialEnd) return;
     const now = new Date();
     const diff = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -32,7 +32,7 @@ export function TrialBanner() {
   }, [user]);
 
   if (dismissed || daysLeft === null) return null;
-  if (user?.isFreeForever || user?.planType !== "trial") return null;
+  if (user?.plan?.isFreeForever || user?.plan?.planType !== "trial") return null;
   if (daysLeft > 25) return null; // Only show when 25 days or less remain
 
   const isUrgent = daysLeft <= 3;

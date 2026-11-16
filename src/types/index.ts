@@ -1,19 +1,6 @@
-export interface User {
-    _id: string;
-    name: string;
-    email: string;
-    role: "user" | "admin";
-    avatar?: string;
-    provider: "local" | "google";
-    status: "active" | "inactive";
-    createdAt: string;
-    planType?: "trial" | "paid" | "free_forever" | "expired";
-    isFreeForever?: boolean;
-    trialStartDate?: string;
-    trialEndDate?: string;
-    totalBilled?: number;
-  }
-  
+// See src/store/auth.store.ts — the one User shape for the app.
+export type { User } from "@/store/auth.store";
+
   export interface Agent {
     _id: string;
     userId: string;

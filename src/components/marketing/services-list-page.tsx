@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { SERVICE_TYPES, SERVICE_TYPE_BY_KEY, serviceDetailHref, type ServiceTypeKey } from "@/config/service-types";
+import { toServiceViews } from "@/lib/service-view";
 
 type ServiceType = ServiceTypeKey;
 
@@ -27,7 +28,6 @@ interface Service {
   nicheSlug?: string;
   icon: string;
   color: string;
-  badge?: string;
   capabilities: string[];
   capabilities_ar?: string[];
   status: "active" | "inactive" | "coming_soon";
@@ -77,7 +77,7 @@ export function ServicesListPage() {
       const res = await fetch(`${apiUrl}/services?limit=100`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setServices((data.data || []).filter((s: Service) => TYPES.includes(s.type as ServiceType)));
+      setServices(toServiceViews<Service>(data.data).filter((s: Service) => TYPES.includes(s.type as ServiceType)));
     } catch {
       setError(isAr ? "تعذّر تحميل الخدمات. حاول مرة ثانية." : "Failed to load services. Please try again.");
     } finally {

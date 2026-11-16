@@ -13,6 +13,7 @@ import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
+import { toServiceViews } from "@/lib/service-view";
 
 const GENERAL_DEMO_URL = "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/logicmate-chatbots-product-demo.mp4";
 
@@ -124,7 +125,7 @@ export function ChatbotsPage() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
     fetch(`${apiUrl}/services?type=chatbot`)
       .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((json) => setTemplates(json.data || json || []))
+      .then((json) => setTemplates(toServiceViews(json.data || json)))
       .catch(() => setTemplates([]));
   }, []);
 

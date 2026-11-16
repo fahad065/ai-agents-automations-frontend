@@ -26,6 +26,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { toServiceViews } from "@/lib/service-view";
 
 interface UserModule {
   _id: string;
@@ -431,7 +432,7 @@ function MarketplaceModal({ onClose, onSubscribed, initialSlug }: {
     setLoading(true);
     setActiveNiche("all");
     api.get("/services?limit=100").then((modRes) => {
-      const mods: AvailableModule[] = modRes.data?.data || [];
+      const mods = toServiceViews<AvailableModule>(modRes.data?.data);
       setModules(mods);
       setLoading(false);
       // Coming from a marketing page's "Get started" via the signup redirect

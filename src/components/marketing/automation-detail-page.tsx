@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
+import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,7 +29,6 @@ interface AutomationTemplate {
   description_ar?: string;
   icon: string;
   color: string;
-  badge: string;
   capabilities: string[];
   capabilities_ar?: string[];
   heroStats: { label: string; value: string }[];
@@ -80,7 +80,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         const res = await fetch(`${apiUrl}/services/${slug}`);
         if (!res.ok) throw new Error("Not found");
         const data = await res.json();
-        setAutomation(data);
+        setAutomation(toServiceView(data));
       } catch {
         setError("Automation not found.");
       } finally {
@@ -140,7 +140,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
         .replace("watch?v=", "embed/")
     : "";
 
-  const ctaLabel = automation.badge === "Live"
+  const ctaLabel = automation.status === "active"
     ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free"))
     : (isAr ? "انضم للقائمة" : "Join waitlist");
 
@@ -170,12 +170,12 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                 <span
                   className="rounded-full border px-3 py-1 text-xs font-semibold"
                   style={{
-                    background: automation.badge === "Live" ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
-                    color: automation.badge === "Live" ? "#22c55e" : undefined,
-                    borderColor: automation.badge === "Live" ? "rgba(34,197,94,0.2)" : undefined,
+                    background: automation.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.08)",
+                    color: automation.status === "active" ? "#22c55e" : undefined,
+                    borderColor: automation.status === "active" ? "rgba(34,197,94,0.2)" : undefined,
                   }}
                 >
-                  {automation.badge}
+                  {serviceStatusLabel(automation.status, isAr)}
                 </span>
               </div>
 
@@ -491,7 +491,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                   ))}
                 </ul>
                 <Button nativeButton={false} variant="outline" render={<Link href={getStartedHref} />} className="w-full">
-                  {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                  {automation.status === "active" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ" : "Get started")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                 </Button>
               </div>
 
@@ -517,7 +517,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                   ))}
                 </ul>
                 <Button nativeButton={false} render={<Link href={getStartedHref} />} className="w-full gap-1.5 shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
-                  {automation.badge === "Live" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
+                  {automation.status === "active" ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ التجربة المجانية" : "Start free trial")) : (isAr ? "انضم للقائمة" : "Join waitlist")}
                   <ArrowRight size={14} />
                 </Button>
                 <p className="mt-2.5 text-center text-[11px] text-muted-foreground">{isAr ? "لا حاجة لبطاقة ائتمان" : "No credit card required"}</p>
@@ -578,13 +578,13 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
             {isAr ? `هل أنت مستعد لنشر ${(isAr && automation.name_ar) ? automation.name_ar : automation.name}؟` : `Ready to deploy ${automation.name}?`}
           </h2>
           <p className="mb-7 text-base leading-[1.7] text-muted-foreground">
-            {automation.badge === "Live"
+            {automation.status === "active"
               ? (isAr ? "ابدأ في دقائق. لا يلزم إعداد تقني." : "Get started in minutes. No technical setup required.")
               : (isAr ? "انضم للقائمة واحصل على خصم 40% عند الإطلاق." : "Join the waitlist and get 40% off when we launch.")
             }
           </p>
           <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-8 py-6 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
-            {automation.badge === "Live"
+            {automation.status === "active"
               ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Start free"))
               : (isAr ? "انضم للقائمة" : "Join waitlist")
             }

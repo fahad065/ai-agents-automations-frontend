@@ -9,6 +9,7 @@ import { Check, ArrowRight, Loader2, Zap, Bot, Package, Star, MessageCircle } fr
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toServiceViews } from "@/lib/service-view";
 
 interface Module {
   _id: string;
@@ -20,7 +21,6 @@ interface Module {
   nicheSlug?: string;
   icon: string;
   color: string;
-  badge?: string;
   capabilities: string[];
   pricing: {
     monthly: number;
@@ -63,7 +63,7 @@ export function PricingPage() {
     setLoading(true); setError("");
     try {
       const data = await apiClient.get<{ data: Module[] }>("/services", { limit: "100" });
-      setModules((data as any).data || (data as any));
+      setModules(toServiceViews<Module>((data as any).data || (data as any)));
     } catch {
       setError("Failed to load pricing. Please try again.");
     } finally {
@@ -297,11 +297,6 @@ function PricingCard({ module, price, billing, isBundle, isAuto, isBot, href, is
           </div>
         </div>
 
-        {module.badge === "Popular" || module.badge === "Hot" ? (
-          <span className="rounded-full border border-[#eab308]/25 px-2.25 py-0.75 text-[10px] font-bold text-[#eab308]" style={{ background: "rgba(234,179,8,0.15)" }}>
-            ⭐ {module.badge}
-          </span>
-        ) : null}
       </div>
 
       {/* Tagline */}
