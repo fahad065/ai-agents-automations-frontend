@@ -578,6 +578,10 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
         const pro = agent.pricingTiers!.find((t) => t.key === "pro");
         if (!basic || !pro) return null;
         const priceFor = (t: { monthly: number; annual: number }) => billingCycle === "annual" ? t.annual : t.monthly;
+        // Real saving from the admin-set prices (annual = per-month price when
+        // billed yearly), so the label never drifts from the numbers shown.
+        const maxSavePct = Math.max(0, ...[basic, pro].map((t) =>
+          t.monthly > 0 && t.annual > 0 && t.annual < t.monthly ? Math.round((1 - t.annual / t.monthly) * 100) : 0));
         return (
           <section id="pricing" className="border-b bg-card px-6 py-20">
             <div className="mx-auto max-w-[960px] text-center">
@@ -599,7 +603,9 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
                       billingCycle === cycle ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground",
                     )}
                   >
-                    {cycle === "monthly" ? (isAr ? "شهري" : "Monthly") : (isAr ? "سنوي (وفّر ٢٠٪)" : "Annual (save ~20%)")}
+                    {cycle === "monthly" ? (isAr ? "شهري" : "Monthly") : (maxSavePct > 0
+                      ? (isAr ? `سنوي (وفّر لين ${maxSavePct.toLocaleString("ar-EG")}٪)` : `Annual (save up to ${maxSavePct}%)`)
+                      : (isAr ? "سنوي" : "Annual"))}
                   </button>
                 ))}
               </div>

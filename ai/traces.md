@@ -757,3 +757,8 @@ detail pages show a "Download brochure" button after "Watch demo" when set
 attribute is ignored cross-origin). Verified against the real backend +
 MongoDB: no button when empty, saved as content.brochureUrl via the admin
 form, button links with ?download=1, Arabic label in AR mode.
+
+## 2026-11-16 — Chatbot detail page: annual savings label computed
+"Annual (save ~20%)" was hardcoded. With Basic 79 → 49 and Pro 120 → 99 it was
+wrong, so the label now works out the biggest saving across the Basic/Pro tiers
+("save up to 38%"), and shows plain "Annual" when there is no saving.
