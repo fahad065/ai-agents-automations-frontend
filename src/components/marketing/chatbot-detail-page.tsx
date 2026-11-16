@@ -609,7 +609,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
                     <span className="text-4xl font-extrabold text-foreground">${priceFor(basic)}</span>
                     <span className="text-sm text-muted-foreground">/mo</span>
                   </div>
-                  <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "دردشة على موقعك بالعربي والإنجليزي. إلغاء في أي وقت." : "Website chat in English & Arabic. Cancel anytime."}</p>
+                  <p className="mb-5 text-[13px] text-muted-foreground">{isAr ? "ودجت محادثة على موقعك. إلغاء في أي وقت." : "Website chat widget. Cancel anytime."}</p>
                   <ul className="mb-6 flex-1 list-none p-0">
                     {basic.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-2 py-1.5 text-[13px] text-muted-foreground">
