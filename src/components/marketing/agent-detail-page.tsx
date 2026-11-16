@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { loc } from "@/lib/localize";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -238,12 +239,12 @@ export function AgentDetailPage({ slug }: { slug: string }) {
             {agent.heroStats?.length > 0 && (
               <div className="grid grid-cols-2 gap-2.5">
                 {agent.heroStats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border bg-foreground/[0.03] p-5.5 text-center">
+                  <div key={loc(stat, "label", isAr)} className="rounded-2xl border bg-foreground/[0.03] p-5.5 text-center">
                     <p className="mb-1.5 text-[30px] leading-none font-extrabold tracking-[-0.02em]" style={{ color: agent.color }}>
-                      {stat.value}
+                      {loc(stat, "value", isAr)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {stat.label}
+                      {loc(stat, "label", isAr)}
                     </p>
                   </div>
                 ))}
@@ -280,11 +281,11 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                 { label: "Shorts per video", value: "3", color: "#3b82f6" },
                 { label: "Manual work", value: "Zero", color: "#f59e0b" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-xl border bg-background p-4.5 text-center">
+                <div key={loc(stat, "label", isAr)} className="rounded-xl border bg-background p-4.5 text-center">
                   <p className="mb-1 text-[28px] font-extrabold" style={{ color: stat.color }}>
-                    {stat.value}
+                    {loc(stat, "value", isAr)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground">{loc(stat, "label", isAr)}</p>
                 </div>
               ))}
             </div>
@@ -414,15 +415,15 @@ export function AgentDetailPage({ slug }: { slug: string }) {
 
             <div ref={featuresRef} className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
               {agent.featureCards.map((feature) => (
-                <div key={feature.title} className="rounded-xl border bg-foreground/[0.015] p-5.5">
+                <div key={loc(feature, "title", isAr)} className="rounded-xl border bg-foreground/[0.015] p-5.5">
                   <div className="mb-3 text-2xl">
                     {feature.icon}
                   </div>
                   <h3 className="mb-2 text-[15px] font-semibold text-foreground">
-                    {feature.title}
+                    {loc(feature, "title", isAr)}
                   </h3>
                   <p className="text-[13px] leading-[1.7] text-muted-foreground">
-                    {feature.description}
+                    {loc(feature, "description", isAr)}
                   </p>
                 </div>
               ))}
@@ -463,10 +464,10 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                   </div>
                   <div className="pt-1.5">
                     <h3 className="mb-1.5 text-base font-semibold text-foreground">
-                      {step.title}
+                      {loc(step, "title", isAr)}
                     </h3>
                     <p className="text-sm leading-[1.7] text-muted-foreground">
-                      {step.description}
+                      {loc(step, "description", isAr)}
                     </p>
                   </div>
                 </div>
@@ -621,7 +622,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
               </h2>
             </div>
             {agent.faq.map((item) => (
-              <FaqItem key={item.question} {...item} />
+              <FaqItem key={item.question} question={loc(item, "question", isAr)} answer={loc(item, "answer", isAr)} />
             ))}
           </div>
         </section>

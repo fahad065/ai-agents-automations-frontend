@@ -20,10 +20,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-interface HeroStat { label: string; value: string; }
-interface Feature { title: string; description: string; icon: string; }
-interface HowItWorksStep { step: string; title: string; description: string; }
-interface FaqItem { question: string; answer: string; }
+interface HeroStat { label: string; value: string; label_ar?: string; value_ar?: string; }
+interface Feature { title: string; description: string; icon: string; title_ar?: string; description_ar?: string; }
+interface HowItWorksStep { step: string; title: string; description: string; title_ar?: string; description_ar?: string; }
+interface FaqItem { question: string; answer: string; question_ar?: string; answer_ar?: string; }
+
+// Arabic for list sections is edited as one textarea per section, line N
+// matching English line N. Blank lines are kept (they mean "no Arabic for
+// that item") so the two lists never drift out of alignment.
+const arLines = (raw: string) => raw.replace(/\s+$/, "").split("\n").map(l => l.trim());
+const arPair = (line?: string): [string, string] => {
+  const [a, ...rest] = (line || "").split("|");
+  return [a?.trim() || "", rest.join("|").trim()];
+};
+const toArText = (items: any[] | undefined, a: string, b: string) =>
+  items?.some(i => i[a] || i[b])
+    ? items.map(i => (i[a] || i[b] ? `${i[a] || ""}|${i[b] || ""}` : "")).join("\n")
+    : "";
+const withAr = <T,>(items: T[], raw: string, a: string, b: string): T[] => {
+  const lines = arLines(raw);
+  return items.map((item, i) => {
+    const [x, y] = arPair(lines[i]);
+    return { ...item, [a]: x || undefined, [b]: y || undefined };
+  });
+};
 interface Testimonial { name: string; role: string; avatar: string; text: string; rating: number; }
 interface PricingData { monthly: number; annual: number; features: string[]; }
 interface PricingTier { key: "basic" | "pro"; monthly: number; annual: number; features: string[]; features_ar?: string[]; }
@@ -113,6 +133,7 @@ const emptyForm = {
   name_ar: "", tagline_ar: "", description_ar: "",
   capabilities_ar: "", pricingFeatures_ar: "",
   tierBasicFeatures_ar: "", tierProFeatures_ar: "",
+  heroStats_ar: "", featureCards_ar: "", howItWorks_ar: "", faq_ar: "",
 };
 
 type FormState = typeof emptyForm;
@@ -215,6 +236,10 @@ export function AdminModules() {
       pricingFeatures_ar: ((m as any).pricing?.features_ar || []).join("\n"),
       tierBasicFeatures_ar: (m.pricingTiers?.find(t => t.key === "basic")?.features_ar ?? []).join("\n"),
       tierProFeatures_ar: (m.pricingTiers?.find(t => t.key === "pro")?.features_ar ?? []).join("\n"),
+      heroStats_ar: toArText(m.heroStats, "label_ar", "value_ar"),
+      featureCards_ar: toArText(m.featureCards, "title_ar", "description_ar"),
+      howItWorks_ar: toArText(m.howItWorks, "title_ar", "description_ar"),
+      faq_ar: toArText(m.faq, "question_ar", "answer_ar"),
     });
     setEditingId(m._id);
     setActiveTab("basic");
@@ -283,10 +308,10 @@ export function AdminModules() {
         capabilities: form.capabilities.split(",").map(c => c.trim()).filter(Boolean),
         platforms: form.platforms.split(",").map(p => p.trim()).filter(Boolean),
         requiredApiKeys: form.requiredApiKeys,
-        heroStats: form.heroStats.trim() ? parseHeroStats(form.heroStats) : [],
-        featureCards: form.featureCards.trim() ? parseFeatures(form.featureCards) : [],
-        howItWorks: form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [],
-        faq: form.faq.trim() ? parseFaq(form.faq) : [],
+        heroStats: withAr(form.heroStats.trim() ? parseHeroStats(form.heroStats) : [], form.heroStats_ar, "label_ar", "value_ar"),
+        featureCards: withAr(form.featureCards.trim() ? parseFeatures(form.featureCards) : [], form.featureCards_ar, "title_ar", "description_ar"),
+        howItWorks: withAr(form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [], form.howItWorks_ar, "title_ar", "description_ar"),
+        faq: withAr(form.faq.trim() ? parseFaq(form.faq) : [], form.faq_ar, "question_ar", "answer_ar"),
         testimonials: form.testimonials.trim() ? parseTestimonials(form.testimonials) : [],
         pricing: form.type === "chatbot"
           ? {
@@ -845,6 +870,27 @@ export function AdminModules() {
                       dir="rtl"
                     />
                   </div>
+                  {([
+                    ["heroStats_ar", "Hero Stats (AR) — الإحصائيات", "Label|Value — same order as English", form.heroStats, 4],
+                    ["featureCards_ar", "Features (AR) — المميزات التفصيلية", "Title|Description — same order as English", form.featureCards, 6],
+                    ["howItWorks_ar", "How It Works (AR) — كيف يعمل", "Title|Description — same order as English", form.howItWorks, 4],
+                    ["faq_ar", "FAQ (AR) — الأسئلة الشائعة", "Question|Answer — same order as English", form.faq, 6],
+                  ] as const).map(([key, label, hint, en, rows]) => {
+                    const enCount = en.split("\n").filter(l => l.trim()).length;
+                    const arCount = arLines(form[key]).filter(l => l).length;
+                    return (
+                      <div key={key} className="col-span-full mb-3.5">
+                        {fieldLabel(label, `${hint} (${arCount}/${enCount} lines)`)}
+                        <Textarea
+                          value={form[key]}
+                          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                          rows={rows}
+                          dir="rtl"
+                          className={monoTextareaClass}
+                        />
+                      </div>
+                    );
+                  })}
                   {form.type === "chatbot" ? (
                     <>
                       <div className="col-span-full mb-3.5">

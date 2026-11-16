@@ -694,3 +694,17 @@ carried the existing twitter value plus the new email/supportEmail/address_ar.
 Fix (same day): the block was gated on slug "contact", but the real page slug
 is `contact-us` (CmsPageSlug.CONTACT) — so it never showed in production.
 Gate corrected; re-verified with the real slug.
+
+## 2026-11-16 — Arabic for hero stats / features / how-it-works / FAQ
+Admin service editor's Arabic tab gained 4 textareas (Label|Value,
+Title|Description ×2, Question|Answer), line N = English line N, blank line =
+no Arabic for that item, with an "x/y lines" counter. Real data-loss bug fixed
+along the way: saving the Content tab rebuilt these arrays from the English
+text only, silently dropping any stored `_ar` fields — they now load into the
+Arabic boxes and are saved back. Agent/automation/chatbot detail pages never
+rendered these `_ar` fields at all; now do via new `lib/localize.ts` `loc()`.
+Chatbot page fixed copy: "runs inside the agent" → "inside your chatbot",
+"no manual work required" → "answered instantly", Basic tier subtitle, and the
+Custom card's label + 4 bullets now have Arabic. Verified with Playwright +
+mock API: AR page shows all 8 Arabic strings; admin round-trip keeps existing
+AR and saves edits to the right item.
