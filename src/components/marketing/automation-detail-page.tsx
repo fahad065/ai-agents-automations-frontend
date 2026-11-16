@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
 import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
+import { BrochureButton } from "@/components/marketing/brochure-button";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -39,6 +40,7 @@ interface AutomationTemplate {
   faq: { question: string; answer: string }[];
   integrations: { name: string; icon: string; description: string }[];
   demoVideoUrl?: string;
+  brochureUrl?: string;
   status?: "active" | "inactive" | "coming_soon";
 }
 
@@ -209,6 +211,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
                 )}
+                <BrochureButton url={automation.brochureUrl} isAr={isAr} />
               </div>
             </div>
 

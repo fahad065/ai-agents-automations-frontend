@@ -75,6 +75,7 @@ interface Module {
   pricing: PricingData;
   pricingTiers?: PricingTier[];
   demoVideoUrl: string;
+  brochureUrl?: string;
   createdAt: string;
 }
 
@@ -121,7 +122,7 @@ const emptyForm = {
   capabilities: "", requiredApiKeys: [] as string[],
   status: "coming_soon", sortOrder: 1,
   platforms: "",
-  demoVideoUrl: "",
+  demoVideoUrl: "", brochureUrl: "",
   heroStats: "", featureCards: "", howItWorks: "",
   faq: "", testimonials: "",
   pricingMonthly: "49", pricingAnnual: "39", pricingFeatures: "",
@@ -208,6 +209,7 @@ export function AdminModules() {
       nicheSlug: m.nicheSlug || "content_social",
       components: (m.components || []).join("\n"),
       demoVideoUrl: m.demoVideoUrl || "",
+      brochureUrl: m.brochureUrl || "",
       heroStats: m.heroStats?.length
         ? m.heroStats.map(s => `${s.label}|${s.value}`).join("\n") : "",
       featureCards: m.featureCards?.length
@@ -303,6 +305,7 @@ export function AdminModules() {
         status: form.status,
         sortOrder: Number(form.sortOrder),
         demoVideoUrl: form.demoVideoUrl.trim(),
+        brochureUrl: form.brochureUrl.trim(),
         capabilities: form.capabilities.split(",").map(c => c.trim()).filter(Boolean),
         platforms: form.platforms.split(",").map(p => p.trim()).filter(Boolean),
         requiredApiKeys: form.type === "chatbot" ? [] : form.requiredApiKeys,
@@ -551,6 +554,10 @@ export function AdminModules() {
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Demo Video URL")}
                   <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="https://youtu.be/..." />
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Brochure PDF URL", "shows a Download brochure button next to Watch demo")}
+                  <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="https://….public.blob.vercel-storage.com/….pdf" />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Status", "inactive = hidden from the public catalog")}

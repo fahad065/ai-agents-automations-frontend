@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
 import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
+import { BrochureButton } from "@/components/marketing/brochure-button";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -40,6 +41,7 @@ interface AgentTemplate {
   pricing: { monthly: number; annual: number; features: string[]; hasCustomPlan?: boolean; customLabel?: string };
   faq: { question: string; answer: string }[];
   demoVideoUrl?: string;
+  brochureUrl?: string;
   status?: "active" | "inactive" | "coming_soon";
 }
 
@@ -232,6 +234,7 @@ export function AgentDetailPage({ slug }: { slug: string }) {
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
                 )}
+                <BrochureButton url={agent.brochureUrl} isAr={isAr} />
               </div>
             </div>
 

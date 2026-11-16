@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loc } from "@/lib/localize";
 import { toServiceView, serviceStatusLabel } from "@/lib/service-view";
+import { BrochureButton } from "@/components/marketing/brochure-button";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -56,6 +57,7 @@ interface ChatbotModule {
   testimonials: { name: string; role: string; avatar: string; text: string; rating: number }[];
   faq: { question: string; answer: string }[];
   demoVideoUrl?: string;
+  brochureUrl?: string;
   status?: "active" | "inactive" | "coming_soon";
   // Legacy single-plan shape — only its hasCustomPlan/customLabel are still
   // used now (for the Custom/Enterprise card), see pricingTiers below.
@@ -331,6 +333,7 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>
                 )}
+                <BrochureButton url={agent.brochureUrl} isAr={isAr} />
               </div>
             </div>
 

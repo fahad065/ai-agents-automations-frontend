@@ -746,3 +746,14 @@ and services as `{type,name,slug,status,content,seo,display,pipeline,pricing}`
 - Verified in the backend's end-to-end run (63/63): channels set up through the
   UI, website settings kept on save, verify token + callback URL shown, admin
   form shows no Pipeline tab for the restaurant chatbot.
+
+## 2026-11-16 — "Download brochure" on service pages
+`content.brochureUrl` already existed on the services schema (planned in an
+earlier session, never wired). Now: admin Services form → Basic tab has a
+"Brochure PDF URL" field (next to Demo Video URL); chatbot/agent/automation
+detail pages show a "Download brochure" button after "Watch demo" when set
+(new shared `marketing/brochure-button.tsx`). Vercel Blob URLs get
+`?download=1` so the PDF downloads instead of opening (the `download`
+attribute is ignored cross-origin). Verified against the real backend +
+MongoDB: no button when empty, saved as content.brochureUrl via the admin
+form, button links with ?download=1, Arabic label in AR mode.
