@@ -762,3 +762,14 @@ form, button links with ?download=1, Arabic label in AR mode.
 "Annual (save ~20%)" was hardcoded. With Basic 79 → 49 and Pro 120 → 99 it was
 wrong, so the label now works out the biggest saving across the Basic/Pro tiers
 ("save up to 38%"), and shows plain "Annual" when there is no saving.
+
+## 2026-11-16 — Dashboard "Modules" → "Services"; hero buttons on one row
+- Sidebar: "My Modules" → "My Services", admin "Modules" → "Services"; the same
+  rename on visible text (page titles, buttons, toasts, table headings, empty
+  states, homepage mockup). Routes (/dashboard/modules, /dashboard/cms-modules)
+  and code names unchanged.
+- Service detail hero (chatbot/agent/automation): primary + Watch demo +
+  Download brochure stay on one row from 640px up (sm:flex-nowrap, tighter
+  padding, whitespace-nowrap); phones still wrap.
+- Admin service form: Testimonials tab hidden — services have no testimonials
+  field, so it never saved; the backend now rejects unknown fields.

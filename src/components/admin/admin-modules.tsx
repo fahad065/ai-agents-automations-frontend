@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import {
   Plus, Pencil, Trash2, Loader2,
   CheckCircle2, XCircle, Boxes, Search,
-  Info, Workflow, FileText, DollarSign, MessageSquare, Languages,
+  Info, Workflow, FileText, DollarSign, Languages,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -151,7 +151,8 @@ const TAB_CONFIG = [
   { key: "pipeline", label: "Pipeline", icon: Workflow },
   { key: "content", label: "Content", icon: FileText },
   { key: "pricing", label: "Pricing", icon: DollarSign },
-  { key: "testimonials", label: "Testimonials", icon: MessageSquare },
+  // Testimonials tab hidden: services have no testimonials field, so it
+  // never saved anything (and the backend now rejects unknown fields).
   { key: "arabic", label: "Arabic", icon: Languages },
 ] as const;
 const TABS = TAB_CONFIG.map((t) => t.key);
@@ -313,7 +314,6 @@ export function AdminModules() {
         featureCards: withAr(form.featureCards.trim() ? parseFeatures(form.featureCards) : [], form.featureCards_ar, "title_ar", "description_ar"),
         howItWorks: withAr(form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [], form.howItWorks_ar, "title_ar", "description_ar"),
         faq: withAr(form.faq.trim() ? parseFaq(form.faq) : [], form.faq_ar, "question_ar", "answer_ar"),
-        testimonials: form.testimonials.trim() ? parseTestimonials(form.testimonials) : [],
         pricing: form.type === "chatbot"
           ? {
               monthly: Number(form.tierBasicMonthly),
@@ -354,10 +354,10 @@ export function AdminModules() {
 
       if (editingId) {
         await api.patch(`/services/${editingId}`, toServicePayload(payload));
-        toast.success("Module updated");
+        toast.success("Service updated");
       } else {
         await api.post("/services", toServicePayload(payload));
-        toast.success("Module created");
+        toast.success("Service created");
       }
       setShowForm(false);
       fetchModules();
@@ -375,7 +375,7 @@ export function AdminModules() {
       toast.success("Deleted");
       fetchModules();
     } catch {
-      toast.error("Failed to delete module");
+      toast.error("Failed to delete service");
     }
     setDeleteLoading(null);
     setDeleteTarget(null);
@@ -407,7 +407,7 @@ export function AdminModules() {
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Modules</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Services</h1>
           <p className="text-sm text-muted-foreground">
             {filteredModules.length} of {modules.length} modules
           </p>
@@ -467,7 +467,7 @@ export function AdminModules() {
                 {form.icon || "🤖"}
               </div>
               <div>
-                <DialogTitle>{editingId ? `Edit: ${form.name || "module"}` : "Create module"}</DialogTitle>
+                <DialogTitle>{editingId ? `Edit: ${form.name || "service"}` : "Create service"}</DialogTitle>
                 <p className="text-xs text-muted-foreground">{form.slug || "no slug yet"}</p>
               </div>
             </div>
@@ -782,57 +782,6 @@ export function AdminModules() {
               )
             )}
 
-            {/* TESTIMONIALS TAB */}
-            {activeTab === "testimonials" && (
-              <div>
-                <div className="mb-4 rounded-lg border border-[#22c55e]/15 bg-[#22c55e]/[0.06] p-3.5">
-                  <p className="mb-1.5 text-xs font-semibold text-[#22c55e]">How to add testimonials</p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Format: <code className="rounded bg-background px-1.5 py-0.5">Name|Role|Avatar Emoji|Rating (1-5)|Review text</code><br />
-                    Example: <code className="rounded bg-background px-1.5 py-0.5">Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week...</code><br />
-                    Only add real testimonials from actual users.
-                  </p>
-                </div>
-                <div className="mb-3.5">
-                  {fieldLabel("Testimonials", "one per line: Name|Role|Avatar|Rating|Text")}
-                  <Textarea
-                    value={form.testimonials}
-                    onChange={e => setForm(f => ({ ...f, testimonials: e.target.value }))}
-                    rows={8}
-                    placeholder={"Ahmed Al Rashid|Content Creator, Dubai|👨‍💼|5|This agent saved me 20 hours a week.\nSarah Thompson|Marketing Manager, London|👩‍💼|5|Incredible quality."}
-                    className={monoTextareaClass}
-                  />
-                </div>
-                {form.testimonials.trim() && (
-                  <div className="mt-4">
-                    <p className="mb-2.5 text-xs font-semibold text-muted-foreground">Preview:</p>
-                    {form.testimonials.split("\n").filter(Boolean).map((line, i) => {
-                      const [name, role, avatar, rating, ...textParts] = line.split("|");
-                      return (
-                        <div key={i} className="mb-2 rounded-lg border bg-background p-3.5">
-                          <div className="mb-2 flex gap-0.75">
-                            {Array.from({ length: Math.min(Number(rating) || 5, 5) }).map((_, j) => (
-                              <span key={j} className="text-[13px] text-amber-500">★</span>
-                            ))}
-                          </div>
-                          <p className="mb-2.5 text-[13px] leading-relaxed text-muted-foreground">
-                            "{textParts.join("|")}"
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{avatar || "👤"}</span>
-                            <div>
-                              <p className="text-[13px] font-semibold text-foreground">{name}</p>
-                              <p className="text-[11px] text-muted-foreground">{role}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ARABIC TAB */}
             {activeTab === "arabic" && (
               <div>
@@ -947,7 +896,7 @@ export function AdminModules() {
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="gap-1.5">
               {saving && <Loader2 size={14} className="animate-spin" />}
-              {editingId ? "Update module" : "Create module"}
+              {editingId ? "Update service" : "Create service"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -961,14 +910,14 @@ export function AdminModules() {
       ) : modules.length === 0 ? (
         <div className="rounded-xl border bg-card p-15 text-center">
           <Boxes size={36} className="mx-auto mb-4 text-muted-foreground" />
-          <p className="mb-4 text-muted-foreground">No modules yet</p>
+          <p className="mb-4 text-muted-foreground">No services yet</p>
           <Button onClick={openCreate} className="gap-1.5">
             <Plus size={14} /> Create first module
           </Button>
         </div>
       ) : filteredModules.length === 0 ? (
         <div className="rounded-xl border bg-card p-10 text-center">
-          <p className="mb-2.5 text-sm text-muted-foreground">No modules match your filters</p>
+          <p className="mb-2.5 text-sm text-muted-foreground">No services match your filters</p>
           <button
             onClick={() => { setSearch(""); setFilterType(""); setFilterNiche(""); }}
             className="border-none bg-transparent text-[13px] text-[#a78bfa] underline"

@@ -401,7 +401,7 @@ export function UsersPage() {
           <div className="min-w-[780px]">
             {/* Column headers */}
             <div className="grid grid-cols-[2fr_1.5fr_100px_120px_80px_90px_100px] gap-2.5 border-b bg-background px-5 py-2.5">
-              {["User", "Email", "Role", "Plan", "Modules", "Billed", "Actions"].map((h) => (
+              {["User", "Email", "Role", "Plan", "Services", "Billed", "Actions"].map((h) => (
                 <span key={h} className="text-[11px] font-semibold text-muted-foreground">{h}</span>
               ))}
             </div>

@@ -108,7 +108,7 @@ export function ActivityLogsPage() {
             value={entityType}
             onChange={(v) => { setEntityType(v); setPage(1); }}
             options={ENTITY_TYPES.map((t) => ({ value: t, label: t.replace("_", " ") }))}
-            placeholder="All modules"
+            placeholder="All services"
             searchPlaceholder="Search modules..."
             className="w-auto min-w-[160px]"
           />
@@ -136,7 +136,7 @@ export function ActivityLogsPage() {
                 <TableRow>
                   {isAdmin && <TableHead>Account</TableHead>}
                   <TableHead>Action</TableHead>
-                  <TableHead>Module</TableHead>
+                  <TableHead>Service</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>By</TableHead>
                   <TableHead>Date</TableHead>

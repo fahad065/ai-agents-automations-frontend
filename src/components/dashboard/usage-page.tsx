@@ -121,7 +121,7 @@ export function UsagePage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Plan</TableHead>
-                <TableHead>Modules</TableHead>
+                <TableHead>Services</TableHead>
                 <TableHead>Runs (30d / total)</TableHead>
                 <TableHead>Failed (30d / total)</TableHead>
                 <TableHead>Last Run</TableHead>

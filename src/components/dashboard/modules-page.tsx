@@ -206,7 +206,7 @@ function SubscribeModal({ module, onClose, onSuccess }: {
         scheduleFrequency: form.scheduleFrequency, scheduleTime: form.scheduleTime,
         nicheSlug: module.nicheSlug, pipelineCategory: module.pipelineCategory,
       });
-      toast.success(isNichePipeline ? "Pipeline activated — 30-day trial started!" : "Module added — 30-day trial started!");
+      toast.success(isNichePipeline ? "Pipeline activated — 30-day trial started!" : "Service added — 30-day trial started!");
       onSuccess(); onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to subscribe");
@@ -287,7 +287,7 @@ function SubscribeModal({ module, onClose, onSuccess }: {
               ) : (
                 module.capabilities?.length > 0 && (
                   <div className="mb-5">
-                    <p className="mb-2.5 text-[13px] font-semibold text-foreground">What this module does:</p>
+                    <p className="mb-2.5 text-[13px] font-semibold text-foreground">What this service does:</p>
                     {module.capabilities.map((cap, i) => (
                       <div key={i} className="mb-2 flex items-start gap-2">
                         <Check size={13} className="mt-0.5 shrink-0" color={module.color} />
@@ -330,7 +330,7 @@ function SubscribeModal({ module, onClose, onSuccess }: {
               ) : (
                 <>
                   <div>
-                    <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Module Name</Label>
+                    <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Service Name</Label>
                     <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="My YouTube Agent" />
                   </div>
                   <div>
@@ -399,7 +399,7 @@ function SubscribeModal({ module, onClose, onSuccess }: {
                 className="flex-2 gap-2"
                 style={{ background: `linear-gradient(135deg, ${module.color}, ${module.color}cc)` }}
               >
-                {isNichePipeline ? "Activate Pipeline" : "Set Up Module"} <ChevronRight size={14} />
+                {isNichePipeline ? "Activate Pipeline" : "Set Up Service"} <ChevronRight size={14} />
               </Button>
             </>
           ) : (
@@ -467,8 +467,8 @@ function MarketplaceModal({ onClose, onSubscribed, initialSlug }: {
         <DialogHeader>
           <div className="mb-1 flex items-center justify-between">
             <div>
-              <DialogTitle>Module Marketplace</DialogTitle>
-              <p className="mt-1 text-xs text-muted-foreground">Choose a module to add to your account</p>
+              <DialogTitle>Service Marketplace</DialogTitle>
+              <p className="mt-1 text-xs text-muted-foreground">Choose a service to add to your account</p>
             </div>
           </div>
 
@@ -513,11 +513,11 @@ function MarketplaceModal({ onClose, onSubscribed, initialSlug }: {
               {modules.length === 0 ? (
                 <div className="rounded-xl border border-[#f59e0b]/20 bg-[#f59e0b]/6 px-6 py-8">
                   <AlertTriangle size={28} className="mx-auto mb-3 text-[#f59e0b]" />
-                  <p className="mb-1.5 text-sm font-semibold text-foreground">No modules available yet</p>
+                  <p className="mb-1.5 text-sm font-semibold text-foreground">No services available yet</p>
                   <p className="text-xs text-muted-foreground">Admin hasn't published any modules yet.</p>
                 </div>
               ) : (
-                <p className="text-[13px] text-muted-foreground">No modules match your search</p>
+                <p className="text-[13px] text-muted-foreground">No services match your search</p>
               )}
             </div>
           ) : (
@@ -631,10 +631,10 @@ export function MyModulesPage() {
     if (!deleteTarget) return;
     try {
       await api.delete(`/usermodules/${deleteTarget._id}`);
-      toast.success("Module removed");
+      toast.success("Service removed");
       fetchModules();
     } catch {
-      toast.error("Failed to remove module");
+      toast.error("Failed to remove service");
     }
     setDeleteTarget(null);
   };
@@ -672,12 +672,12 @@ export function MyModulesPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">My Modules</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">My Services</h1>
           <p className="text-sm text-muted-foreground">Manage your subscribed agents and automations.</p>
         </div>
         <div className="flex items-center gap-2.5">
           <Button onClick={() => setShowMarketplace(true)} className="gap-2">
-            <Plus size={15} /> Add Module
+            <Plus size={15} /> Add Service
           </Button>
         </div>
       </div>
@@ -711,7 +711,7 @@ export function MyModulesPage() {
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border bg-card px-6 py-15 text-center">
           <Package size={40} className="mx-auto mb-4 text-muted-foreground" />
-          <h2 className="mb-2 text-base font-semibold text-foreground">{search ? "No modules found" : "No modules yet"}</h2>
+          <h2 className="mb-2 text-base font-semibold text-foreground">{search ? "No services found" : "No services yet"}</h2>
           <p className="mb-5 text-sm text-muted-foreground">{search ? "Try a different search term." : "Browse the marketplace to add your first module."}</p>
           {!search && (
             <Button onClick={() => setShowMarketplace(true)} className="gap-2">

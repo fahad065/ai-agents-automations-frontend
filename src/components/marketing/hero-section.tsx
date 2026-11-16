@@ -247,7 +247,7 @@ export function HeroSection() {
           <div className={cn("min-h-[320px] rounded-xl p-5", isDark ? "bg-[#0a0a0a]" : "bg-[#f4f4f5]")}>
             {/* Header row */}
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-bold text-foreground">My Modules</p>
+              <p className="text-sm font-bold text-foreground">My Services</p>
               <div className="flex items-center gap-1.5">
                 <div className="size-1.5 animate-[pulse-dot_2s_infinite] rounded-full bg-[#22c55e]" />
                 <span className="text-[11px] font-semibold text-[#22c55e]">4 active</span>

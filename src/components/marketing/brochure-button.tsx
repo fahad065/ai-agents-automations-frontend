@@ -23,7 +23,7 @@ export function BrochureButton({ url, isAr }: { url?: string; isAr: boolean }) {
       download
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.02] px-6 py-3.5 text-[15px] font-medium text-muted-foreground no-underline"
+      className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.02] px-4.5 py-3.5 text-[15px] font-medium whitespace-nowrap text-muted-foreground no-underline"
     >
       <FileDown size={14} /> {isAr ? "حمّل الكتيّب" : "Download brochure"}
     </a>

@@ -350,7 +350,7 @@ export function DashboardOverview() {
             <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
               {[
                 { step: 1, title: "Add your API keys", desc: "OpenAI and Atlas Cloud keys are required to run any pipeline", href: "/dashboard/api-keys", cta: "Add keys", color: "#f59e0b" },
-                { step: 2, title: "Choose a module", desc: "Browse agents, automations and chatbots in the marketplace", href: "/dashboard/modules", cta: "Browse marketplace", color: "#7c3aed" },
+                { step: 2, title: "Choose a service", desc: "Browse agents, automations and chatbots in the marketplace", href: "/dashboard/modules", cta: "Browse marketplace", color: "#7c3aed" },
                 { step: 3, title: "Run your first pipeline", desc: "Click ‘Configure & Run’ — results delivered automatically", href: "/dashboard/modules", cta: "Get started", color: "#22c55e" },
               ].map((item) => (
                 <div key={item.step} className="flex flex-col rounded-xl border bg-card p-4">
@@ -464,7 +464,7 @@ export function DashboardOverview() {
             icon={DollarSign} color="#f59e0b" loading={loading}
             onClick={() => router.push("/dashboard/billing")} />
           <StatCard
-            label="Subscribed Modules"
+            label="Subscribed Services"
             value={loading ? "—" : totalSubscribed}
             sub={loading ? undefined : `Agents: ${userStats.totalAgents} · Automations: ${userStats.totalAutomations} · Chatbots: ${userStats.totalChatbots}`}
             icon={Package} color="#7c3aed" loading={loading}
@@ -535,11 +535,11 @@ export function DashboardOverview() {
             <div style={{ padding: "40px", textAlign: "center" }}>
               <FileText size={28} color={colors.textMuted} style={{ margin: "0 auto 12px" }} />
               <p style={{ fontSize: "14px", fontWeight: 600, color: colors.text, marginBottom: "6px" }}>
-                {!isAdmin && totalSubscribed === 0 ? "No modules added yet" : "No pipeline runs yet"}
+                {!isAdmin && totalSubscribed === 0 ? "No services added yet" : "No pipeline runs yet"}
               </p>
               <p style={{ fontSize: "13px", color: colors.textMuted, marginBottom: "16px" }}>
                 {!isAdmin && totalSubscribed === 0
-                  ? "Add a module and run your first pipeline to see results here"
+                  ? "Add a service and run your first pipeline to see results here"
                   : "Your first video will appear here after the pipeline runs"}
               </p>
               {!isAdmin && totalSubscribed === 0 && (
@@ -653,7 +653,7 @@ export function DashboardOverview() {
             <>
               <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
                 <div style={{ padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Modules Breakdown</h2>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Services Breakdown</h2>
                 </div>
                 <DonutChart agents={chartData.agents} automations={chartData.automations} colors={colors} />
               </div>
@@ -717,10 +717,10 @@ export function DashboardOverview() {
                 )}
               </div>
 
-              {/* Subscribed Modules */}
+              {/* Subscribed Services */}
               <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: "12px", overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${colors.border}` }}>
-                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Subscribed Modules</h2>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, color: colors.text }}>Subscribed Services</h2>
                   <Link href="/dashboard/modules" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none" }}>
                     View all →
                   </Link>

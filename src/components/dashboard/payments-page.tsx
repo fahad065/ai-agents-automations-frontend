@@ -208,7 +208,7 @@ export function PaymentsPage() {
 
         {/* Top modules by revenue */}
         <div className="rounded-xl border bg-card px-5 py-4.5">
-          <h2 className="mb-4 text-sm font-semibold text-foreground">Revenue by Module</h2>
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Revenue by Service</h2>
           {loading ? (
             <Loader2 size={20} className="animate-spin text-primary" />
           ) : !summary?.byModule?.length ? (
@@ -244,7 +244,7 @@ export function PaymentsPage() {
               <TableRow>
                 <TableHead>Description</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Module</TableHead>
+                <TableHead>Service</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>

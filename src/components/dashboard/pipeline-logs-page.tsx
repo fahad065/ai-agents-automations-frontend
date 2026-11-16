@@ -197,7 +197,7 @@ export default function PipelineLogsPage() {
 
   const handleRetry = async (run: PipelineRun) => {
     if (!run.agentId) {
-      toast.error("Cannot retry — module ID not found");
+      toast.error("Cannot retry — service ID not found");
       return;
     }
     setRetrying(run._id);

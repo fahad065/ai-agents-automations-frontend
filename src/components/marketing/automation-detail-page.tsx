@@ -195,8 +195,8 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                 {(isAr && automation.description_ar) ? automation.description_ar : automation.description}
               </p>
 
-              <div className="flex flex-wrap gap-3">
-                <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-7 py-5.5 text-[15px] shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
+              <div className="flex flex-wrap gap-2.5 sm:flex-nowrap">
+                <Button nativeButton={false} render={<Link href={getStartedHref} />} className="gap-2 rounded-[10px] px-5 py-5.5 text-[15px] whitespace-nowrap shadow-[0_4px_20px_rgba(124,58,237,0.35)]">
                   {ctaLabel}
                   <ArrowRight size={15} />
                 </Button>
@@ -206,7 +206,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                     href={automation.demoVideoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.015] px-7 py-3.25 text-[15px] font-medium text-muted-foreground no-underline"
+                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.015] px-4.5 py-3.25 text-[15px] font-medium whitespace-nowrap text-muted-foreground no-underline"
                   >
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
                   </a>

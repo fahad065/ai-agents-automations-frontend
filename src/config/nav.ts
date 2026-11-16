@@ -27,7 +27,7 @@ export const navSections: NavSection[] = [
     label: "Dashboard",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "My Modules", url: "/dashboard/modules", icon: Package },
+      { title: "My Services", url: "/dashboard/modules", icon: Package },
       { title: "Chatbots", url: "/dashboard/chatbots", icon: Bot },
       { title: "Pipeline Logs", url: "/dashboard/pipeline-logs", icon: FileText },
       { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
@@ -51,7 +51,7 @@ export const navSections: NavSection[] = [
   {
     label: "Administration",
     items: [
-      { title: "Modules", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
+      { title: "Services", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
       { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },
       { title: "Content (CMS)", url: "/dashboard/cms", icon: BookOpen, adminOnly: true },
