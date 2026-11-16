@@ -293,18 +293,19 @@ export function AdminModules() {
         description: form.description.trim(),
         tagline: form.tagline.trim(),
         type: form.type,
-        pipelineType: form.pipelineType,
+        // Pipeline fields only mean something for agents/automations.
+        pipelineType: form.type === "chatbot" ? undefined : form.pipelineType,
         icon: form.icon.trim(),
         color: form.color.trim(),
-        pipelineCategory: form.pipelineCategory,
+        pipelineCategory: form.type === "chatbot" ? "standalone" : form.pipelineCategory,
         nicheSlug: form.nicheSlug,
-        components: form.components.split("\n").map(c => c.trim()).filter(Boolean),
+        components: form.type === "chatbot" ? [] : form.components.split("\n").map(c => c.trim()).filter(Boolean),
         status: form.status,
         sortOrder: Number(form.sortOrder),
         demoVideoUrl: form.demoVideoUrl.trim(),
         capabilities: form.capabilities.split(",").map(c => c.trim()).filter(Boolean),
         platforms: form.platforms.split(",").map(p => p.trim()).filter(Boolean),
-        requiredApiKeys: form.requiredApiKeys,
+        requiredApiKeys: form.type === "chatbot" ? [] : form.requiredApiKeys,
         heroStats: withAr(form.heroStats.trim() ? parseHeroStats(form.heroStats) : [], form.heroStats_ar, "label_ar", "value_ar"),
         featureCards: withAr(form.featureCards.trim() ? parseFeatures(form.featureCards) : [], form.featureCards_ar, "title_ar", "description_ar"),
         howItWorks: withAr(form.howItWorks.trim() ? parseHowItWorks(form.howItWorks) : [], form.howItWorks_ar, "title_ar", "description_ar"),
@@ -472,7 +473,10 @@ export function AdminModules() {
           {/* Nav + Form Body */}
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[190px_1fr]">
             <nav className="flex flex-row gap-1 overflow-x-auto rounded-xl border bg-card p-2 md:flex-col md:overflow-visible">
-              {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+              {/* Chatbots run inside the backend, not the Python pipeline
+                  service — none of the Pipeline tab's fields apply to them
+                  (Niche is shown on the Basic tab instead). */}
+              {TAB_CONFIG.filter((t) => !(form.type === "chatbot" && t.key === "pipeline")).map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -521,6 +525,17 @@ export function AdminModules() {
                   />
                 </div>
                 <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
+                {form.type === "chatbot" && (
+                  <div className="mb-3.5">
+                    {fieldLabel("Niche", "drives the industry filter on /services and /pricing")}
+                    <Combobox
+                      value={form.nicheSlug}
+                      onChange={(v) => setForm(f => ({ ...f, nicheSlug: v }))}
+                      options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
+                      searchPlaceholder="Search niches..."
+                    />
+                  </div>
+                )}
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Description")}
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />

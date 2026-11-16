@@ -40,12 +40,15 @@ interface WhatsappChannel {
   phoneNumberId?: string;
   accessToken?: string;
   verifyToken?: string;
+  appSecret?: string;
   webhookVerified?: boolean;
 }
 interface InstagramChannel {
   enabled?: boolean;
   accountId?: string;
   accessToken?: string;
+  verifyToken?: string;
+  appSecret?: string;
   webhookVerified?: boolean;
 }
 interface Channels {
@@ -1772,15 +1775,14 @@ function ChannelsTab({ embedKey, channels, setChannels, embedCode, embedLoading,
                 />
               </div>
             </div>
-            <div className="mb-3.5">
-              {fieldLabel("Webhook URL — paste this into Meta")}
-              <div className="flex gap-2">
-                <Input readOnly value={whatsappWebhook} className="cursor-text text-muted-foreground" />
-                <Button variant="outline" onClick={() => copyText(whatsappWebhook, "Webhook URL")} className="shrink-0 gap-1.5">
-                  <Copy size={12} /> Copy
-                </Button>
-              </div>
-            </div>
+            <MetaWebhookFields
+              appSecret={channels.whatsapp.appSecret || ""}
+              onAppSecret={(v) => setChannels((c) => ({ ...c, whatsapp: { ...c.whatsapp, appSecret: v } }))}
+              verifyToken={channels.whatsapp.verifyToken}
+              verified={channels.whatsapp.webhookVerified}
+              webhookUrl={whatsappWebhook}
+              copyText={copyText}
+            />
           </>
         )}
       </Section>
@@ -1820,18 +1822,62 @@ function ChannelsTab({ embedKey, channels, setChannels, embedCode, embedLoading,
             />
           </div>
         </div>
-        <div className="mb-3.5">
-          {fieldLabel("Webhook URL — paste this into Meta")}
+        <MetaWebhookFields
+          appSecret={channels.instagram.appSecret || ""}
+          onAppSecret={(v) => setChannels((c) => ({ ...c, instagram: { ...c.instagram, appSecret: v } }))}
+          verifyToken={channels.instagram.verifyToken}
+          verified={channels.instagram.webhookVerified}
+          webhookUrl={instagramWebhook}
+          copyText={copyText}
+        />
+          </>
+        )}
+      </Section>
+    </>
+  );
+}
+
+// Meta security fields shared by the WhatsApp and Instagram cards. The app
+// secret lets the backend check every incoming message really came from the
+// client's Meta app (X-Hub-Signature-256); the verify token is generated per
+// bot by the backend on first save and must be pasted into Meta's webhook
+// setup alongside the URL.
+function MetaWebhookFields({ appSecret, onAppSecret, verifyToken, webhookUrl, verified, copyText }: {
+  appSecret: string; onAppSecret: (v: string) => void; verifyToken?: string;
+  webhookUrl: string; verified?: boolean; copyText: (text: string, label: string) => void;
+}) {
+  return (
+    <>
+      <div className="mb-3.5">
+        {fieldLabel("App Secret")}
+        <Input type="password" value={appSecret} onChange={(e) => onAppSecret(e.target.value)} placeholder="•••••••••••" />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Meta Business App → App settings → Basic → App secret. Required: messages that aren&apos;t signed with it are rejected.
+        </p>
+      </div>
+      <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-x-5">
+        <div>
+          {fieldLabel("Callback URL — paste into Meta")}
           <div className="flex gap-2">
-            <Input readOnly value={instagramWebhook} className="cursor-text text-muted-foreground" />
-            <Button variant="outline" onClick={() => copyText(instagramWebhook, "Webhook URL")} className="shrink-0 gap-1.5">
+            <Input readOnly value={webhookUrl} className="cursor-text text-muted-foreground" />
+            <Button variant="outline" onClick={() => copyText(webhookUrl, "Callback URL")} className="shrink-0 gap-1.5">
               <Copy size={12} /> Copy
             </Button>
           </div>
         </div>
-          </>
-        )}
-      </Section>
+        <div>
+          {fieldLabel("Verify Token — paste into Meta")}
+          <div className="flex gap-2">
+            <Input readOnly value={verifyToken || "Save channels to generate"} className="cursor-text text-muted-foreground" />
+            <Button variant="outline" disabled={!verifyToken} onClick={() => verifyToken && copyText(verifyToken, "Verify token")} className="shrink-0 gap-1.5">
+              <Copy size={12} /> Copy
+            </Button>
+          </div>
+        </div>
+      </div>
+      <p className={cn("mb-1 text-xs font-medium", verified ? "text-[#22c55e]" : "text-muted-foreground")}>
+        {verified ? "✓ Webhook verified by Meta" : "Webhook not verified by Meta yet"}
+      </p>
     </>
   );
 }
