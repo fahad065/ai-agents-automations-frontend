@@ -147,7 +147,7 @@ export function PaymentsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Payment Dashboard</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Payments</h1>
           <p className="text-sm text-muted-foreground">Platform-wide billing, API costs and profit/loss.</p>
         </div>
 

@@ -79,7 +79,7 @@ function LogDrawer({ run, onClose }: { run: PipelineRun; onClose: () => void }) 
         <div className="flex items-center justify-between border-b border-white/6 px-4.5 py-3.5">
           <div className="flex items-center gap-2">
             <Terminal size={14} className="text-[#a78bfa]" />
-            <span className="text-[13px] font-semibold text-[#e5e5e5]">Pipeline Logs</span>
+            <span className="text-[13px] font-semibold text-[#e5e5e5]">Run log</span>
             <span className="text-[11px] text-[#525252]">— {run.runId}</span>
             {isRunning && (
               <span className="animate-pulse rounded bg-[#22c55e]/15 px-1.75 py-0.5 text-[9px] font-bold text-[#22c55e]">LIVE</span>
@@ -227,7 +227,7 @@ export default function PipelineLogsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Pipeline Logs</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Run History</h1>
           <p className="text-[13px] text-muted-foreground">Track all your pipeline runs</p>
         </div>
         <div className="flex items-center gap-2">

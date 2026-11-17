@@ -708,7 +708,7 @@ export function CmsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Content CMS</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Website Content</h1>
           <p className="text-sm text-muted-foreground">Manage blog posts and website pages — one content system, two views.</p>
         </div>
         {tab === "blog" ? (

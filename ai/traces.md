@@ -805,3 +805,14 @@ Backend moved agents/automations onto `userservices`; every dashboard call to
 `/usermodules/*` now uses `/userservices/*` (same response shape). Verified by
 the backend's agent e2e suite (subscribe from Browse Services, My Services
 card, pause/resume, remove) — 32/32.
+
+## 2026-11-17 — Sidebar regrouped and renamed
+Overview (Dashboard) · Services (My Services, Browse Services, Run History) ·
+Account (Billing, API Keys, Notifications, Activity Logs) · Administration,
+admin only (Users, Customer Subscriptions, Customer Chatbots, Service Catalog,
+Payments, Usage, Website Content) · Settings (Notification Preferences,
+Security, Email Sender — admin). URLs unchanged. Renamed to stop clashes:
+admin "Services" (catalog editor) → Service Catalog; "Pipeline Logs" → Run
+History; "Client Chatbots" → Customer Chatbots; "Subscriptions" → Customer
+Subscriptions; Settings' "Notifications" tab → Notification Preferences.
+Page titles match the labels. e2e gym 76/76, agent 32/32.

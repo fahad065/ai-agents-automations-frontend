@@ -29,7 +29,7 @@ import {
 const ReactSelect = dynamic(() => import("react-select"), { ssr: false });
 
 const TABS = [
-  { key: "notifications", label: "Notifications", icon: Bell, adminOnly: false },
+  { key: "notifications", label: "Notification Preferences", icon: Bell, adminOnly: false },
   { key: "security", label: "Security", icon: Shield, adminOnly: false },
   { key: "email", label: "Email Sender", icon: Mail, adminOnly: true },
 ] as const;

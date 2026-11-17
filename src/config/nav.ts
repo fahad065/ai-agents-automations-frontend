@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Bot, FileText, Key, CreditCard, Bell, Settings,
-  Package, Users, BarChart3, BookOpen, Shield, Mail, User, Activity, History, Store,
+  Package, Users, BarChart3, BookOpen, Shield, Mail, Activity, History, Store, LayoutGrid, Wallet,
 } from "lucide-react";
 
 export interface NavItem {
@@ -19,43 +19,45 @@ export interface NavSection {
 }
 
 // Full nav map — admin sees every section/item, a regular user only the
-// ones without adminOnly. Settings is itself a NavGroup (item.items) so it
-// renders as a collapsible sub-nav in the sidebar, matching the rest of the
-// group styling instead of being a flat page link.
+// ones without adminOnly. Customers see Overview / Services / Account /
+// Settings; admins also get Administration (everything about other
+// customers and the catalog). Each page's <h1> matches its label here.
+// Settings is itself a NavGroup (item.items) so it renders as a
+// collapsible sub-nav.
 export const navSections: NavSection[] = [
   {
-    label: "Dashboard",
+    label: "Overview",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
       { title: "My Services", url: "/dashboard/modules", icon: Package },
       { title: "Browse Services", url: "/dashboard/services", icon: Store },
-      { title: "Pipeline Logs", url: "/dashboard/pipeline-logs", icon: FileText },
+      { title: "Run History", url: "/dashboard/pipeline-logs", icon: FileText },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { title: "Billing", url: "/dashboard/billing", icon: CreditCard },
+      { title: "API Keys", url: "/dashboard/api-keys", icon: Key },
       { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
       { title: "Activity Logs", url: "/dashboard/activity-logs", icon: History },
     ],
   },
   {
-    label: "Apps",
-    items: [
-      { title: "API Keys", url: "/dashboard/api-keys", icon: Key },
-    ],
-  },
-  {
-    label: "Billing",
-    items: [
-      { title: "Billing", url: "/dashboard/billing", icon: CreditCard },
-      { title: "Payments", url: "/dashboard/payments", icon: CreditCard, adminOnly: true },
-      { title: "Subscriptions", url: "/dashboard/subscriptions", icon: BarChart3, adminOnly: true },
-    ],
-  },
-  {
     label: "Administration",
     items: [
-      { title: "Services", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
-      { title: "Client Chatbots", url: "/dashboard/chatbots", icon: Bot, adminOnly: true },
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
+      { title: "Customer Subscriptions", url: "/dashboard/subscriptions", icon: BarChart3, adminOnly: true },
+      { title: "Customer Chatbots", url: "/dashboard/chatbots", icon: Bot, adminOnly: true },
+      { title: "Service Catalog", url: "/dashboard/cms-modules", icon: LayoutGrid, adminOnly: true },
+      { title: "Payments", url: "/dashboard/payments", icon: Wallet, adminOnly: true },
       { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },
-      { title: "Content (CMS)", url: "/dashboard/cms", icon: BookOpen, adminOnly: true },
+      { title: "Website Content", url: "/dashboard/cms", icon: BookOpen, adminOnly: true },
     ],
   },
   {
@@ -66,7 +68,7 @@ export const navSections: NavSection[] = [
         url: "/dashboard/settings",
         icon: Settings,
         items: [
-          { title: "Notifications", url: "/dashboard/settings?tab=notifications", icon: Bell },
+          { title: "Notification Preferences", url: "/dashboard/settings?tab=notifications", icon: Bell },
           { title: "Security", url: "/dashboard/settings?tab=security", icon: Shield },
           { title: "Email Sender", url: "/dashboard/settings?tab=email", icon: Mail, adminOnly: true },
         ],

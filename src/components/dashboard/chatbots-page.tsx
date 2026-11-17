@@ -335,7 +335,7 @@ export function ChatbotsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">{isAdmin ? "Client Chatbots" : "Chatbots"}</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">{isAdmin ? "Customer Chatbots" : "Chatbots"}</h1>
           <p className="text-sm text-muted-foreground">Build and deploy AI chatbots on your website, WhatsApp, and Instagram.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">

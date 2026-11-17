@@ -407,7 +407,7 @@ export function AdminModules() {
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Services</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Service Catalog</h1>
           <p className="text-sm text-muted-foreground">
             {filteredModules.length} of {modules.length} modules
           </p>

@@ -252,7 +252,7 @@ export function SubscriptionsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Subscriptions</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">Customer Subscriptions</h1>
           <p className="text-sm text-muted-foreground">Manage all user subscriptions — {total} total</p>
         </div>
         <Button variant="outline" onClick={fetchSubs} className="gap-1.5">

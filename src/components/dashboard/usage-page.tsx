@@ -86,7 +86,7 @@ export function UsagePage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Usage & Monitoring</h1>
+        <h1 className="text-xl font-bold text-foreground">Usage</h1>
         <p className="text-sm text-muted-foreground">
           Per-tenant pipeline activity for agents/automations — how each customer is actually using the platform, not just global totals. Chatbot message volume is on each bot's own card in the Chatbots admin list.
         </p>
