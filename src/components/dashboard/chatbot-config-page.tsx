@@ -780,8 +780,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     return (
       <div className="p-20 text-center">
         <p className="text-sm text-muted-foreground">Chatbot not found.</p>
-        <Button className="mt-4" onClick={() => router.push(isAdmin ? "/dashboard/chatbots" : "/dashboard/modules")}>
-          {isAdmin ? "Back to Customer Chatbots" : "Back to My Services"}
+        <Button className="mt-4" onClick={() => router.push(isAdmin ? "/dashboard/customer-services" : "/dashboard/modules")}>
+          {isAdmin ? "Back to Customer Services" : "Back to My Services"}
         </Button>
       </div>
     );
@@ -825,8 +825,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   return (
     <div>
       {/* Breadcrumb */}
-      <button onClick={() => guardNavigate(() => router.push(isAdmin ? "/dashboard/chatbots" : "/dashboard/modules"))} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
-        <ArrowLeft size={14} /> {isAdmin ? "Back to Customer Chatbots" : "Back to My Services"}
+      <button onClick={() => guardNavigate(() => router.push(isAdmin ? "/dashboard/customer-services" : "/dashboard/modules"))} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
+        <ArrowLeft size={14} /> {isAdmin ? "Back to Customer Services" : "Back to My Services"}
       </button>
 
       {/* Header */}

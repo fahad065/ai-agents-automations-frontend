@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard, Bot, FileText, Key, CreditCard, Bell, Settings,
-  Package, Users, BarChart3, BookOpen, Shield, Mail, Activity, History, Store, LayoutGrid, Wallet,
+  LayoutDashboard, FileText, Key, CreditCard, Bell, Settings,
+  Package, Users, BookOpen, Shield, Mail, Activity, History, Store, LayoutGrid, Wallet,
 } from "lucide-react";
 
 export interface NavItem {
@@ -52,8 +52,7 @@ export const navSections: NavSection[] = [
     label: "Administration",
     items: [
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
-      { title: "Customer Subscriptions", url: "/dashboard/subscriptions", icon: BarChart3, adminOnly: true },
-      { title: "Customer Chatbots", url: "/dashboard/chatbots", icon: Bot, adminOnly: true },
+      { title: "Customer Services", url: "/dashboard/customer-services", icon: Package, adminOnly: true },
       { title: "Service Catalog", url: "/dashboard/cms-modules", icon: LayoutGrid, adminOnly: true },
       { title: "Payments", url: "/dashboard/payments", icon: Wallet, adminOnly: true },
       { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },

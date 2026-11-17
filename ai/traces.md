@@ -816,3 +816,19 @@ admin "Services" (catalog editor) → Service Catalog; "Pipeline Logs" → Run
 History; "Client Chatbots" → Customer Chatbots; "Subscriptions" → Customer
 Subscriptions; Settings' "Notifications" tab → Notification Preferences.
 Page titles match the labels. e2e gym 76/76, agent 32/32.
+
+## 2026-11-17 — Customer Chatbots + Customer Subscriptions → one "Customer Services"
+- `/dashboard/customer-services` (`customer-services-page.tsx`): one table of
+  every client's chatbots, agents and automations — filters for type, status,
+  search and the chatbot needs-setup queue; stats (total / active-trial /
+  past due / needs setup). Chatbot rows: Configure (bot settings) + Manage;
+  agent/automation rows: Manage (extend trial / free forever / cancel — same
+  backend routes for every type). "New chatbot for a client" kept
+  (`create-chatbot-modal.tsx`).
+- Old URLs forward: `/dashboard/chatbots` → Customer Services (admin) or My
+  Services (customer); `/dashboard/subscriptions` → Customer Services.
+  `/dashboard/chatbots/[id]` (bot settings) is unchanged; its back link now
+  says "Back to Customer Services" for admins.
+- Deleted `chatbots-page.tsx` (dashboard) and `subscriptions-page.tsx`.
+- Admin sidebar Administration: Users, Customer Services, Service Catalog,
+  Payments, Usage, Website Content.

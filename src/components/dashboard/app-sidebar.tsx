@@ -45,9 +45,9 @@ function urlMatches(url: string, pathname: string, isAdmin = false) {
   const [path] = url.split("?");
   if (path === pathname) return true;
   // A chatbot's settings page belongs to "My Services" (users) or
-  // "Customer Chatbots" (admin) — both are listed under one item each.
+  // "Customer Services" (admin).
   if (pathname.startsWith("/dashboard/chatbots/")) {
-    return path === (isAdmin ? "/dashboard/chatbots" : "/dashboard/modules");
+    return path === (isAdmin ? "/dashboard/customer-services" : "/dashboard/modules");
   }
   return false;
 }

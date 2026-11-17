@@ -431,7 +431,7 @@ export function DashboardOverview() {
             <StatCard label="Total Agents" value={loading ? "—" : adminStats.totalAgents}
               sub={`${adminStats.activeAgents} active`}
               icon={Bot} color="#7c3aed" loading={loading}
-              onClick={() => router.push("/dashboard/subscriptions")} />
+              onClick={() => router.push("/dashboard/customer-services")} />
             <StatCard label="Videos Generated" value={loading ? "—" : adminStats.uploadedVideos}
               sub={`${adminStats.successRate}% success rate`}
               icon={Video} color="#ec4899" loading={loading}

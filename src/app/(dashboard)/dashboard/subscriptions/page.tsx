@@ -1,4 +1,6 @@
-import { SubscriptionsPage } from "@/components/dashboard/subscriptions-page";
+import { redirect } from "next/navigation";
+
+// Merged into Customer Services.
 export default function SubscriptionsRoute() {
-  return <SubscriptionsPage />;
+  redirect("/dashboard/customer-services");
 }
