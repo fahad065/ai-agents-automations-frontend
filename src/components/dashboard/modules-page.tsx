@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   Package, Plus, Play, Pause, Trash2,
-  Loader2, Search, AlertTriangle,
+  Loader2, Search,
   ChevronRight, Check, Settings2,
   MessageCircle, ArrowRight,
 } from "lucide-react";
@@ -26,7 +26,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { toServiceViews } from "@/lib/service-view";
+import { CHATBOT_TEMPLATE_META, SERVICE_SLUG_TO_TEMPLATE } from "@/lib/chatbot-templates";
 
 interface UserModule {
   _id: string;
@@ -49,39 +49,18 @@ interface UserModule {
   };
 }
 
-// Maps a chatbot template module's slug to the Chatbot.template enum the
-// backend expects on creation (see chatbot.schema.ts) — same lookup used on
-// the marketing detail page (chatbot-detail-page.tsx).
-const CHATBOT_TEMPLATE_ENUM: Record<string, string> = {
-  "restaurant-chatbot": "restaurant",
-  "real-estate-chatbot": "real_estate",
-  "clinic-chatbot": "clinic",
-  "ecommerce-chatbot": "ecommerce",
-  "gym-chatbot": "gym",
-  "education-chatbot": "education",
-  "salon-chatbot": "salon",
-  "hotel-chatbot": "hotel",
-  "auto-dealership-chatbot": "auto_dealership",
-};
-
-interface AvailableModule {
+export interface AvailableModule {
   _id: string; name: string; slug: string; tagline?: string; description?: string;
   type: string; pipelineType: string;
   pipelineCategory: string; nicheSlug: string;
   icon: string; color: string; badge?: string;
   capabilities: string[]; requiredApiKeys: string[];
   platforms: string[];
-  pricing?: { monthly: number; annual: number };
+  pricing?: { monthly: number; annual: number; features?: string[] };
+  pricingTiers?: { key: "basic" | "pro"; monthly: number; annual: number; features: string[] }[];
   status: "active" | "inactive" | "coming_soon";
   components?: { key: string; name: string; description: string; icon: string; isRequired: boolean; sortOrder: number }[];
 }
-
-// Niche filter pills are derived from the loaded modules' own nicheSlug
-// values — the separate `niches` collection/endpoint was dead code (never
-// registered in app.module.ts, so GET /niches always 404'd) and has been
-// removed; services.nicheSlug is the one source of truth for this now.
-const nicheLabel = (slug: string) =>
-  slug.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
 const STATUS_CONFIG: Record<string, string> = {
   active:    "bg-[#22c55e]/10 text-[#22c55e]",
@@ -93,28 +72,33 @@ const STATUS_CONFIG: Record<string, string> = {
 
 // ── Add Chatbot Modal ────────────────────────────────────────
 // Chatbots don't go through /usermodules/subscribe (SubscribeModal below) —
-// that endpoint creates a UserModule record, which is the wrong data model
-// entirely for a chatbot (no embedKey, no knowledge base, no channels).
-// This mirrors exactly what the marketing detail page's pricing section
-// does: POST /chatbots with moduleSlug so the backend prices the trial off
-// this template's module.pricing.monthly, then straight into the bot's own
-// config portal — same 30-day auto-trial, same destination.
-function AddChatbotModal({ module, onClose, onSuccess }: {
+// that endpoint creates a UserModule record, the wrong data model for a
+// chatbot. This does what the marketing page's pricing section does:
+// POST /chatbots with moduleSlug + the chosen tier, so the backend prices
+// the 30-day trial off that tier, then straight into the bot's settings.
+export function AddChatbotModal({ module, onClose, onSuccess }: {
   module: AvailableModule; onClose: () => void; onSuccess: () => void;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [name, setName] = useState(module.name);
+  const tiers = module.pricingTiers?.length
+    ? module.pricingTiers
+    : [{ key: "basic" as const, monthly: module.pricing?.monthly || 0, annual: module.pricing?.annual || 0, features: module.pricing?.features || [] }];
+  const [tier, setTier] = useState<"basic" | "pro">("basic");
 
   const handleAdd = async () => {
+    if (!name.trim()) { setError("Enter a name for your chatbot"); return; }
     setSaving(true); setError("");
     try {
       const res = await api.post("/chatbots", {
-        name: module.name,
+        name: name.trim(),
         description: module.description || module.tagline,
-        template: CHATBOT_TEMPLATE_ENUM[module.slug] || "custom",
+        template: SERVICE_SLUG_TO_TEMPLATE[module.slug] || "custom",
         language: "both",
         moduleSlug: module.slug,
+        tier,
       });
       const created = res.data?.data || res.data;
       toast.success("Chatbot created — 30-day free trial started!");
@@ -128,7 +112,7 @@ function AddChatbotModal({ module, onClose, onSuccess }: {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
             <div className="flex size-9.5 items-center justify-center rounded-[9px] border text-lg" style={{ background: `${module.color}12`, borderColor: `${module.color}20` }}>
@@ -136,30 +120,57 @@ function AddChatbotModal({ module, onClose, onSuccess }: {
             </div>
             <div>
               <DialogTitle>{module.name}</DialogTitle>
-              <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-primary/12 px-1.75 py-0.5 text-[10px] font-semibold text-[#a78bfa]">
-                <MessageCircle size={9} /> Chatbot
-              </span>
+              <p className="mt-0.5 text-xs text-muted-foreground">30-day free trial · No credit card</p>
             </div>
           </div>
         </DialogHeader>
 
-        <div>
-          {module.tagline && (
-            <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">{module.tagline}</p>
-          )}
+        <div className="-mx-1 overflow-y-auto px-1">
+          {module.tagline && <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">{module.tagline}</p>}
 
-          {module.pricing && module.pricing.monthly > 0 && (
-            <div className="mb-4 rounded-[10px] border bg-background px-4 py-3.5">
-              <div className="mb-0.5 flex items-baseline gap-1">
-                <span className="text-[22px] font-extrabold text-foreground">${module.pricing.monthly}</span>
-                <span className="text-xs text-muted-foreground">/month</span>
-              </div>
-              <p className="text-[11px] font-semibold text-[#22c55e]">30-day free trial — no credit card required</p>
-            </div>
-          )}
+          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Chatbot name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter chatbot name" className="mb-4" />
 
-          <p className="mb-1 text-xs leading-relaxed text-muted-foreground">
-            This creates the chatbot right away and takes you into its setup — add your knowledge base, connect channels, and go live whenever you're ready.
+          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Choose a plan</Label>
+          <div className={cn("mb-3 grid gap-2.5", tiers.length > 1 ? "sm:grid-cols-2" : "")} role="radiogroup" aria-label="Plan">
+            {tiers.map((t) => {
+              const active = tier === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setTier(t.key)}
+                  className={cn("rounded-[10px] border-[1.5px] p-3.5 text-left transition-colors", active ? "border-primary bg-primary/[0.05]" : "bg-background")}
+                >
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[13px] font-bold tracking-wide text-foreground uppercase">{t.key === "pro" ? "Pro" : "Basic"}</span>
+                    {active && <Check size={14} className="text-primary" />}
+                  </div>
+                  {t.monthly > 0 && (
+                    <>
+                      <p className="text-xl font-extrabold text-foreground">${t.monthly}<span className="text-xs font-normal text-muted-foreground">/mo</span></p>
+                      {t.annual > 0 && t.annual < t.monthly && (
+                        <p className="text-[11px] text-muted-foreground">or ${t.annual}/mo billed annually</p>
+                      )}
+                    </>
+                  )}
+                  <ul className="mt-2 space-y-1">
+                    {t.features.slice(0, 5).map((f) => (
+                      <li key={f} className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
+                        <Check size={11} className="mt-0.5 shrink-0 text-[#22c55e]" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            You won&apos;t be charged during the trial. Next you&apos;ll add your business details and AI key, then go live when you&apos;re ready.
+            You can upgrade from Basic to Pro later from the Billing tab.
           </p>
 
           {error && (
@@ -172,7 +183,7 @@ function AddChatbotModal({ module, onClose, onSuccess }: {
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
           <Button onClick={handleAdd} disabled={saving} className="flex-2 gap-2">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <>Add chatbot <ArrowRight size={13} /></>}
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <>Start free trial <ArrowRight size={13} /></>}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -181,7 +192,7 @@ function AddChatbotModal({ module, onClose, onSuccess }: {
 }
 
 // ── Subscribe Modal ───────────────────────────────────────────
-function SubscribeModal({ module, onClose, onSuccess }: {
+export function SubscribeModal({ module, onClose, onSuccess }: {
   module: AvailableModule; onClose: () => void; onSuccess: () => void;
 }) {
   const isNichePipeline = module.pipelineCategory === "niche_pipeline";
@@ -263,7 +274,7 @@ function SubscribeModal({ module, onClose, onSuccess }: {
               {isNichePipeline && module.components && module.components.length > 0 ? (
                 <div className="mb-5">
                   <p className="mb-2.5 text-[13px] font-semibold text-foreground">
-                    What's included ({module.components.length} agents):
+                    What&apos;s included ({module.components.length} agents):
                   </p>
                   {module.components
                     .slice()
@@ -417,209 +428,57 @@ function SubscribeModal({ module, onClose, onSuccess }: {
   );
 }
 
-// ── Marketplace Modal ─────────────────────────────────────────
-function MarketplaceModal({ onClose, onSubscribed, initialSlug }: {
-  onClose: () => void; onSubscribed: () => void; initialSlug?: string | null;
-}) {
-  const [modules, setModules] = useState<AvailableModule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [activeNiche, setActiveNiche] = useState("all");
-  const [selected, setSelected] = useState<AvailableModule | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    setActiveNiche("all");
-    api.get("/services?limit=100").then((modRes) => {
-      const mods = toServiceViews<AvailableModule>(modRes.data?.data);
-      setModules(mods);
-      setLoading(false);
-      // Coming from a marketing page's "Get started" via the signup redirect
-      // (or an already-logged-in user's own "Get started" link) — open this
-      // module's setup form directly instead of leaving them to rediscover
-      // it in the grid.
-      if (initialSlug) {
-        const match = mods.find((m) => m.slug === initialSlug);
-        if (match) setSelected(match);
-      }
-    }).catch(() => setLoading(false));
-  }, [initialSlug]);
-
-  const nicheSlugs = Array.from(new Set(modules.map(m => m.nicheSlug).filter(Boolean))) as string[];
-
-  const filtered = modules.filter(m => {
-    const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
-    const matchNiche = activeNiche === "all" || m.nicheSlug === activeNiche;
-    return matchSearch && matchNiche;
-  });
-
-  if (selected) {
-    if (selected.type === "chatbot") {
-      return <AddChatbotModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
-    }
-    return <SubscribeModal module={selected} onClose={() => setSelected(null)} onSuccess={() => { setSelected(null); onClose(); onSubscribed(); }} />;
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-3xl">
-        <DialogHeader>
-          <div className="mb-1 flex items-center justify-between">
-            <div>
-              <DialogTitle>Service Marketplace</DialogTitle>
-              <p className="mt-1 text-xs text-muted-foreground">Choose a service to add to your account</p>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search size={13} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search modules..." className="h-8 pl-7.5 text-[13px]" />
-          </div>
-
-          {/* Niche tabs */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-            <button
-              onClick={() => setActiveNiche("all")}
-              className={cn(
-                "rounded-full border px-3 py-1.25 text-[11px] font-semibold whitespace-nowrap",
-                activeNiche === "all" ? "border-primary/60 bg-primary/10 text-[#a78bfa]" : "text-muted-foreground"
-              )}
-            >
-              All
-            </button>
-            {nicheSlugs.map(slug => (
-              <button
-                key={slug}
-                onClick={() => setActiveNiche(slug)}
-                className={cn(
-                  "rounded-full border px-3 py-1.25 text-[11px] font-semibold whitespace-nowrap",
-                  activeNiche === slug ? "border-primary/60 bg-primary/10 text-[#a78bfa]" : "text-muted-foreground"
-                )}
-              >
-                {nicheLabel(slug)}
-              </button>
-            ))}
-          </div>
-        </DialogHeader>
-
-        {/* Module grid */}
-        <div className="flex-1 overflow-auto">
-          {loading ? (
-            <div className="p-15 text-center"><Loader2 size={24} className="mx-auto animate-spin text-primary" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="p-10 text-center">
-              {modules.length === 0 ? (
-                <div className="rounded-xl border border-[#f59e0b]/20 bg-[#f59e0b]/6 px-6 py-8">
-                  <AlertTriangle size={28} className="mx-auto mb-3 text-[#f59e0b]" />
-                  <p className="mb-1.5 text-sm font-semibold text-foreground">No services available yet</p>
-                  <p className="text-xs text-muted-foreground">Admin hasn't published any modules yet.</p>
-                </div>
-              ) : (
-                <p className="text-[13px] text-muted-foreground">No services match your search</p>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filtered.map((m) => {
-                const isHovered = hoveredId === m._id;
-                return (
-                  <div
-                    key={m._id}
-                    className={cn("rounded-xl border bg-card p-4 transition-colors", m.status === "coming_soon" ? "cursor-not-allowed opacity-60" : "cursor-pointer")}
-                    style={isHovered && m.status !== "coming_soon" ? { borderColor: `${m.color}50` } : undefined}
-                    onClick={() => m.status !== "coming_soon" && setSelected(m)}
-                    onMouseEnter={() => setHoveredId(m._id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                  >
-                    <div className="mb-2.5 flex items-center gap-2.5">
-                      <div className="flex size-9.5 shrink-0 items-center justify-center rounded-[9px] border text-xl" style={{ background: `${m.color}12`, borderColor: `${m.color}20` }}>{m.icon}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-[13px] font-semibold text-foreground">{m.name}</p>
-                          {m.pipelineCategory === "niche_pipeline" && (
-                            <span className="rounded border px-1.25 py-0.25 text-[9px] font-bold" style={{ background: `${m.color}15`, color: m.color, borderColor: `${m.color}25` }}>PIPELINE</span>
-                          )}
-                          {m.type === "chatbot" && (
-                            <span className="rounded border border-primary/30 bg-primary/15 px-1.25 py-0.25 text-[9px] font-bold text-[#a78bfa]">CHATBOT</span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground capitalize">{m.type}{m.nicheSlug ? ` · ${nicheLabel(m.nicheSlug)}` : ""}</p>
-                      </div>
-                      {m.status === "coming_soon" ? (
-                        <span className="rounded-full bg-secondary px-1.75 py-0.5 text-[10px] font-semibold text-muted-foreground">Soon</span>
-                      ) : (
-                        <span className="rounded-full bg-[#22c55e]/10 px-1.75 py-0.5 text-[10px] font-semibold text-[#22c55e]">Free Trial</span>
-                      )}
-                    </div>
-
-                    {m.tagline && <p className="mb-2.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{m.tagline}</p>}
-
-                    {/* Niche pipeline: show component list preview */}
-                    {m.pipelineCategory === "niche_pipeline" && m.components && m.components.length > 0 && (
-                      <div className="mb-2.5">
-                        {m.components.slice(0, 3).map(c => (
-                          <div key={c.key} className="mb-0.75 flex items-center gap-1.5">
-                            <span className="text-[10px]">{c.icon}</span>
-                            <span className="text-[11px] text-muted-foreground">{c.name}</span>
-                          </div>
-                        ))}
-                        {m.components.length > 3 && (
-                          <p className="mt-0.5 text-[10px] text-muted-foreground">+{m.components.length - 3} more components</p>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <span className={cn("text-xs font-bold", m.pricing?.monthly ? "text-foreground" : "text-[#22c55e]")}>{m.pricing?.monthly ? `$${m.pricing.monthly}/mo` : "Free"}</span>
-                      {m.status !== "coming_soon" && <span className="text-[11px] font-medium" style={{ color: m.color }}>{m.pipelineCategory === "niche_pipeline" ? "Set up pipeline →" : "Get started →"}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+interface MyChatbot {
+  _id: string;
+  name: string;
+  template?: string;
+  status: "draft" | "active" | "inactive";
+  channels?: { website?: { enabled?: boolean }; whatsapp?: { enabled?: boolean }; instagram?: { enabled?: boolean } };
+  billing?: { tier?: "basic" | "pro" | "custom"; status?: string; trialEndsAt?: string };
 }
 
-// ── Main Page ─────────────────────────────────────────────────
+const BOT_STATUS: Record<string, { className: string; label: string }> = {
+  active: { className: "bg-[#22c55e]/10 text-[#22c55e]", label: "Live" },
+  draft: { className: "bg-[#f59e0b]/10 text-[#f59e0b]", label: "Draft" },
+  inactive: { className: "bg-secondary text-muted-foreground", label: "Paused" },
+};
+
+const trialDaysLeft = (iso?: string) =>
+  iso ? Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000)) : null;
+
+// One page for everything the user has subscribed to: chatbots (their own
+// Chatbot docs) next to agents and automations (UserModule docs). Adding a
+// new service happens on /dashboard/services (Browse Services).
 export function MyModulesPage() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<UserModule[]>([]);
+  const [chatbots, setChatbots] = useState<MyChatbot[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [kindFilter, setKindFilter] = useState<"all" | "chatbot" | "pipeline">("all");
   const [editModule, setEditModule] = useState<UserModule | null>(null);
   const [runningModuleId, setRunningModuleId] = useState<string | null>(null);
-  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserModule | null>(null);
+  const [deleteBot, setDeleteBot] = useState<MyChatbot | null>(null);
 
   useEffect(() => { fetchModules(); }, []);
 
-  // A marketing page's "Get started" link (or the post-signup redirect chain)
-  // lands here with ?openModule=<slug> — open the marketplace straight to
-  // that module's setup form instead of the plain grid.
+  // Old deep link (marketing "Get started" → signup → here with
+  // ?openModule=<slug>) now opens that service on Browse Services.
   useEffect(() => {
     const slug = searchParams.get("openModule");
     if (!slug) return;
-    setPendingSlug(slug);
-    setShowMarketplace(true);
-    router.replace("/dashboard/modules", { scroll: false });
+    router.replace(`/dashboard/services?open=${encodeURIComponent(slug)}`, { scroll: false });
   }, [searchParams, router]);
 
   const fetchModules = async () => {
     setLoading(true);
-    try {
-      const res = await api.get("/usermodules/my");
-      setAgents(res.data?.data || res.data || []);
-    } catch {}
+    const [mods, bots] = await Promise.allSettled([api.get("/usermodules/my"), api.get("/chatbots")]);
+    if (mods.status === "fulfilled") setAgents(mods.value.data?.data || mods.value.data || []);
+    if (bots.status === "fulfilled") setChatbots(bots.value.data?.data || bots.value.data || []);
     setLoading(false);
   };
 
@@ -639,6 +498,18 @@ export function MyModulesPage() {
     setDeleteTarget(null);
   };
 
+  const deleteChatbot = async () => {
+    if (!deleteBot) return;
+    try {
+      await api.delete(`/chatbots/${deleteBot._id}`);
+      toast.success("Chatbot deleted");
+      fetchModules();
+    } catch {
+      toast.error("Failed to delete chatbot");
+    }
+    setDeleteBot(null);
+  };
+
   const handleRunNow = async (id: string) => {
     try {
       setRunningModuleId(id);
@@ -651,11 +522,20 @@ export function MyModulesPage() {
     }
   };
 
-  const filtered = agents.filter((m) => {
-    const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.niche?.toLowerCase().includes(search.toLowerCase());
+  const q = search.toLowerCase();
+  const filtered = kindFilter === "chatbot" ? [] : agents.filter((m) => {
+    const matchSearch = !q || m.name.toLowerCase().includes(q) || m.niche?.toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || m.status === statusFilter;
     return matchSearch && matchStatus;
   });
+  const filteredBots = kindFilter === "pipeline" ? [] : chatbots.filter((b) => {
+    const matchSearch = !q || b.name.toLowerCase().includes(q) || (b.template || "").includes(q);
+    const onTrial = b.billing?.status === "trial";
+    const matchStatus = statusFilter === "all" || b.status === statusFilter || (statusFilter === "trial" && onTrial)
+      || (statusFilter === "paused" && b.status === "inactive");
+    return matchSearch && matchStatus;
+  });
+  const total = filtered.length + filteredBots.length;
 
   // Format schedule display
   const formatSchedule = (module: UserModule) => {
@@ -673,34 +553,43 @@ export function MyModulesPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="mb-1 text-xl font-bold text-foreground">My Services</h1>
-          <p className="text-sm text-muted-foreground">Manage your subscribed agents and automations.</p>
+          <p className="text-sm text-muted-foreground">Your chatbots, agents and automations in one place.</p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <Button onClick={() => setShowMarketplace(true)} className="gap-2">
-            <Plus size={15} /> Add Service
-          </Button>
-        </div>
+        <Button onClick={() => router.push("/dashboard/services")} className="gap-2">
+          <Plus size={15} /> Add Service
+        </Button>
       </div>
 
       {/* Filters */}
       <div className="mb-5 flex flex-wrap items-center gap-2.5 rounded-[10px] border bg-card px-4 py-3">
         <div className="relative min-w-[200px] flex-1">
           <Search size={13} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search modules..." className="h-8 w-full pl-7.5 text-[13px]" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search services..." className="h-8 w-full pl-7.5 text-[13px]" />
         </div>
         <Combobox
+          value={kindFilter}
+          onChange={(v) => setKindFilter((v || "all") as typeof kindFilter)}
+          options={[
+            { value: "all", label: "All types" },
+            { value: "chatbot", label: "Chatbots" },
+            { value: "pipeline", label: "Agents & automations" },
+          ]}
+          className="w-auto min-w-[170px]"
+        />
+        <Combobox
           value={statusFilter}
-          onChange={setStatusFilter}
+          onChange={(v) => setStatusFilter(v || "all")}
           options={[
             { value: "all", label: "All Status" },
-            { value: "active", label: "Active" },
+            { value: "active", label: "Active / Live" },
             { value: "trial", label: "Trial" },
+            { value: "draft", label: "Draft" },
             { value: "paused", label: "Paused" },
             { value: "expired", label: "Expired" },
           ]}
           className="w-auto min-w-[150px]"
         />
-        <span className="ml-auto text-xs text-muted-foreground">{filtered.length} module{filtered.length !== 1 ? "s" : ""}</span>
+        <span className="ml-auto text-xs text-muted-foreground">{total} service{total !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Grid */}
@@ -708,19 +597,57 @@ export function MyModulesPage() {
         <div className="p-15 text-center">
           <Loader2 size={28} className="mx-auto animate-spin text-primary" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : total === 0 ? (
         <div className="rounded-xl border bg-card px-6 py-15 text-center">
           <Package size={40} className="mx-auto mb-4 text-muted-foreground" />
-          <h2 className="mb-2 text-base font-semibold text-foreground">{search ? "No services found" : "No services yet"}</h2>
-          <p className="mb-5 text-sm text-muted-foreground">{search ? "Try a different search term." : "Browse the marketplace to add your first module."}</p>
-          {!search && (
-            <Button onClick={() => setShowMarketplace(true)} className="gap-2">
-              <Plus size={15} /> Browse Marketplace
-            </Button>
-          )}
+          <h2 className="mb-2 text-base font-semibold text-foreground">{search || statusFilter !== "all" || kindFilter !== "all" ? "No services found" : "No services yet"}</h2>
+          <p className="mb-5 text-sm text-muted-foreground">{search ? "Try a different search term." : "Browse services to start your first 30-day free trial."}</p>
+          <Button onClick={() => router.push("/dashboard/services")} className="gap-2">
+            <Plus size={15} /> Browse Services
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+          {filteredBots.map((bot) => {
+            const meta = CHATBOT_TEMPLATE_META[bot.template || "custom"] || CHATBOT_TEMPLATE_META.custom;
+            const st = BOT_STATUS[bot.status] || BOT_STATUS.draft;
+            const days = bot.billing?.status === "trial" ? trialDaysLeft(bot.billing?.trialEndsAt) : null;
+            const channels = (["website", "whatsapp", "instagram"] as const).filter((c) => bot.channels?.[c]?.enabled);
+            return (
+              <div key={bot._id} className="flex flex-col rounded-xl border bg-card p-4.5" data-testid="my-chatbot-card">
+                <div className="mb-2.5 flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/[0.06] text-xl">{meta.emoji}</div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{bot.name}</p>
+                      <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <MessageCircle size={10} /> {meta.name} chatbot · {bot.billing?.tier === "pro" ? "Pro" : bot.billing?.tier === "custom" ? "Custom" : "Basic"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.75 text-[10px] font-semibold", st.className)}>{st.label}</span>
+                </div>
+                <div className="mb-3 flex gap-1.5">
+                  <div className="flex-1 rounded-md border bg-background px-2 py-1.5 text-center">
+                    <p className="text-[11px] font-bold text-foreground">{days !== null ? `${days} day${days === 1 ? "" : "s"}` : bot.billing?.status === "active" ? "Paid" : "—"}</p>
+                    <p className="text-[10px] text-muted-foreground">{days !== null ? "Trial left" : "Billing"}</p>
+                  </div>
+                  <div className="flex-1 rounded-md border bg-background px-2 py-1.5 text-center">
+                    <p className="truncate text-[11px] font-bold text-foreground capitalize">{channels.length ? channels.join(", ") : "None yet"}</p>
+                    <p className="text-[10px] text-muted-foreground">Channels</p>
+                  </div>
+                </div>
+                <div className="mt-auto flex items-stretch gap-1.5">
+                  <Button onClick={() => router.push(`/dashboard/chatbots/${bot._id}`)} className="flex-1 gap-1.5 text-xs">
+                    <Settings2 size={13} /> Configure
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setDeleteBot(bot)} title="Delete" className="border-destructive/20 bg-destructive/6 text-destructive">
+                    <Trash2 size={13} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
           {filtered.map((module) => {
             const scClass = STATUS_CONFIG[module.status] || STATUS_CONFIG.paused;
             const isYouTube = module.pipelineType === "youtube";
@@ -817,15 +744,6 @@ export function MyModulesPage() {
         </div>
       )}
 
-      {/* Marketplace modal */}
-      {showMarketplace && (
-        <MarketplaceModal
-          onClose={() => { setShowMarketplace(false); setPendingSlug(null); }}
-          onSubscribed={fetchModules}
-          initialSlug={pendingSlug}
-        />
-      )}
-
       {/* Edit module modal */}
       {editModule && (
         <EditModuleModal
@@ -841,7 +759,7 @@ export function MyModulesPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this module?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this service?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget && `"${deleteTarget.name}" will be removed. This can't be undone.`}
             </AlertDialogDescription>
@@ -850,6 +768,22 @@ export function MyModulesPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={deleteModule} className="bg-destructive text-white hover:bg-destructive/90">
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!deleteBot} onOpenChange={(open) => !open && setDeleteBot(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this chatbot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteBot && `"${deleteBot.name}" and its knowledge base and conversations will be deleted. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteChatbot} className="bg-destructive text-white hover:bg-destructive/90">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -41,9 +41,15 @@ import {
 // real search params are available — a real hydration mismatch that was
 // severe enough to swallow sidebar link clicks entirely. Losing exact
 // per-tab sub-item highlighting is a fair trade for that.
-function urlMatches(url: string, pathname: string) {
+function urlMatches(url: string, pathname: string, isAdmin = false) {
   const [path] = url.split("?");
-  return path === pathname;
+  if (path === pathname) return true;
+  // A chatbot's settings page belongs to "My Services" (users) or
+  // "Client Chatbots" (admin) — both are listed under one item each.
+  if (pathname.startsWith("/dashboard/chatbots/")) {
+    return path === (isAdmin ? "/dashboard/chatbots" : "/dashboard/modules");
+  }
+  return false;
 }
 
 function NavLeaf({ item, isActive, onNavigate }: { item: NavItem; isActive: boolean; onNavigate: () => void }) {
@@ -164,7 +170,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     <NavLeaf
                       key={item.url}
                       item={item}
-                      isActive={urlMatches(item.url, pathname)}
+                      isActive={urlMatches(item.url, pathname, isAdmin)}
                       onNavigate={closeMobile}
                     />
                   )

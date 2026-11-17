@@ -288,6 +288,13 @@ export function ChatbotsPage() {
   const [templateFilter, setTemplateFilter] = useState<string>("all");
   const visibleChatbots = isAdmin && showNeedsSetupOnly ? chatbots.filter((b) => b.needsSetup) : chatbots;
 
+  // Customers manage their chatbots on My Services now (one list for
+  // chatbots, agents and automations); this page is the admin's view of
+  // every client's chatbot.
+  useEffect(() => {
+    if (user && !isAdmin) router.replace("/dashboard/modules");
+  }, [user, isAdmin, router]);
+
   useEffect(() => { fetchChatbots(); }, [isAdmin, templateFilter]);
 
   // Admin sees every client's chatbot (so they can open and configure any of
@@ -326,7 +333,7 @@ export function ChatbotsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-foreground">Chatbots</h1>
+          <h1 className="mb-1 text-xl font-bold text-foreground">{isAdmin ? "Client Chatbots" : "Chatbots"}</h1>
           <p className="text-sm text-muted-foreground">Build and deploy AI chatbots on your website, WhatsApp, and Instagram.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">

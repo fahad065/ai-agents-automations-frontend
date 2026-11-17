@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Bot, FileText, Key, CreditCard, Bell, Settings,
-  Package, Users, BarChart3, BookOpen, Shield, Mail, User, Activity, History,
+  Package, Users, BarChart3, BookOpen, Shield, Mail, User, Activity, History, Store,
 } from "lucide-react";
 
 export interface NavItem {
@@ -28,7 +28,7 @@ export const navSections: NavSection[] = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "My Services", url: "/dashboard/modules", icon: Package },
-      { title: "Chatbots", url: "/dashboard/chatbots", icon: Bot },
+      { title: "Browse Services", url: "/dashboard/services", icon: Store },
       { title: "Pipeline Logs", url: "/dashboard/pipeline-logs", icon: FileText },
       { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
       { title: "Activity Logs", url: "/dashboard/activity-logs", icon: History },
@@ -52,6 +52,7 @@ export const navSections: NavSection[] = [
     label: "Administration",
     items: [
       { title: "Services", url: "/dashboard/cms-modules", icon: Bot, adminOnly: true },
+      { title: "Client Chatbots", url: "/dashboard/chatbots", icon: Bot, adminOnly: true },
       { title: "Users", url: "/dashboard/users", icon: Users, adminOnly: true },
       { title: "Usage", url: "/dashboard/usage", icon: Activity, adminOnly: true },
       { title: "Content (CMS)", url: "/dashboard/cms", icon: BookOpen, adminOnly: true },

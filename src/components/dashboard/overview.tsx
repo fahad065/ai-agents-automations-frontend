@@ -480,7 +480,7 @@ export function DashboardOverview() {
             value={loading ? "—" : userStats.totalChatbots}
             sub="Live & draft bots"
             icon={MessageCircle} color="#ec4899" loading={loading}
-            onClick={() => router.push("/dashboard/chatbots")} />
+            onClick={() => router.push("/dashboard/modules")} />
           <StatCard
             label="Pipeline Runs"
             value={loading ? "—" : userStats.totalRuns}

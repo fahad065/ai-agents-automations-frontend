@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { COUNTRY_NAMES } from "@/lib/countries";
+import { chatbotTemplateProfile, type ChatbotTemplateProfile } from "@/lib/chatbot-templates";
 import { SiOpenai, SiAnthropic, SiGooglegemini } from "react-icons/si";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -67,6 +69,7 @@ interface Outlet {
   phone?: string;
   hours?: string;
   deliveryPlatforms?: string[];
+  facilities?: string[];
   mapUrl?: string;
   isOnlineOnly?: boolean;
   notes?: string;
@@ -174,6 +177,7 @@ interface KnowledgeEntry {
   answer?: string;
   content?: string;
   sourceUrl?: string;
+  linkLabel?: string;
   createdAt: string;
 }
 
@@ -776,8 +780,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     return (
       <div className="p-20 text-center">
         <p className="text-sm text-muted-foreground">Chatbot not found.</p>
-        <Button className="mt-4" onClick={() => router.push("/dashboard/chatbots")}>
-          Back to Chatbots
+        <Button className="mt-4" onClick={() => router.push(isAdmin ? "/dashboard/chatbots" : "/dashboard/modules")}>
+          {isAdmin ? "Back to Client Chatbots" : "Back to My Services"}
         </Button>
       </div>
     );
@@ -788,6 +792,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   // integrations negotiated directly, so it's treated the same as Pro
   // everywhere gating is checked.
   const isProOrAbove = chatbot.billing.tier === "pro" || chatbot.billing.tier === "custom";
+  const templateProfile = chatbotTemplateProfile(chatbot.template);
   const visibleTabs = TABS.filter((t) => t.key !== "analytics" || isProOrAbove);
 
   // Dirty = current editable state differs from the last loaded/saved
@@ -820,8 +825,8 @@ export function ChatbotConfigPage({ id }: { id: string }) {
   return (
     <div>
       {/* Breadcrumb */}
-      <button onClick={() => guardNavigate(() => router.push("/dashboard/chatbots"))} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
-        <ArrowLeft size={14} /> Back to Chatbots
+      <button onClick={() => guardNavigate(() => router.push(isAdmin ? "/dashboard/chatbots" : "/dashboard/modules"))} className="mb-3.5 flex items-center gap-1.5 border-none bg-transparent p-0 text-[13px] text-muted-foreground">
+        <ArrowLeft size={14} /> {isAdmin ? "Back to Client Chatbots" : "Back to My Services"}
       </button>
 
       {/* Header */}
@@ -958,11 +963,11 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                 placeholder="e.g. Friendly, concise, always offers to book a call if the user seems unsure." />
             </div>
             <div>
-              {fieldLabel("Booking Link (optional)")}
+              {fieldLabel(`${templateProfile.bookingLabel} (optional)`)}
               <Input value={overview.bookingUrl} onChange={(e) => setOverview((o) => ({ ...o, bookingUrl: e.target.value }))}
-                placeholder="https://calendly.com/your-business or an OpenTable/Resy link" />
+                placeholder="Paste your booking link (https://...)" />
               <p className="mt-1.5 text-xs text-muted-foreground">
-                If a customer wants to book, the bot shares this link. Leave blank and it'll still take their name/phone/date & time in the conversation instead — your team just confirms manually.
+                {templateProfile.bookingHelp} Leave blank and it&apos;ll take their name, phone and preferred date &amp; time in the conversation instead — your team just confirms.
               </p>
             </div>
           </Section>
@@ -1071,7 +1076,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
               label="Save Locations"
             />
           )}
-          <LocationsTab outlets={outlets} setOutlets={setOutlets} />
+          <LocationsTab outlets={outlets} setOutlets={setOutlets} profile={templateProfile} />
         </>
       )}
 
@@ -1180,45 +1185,88 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 }
 
 // ── Knowledge Tab ────────────────────────────────────────────
+// What kind of link an answer carries. The label is stored with the entry
+// (linkLabel) and shown to the AI as "<label>: <url>", so it knows what it
+// is sharing ("here's our Google Maps location: …").
+const LINK_KINDS = [
+  "Google Maps location",
+  "Website page",
+  "Menu / price list",
+  "Booking page",
+  "Brochure / PDF",
+  "Social media page",
+  "Video",
+];
+const LINK_KIND_OPTIONS: ComboboxOption[] = [
+  ...LINK_KINDS.map((k) => ({ value: k, label: k })),
+  { value: "__other", label: "Other" },
+];
+type AnswerKind = "text" | "link" | "both";
+const isHttpUrl = (v: string) => /^https?:\/\/\S+$/i.test(v.trim());
+
 function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh }: {
   botId: string; knowledge: KnowledgeEntry[]; loading: boolean;
   showAdd: boolean; setShowAdd: (v: boolean) => void; refresh: () => void;
 }) {
-  const [type, setType] = useState<"faq" | "text" | "url">("faq");
+  // "qa" = a customer question + its answer (the default — that's what
+  // guests ask). "info" = general information with no question (about us,
+  // policies, a pasted page). Each answer can be text, a link, or both —
+  // e.g. "Where are you?" → your address + a Google Maps link.
+  const [kind, setKind] = useState<"qa" | "info">("qa");
+  const [answerKind, setAnswerKind] = useState<AnswerKind>("text");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [content, setContent] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [linkKind, setLinkKind] = useState<string>(LINK_KINDS[0]);
+  const [linkOther, setLinkOther] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
   const [editTarget, setEditTarget] = useState<KnowledgeEntry | null>(null);
 
-  const reset = () => { setType("faq"); setQuestion(""); setAnswer(""); setContent(""); setSourceUrl(""); setEditTarget(null); };
+  const reset = () => {
+    setKind("qa"); setAnswerKind("text"); setQuestion(""); setAnswer(""); setContent("");
+    setSourceUrl(""); setLinkKind(LINK_KINDS[0]); setLinkOther(""); setEditTarget(null);
+  };
 
   const startEdit = (entry: KnowledgeEntry) => {
     setEditTarget(entry);
-    setType(entry.type);
+    setKind(entry.type === "faq" ? "qa" : "info");
+    const text = entry.type === "faq" ? entry.answer : entry.content;
+    setAnswerKind(entry.sourceUrl ? (text ? "both" : "link") : "text");
     setQuestion(entry.question || "");
     setAnswer(entry.answer || "");
     setContent(entry.content || "");
     setSourceUrl(entry.sourceUrl || "");
+    const label = entry.linkLabel || "";
+    if (!label || LINK_KINDS.includes(label)) { setLinkKind(label || LINK_KINDS[0]); setLinkOther(""); }
+    else { setLinkKind("__other"); setLinkOther(label); }
     setShowAdd(true);
   };
 
+  const wantsText = answerKind !== "link";
+  const wantsLink = answerKind !== "text";
+
   // Handles both add and edit — same validation, same body shape, only the
   // HTTP method + endpoint differ. Editing re-embeds server-side so the
-  // change is searchable immediately (see ChatbotsService.updateKnowledge),
-  // which is what makes "edit an FAQ, then ask the widget" work live.
+  // change is searchable immediately (see ChatbotsService.updateKnowledge).
   const saveEntry = async () => {
-    if (type === "faq" && (!question.trim() || !answer.trim())) { toast.error("Question and answer are required"); return; }
-    if (type === "text" && !content.trim()) { toast.error("Content is required"); return; }
-    if (type === "url" && !sourceUrl.trim()) { toast.error("URL is required"); return; }
+    const text = (kind === "qa" ? answer : content).trim();
+    if (kind === "qa" && !question.trim()) { toast.error("Enter the question"); return; }
+    if (wantsText && !text) { toast.error(kind === "qa" ? "Enter the answer" : "Enter the information"); return; }
+    if (wantsLink && !isHttpUrl(sourceUrl)) { toast.error("Enter a link starting with http:// or https://"); return; }
+    if (wantsLink && linkKind === "__other" && !linkOther.trim()) { toast.error("Say what the link is"); return; }
+    const label = linkKind === "__other" ? linkOther.trim() : linkKind;
+    const body: Record<string, string> = {
+      // A link-only "general information" entry is the older "url" type.
+      type: kind === "qa" ? "faq" : (wantsText ? "text" : "url"),
+      sourceUrl: wantsLink ? sourceUrl.trim() : "",
+      linkLabel: wantsLink ? label : "",
+    };
+    if (kind === "qa") { body.question = question.trim(); body.answer = wantsText ? text : ""; }
+    else { body.content = wantsText ? text : ""; }
     setSaving(true);
     try {
-      const body: any = { type };
-      if (type === "faq") { body.question = question.trim(); body.answer = answer.trim(); }
-      if (type === "text") { body.content = content.trim(); }
-      if (type === "url") { body.sourceUrl = sourceUrl.trim(); }
       if (editTarget) {
         await api.put(`/chatbots/${botId}/knowledge/${editTarget._id}`, body);
         toast.success("Knowledge entry updated");
@@ -1229,8 +1277,8 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       reset();
       setShowAdd(false);
       refresh();
-    } catch {
-      toast.error(editTarget ? "Failed to update entry" : "Failed to add entry");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || (editTarget ? "Failed to update entry" : "Failed to add entry"));
     }
     setSaving(false);
   };
@@ -1247,8 +1295,8 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
     setDeleteTarget(null);
   };
 
-  const typeIcon: Record<string, any> = { faq: HelpCircle, text: FileText, url: Link2 };
-  const typeColor: Record<string, string> = { faq: "#7c3aed", text: "#3b82f6", url: "#22c55e" };
+  const chip = (active: boolean) =>
+    `flex-1 rounded-md border-[1.5px] px-2 py-2 text-xs font-semibold ${active ? "border-primary bg-primary/[0.07] text-primary" : "bg-card text-foreground"}`;
 
   return (
     <Section
@@ -1261,61 +1309,72 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       }
     >
       <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
-        The bot only answers from what you add here — add your FAQs, policies, or paste website content.
+        The bot only answers from what you add here. Add the questions customers ask, with a written answer, a link
+        (like your Google Maps location or menu), or both.
       </p>
 
       {showAdd && (
         <div className="mb-4 rounded-lg border bg-background p-4">
-          {editTarget && (
-            <p className="mb-3 text-xs font-semibold text-[#a78bfa]">Editing entry</p>
-          )}
-          <div className="mb-3.5 flex gap-2">
-            {([
-              { value: "faq", label: "FAQ" },
-              { value: "text", label: "Text" },
-              { value: "url", label: "URL" },
-            ] as const).map((t) => (
-              <button
-                key={t.value}
-                onClick={() => setType(t.value)}
-                className="flex-1 rounded-md border-[1.5px] p-2 text-xs font-semibold"
-                style={{
-                  borderColor: type === t.value ? typeColor[t.value] : "var(--border)",
-                  background: type === t.value ? `${typeColor[t.value]}12` : "var(--card)",
-                  color: type === t.value ? typeColor[t.value] : "var(--foreground)",
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
+          {editTarget && <p className="mb-3 text-xs font-semibold text-[#a78bfa]">Editing entry</p>}
+
+          <div className="mb-3.5 flex gap-2" role="group" aria-label="Entry type">
+            <button type="button" onClick={() => setKind("qa")} className={chip(kind === "qa")}>Question &amp; answer</button>
+            <button type="button" onClick={() => setKind("info")} className={chip(kind === "info")}>General information</button>
           </div>
 
-          {type === "faq" && (
-            <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3">
+            {kind === "qa" ? (
               <div>
                 {fieldLabel("Question")}
-                <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What are your opening hours?" />
+                <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Type the question a customer would ask" />
               </div>
+            ) : (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                For information that isn&apos;t one question — your story, policies, or a page you want the bot to know.
+              </p>
+            )}
+
+            <div>
+              {fieldLabel(kind === "qa" ? "Answer type" : "Information type")}
+              <div className="flex gap-2" role="group" aria-label="Answer type">
+                <button type="button" onClick={() => setAnswerKind("text")} className={chip(answerKind === "text")}>Text</button>
+                <button type="button" onClick={() => setAnswerKind("link")} className={chip(answerKind === "link")}>Link</button>
+                <button type="button" onClick={() => setAnswerKind("both")} className={chip(answerKind === "both")}>Text + link</button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                {answerKind === "text" && "A written answer, e.g. your opening hours or prices."}
+                {answerKind === "link" && "The bot replies with a link, e.g. your menu, brochure or booking page."}
+                {answerKind === "both" && "A written answer plus a link, e.g. your address with its Google Maps location."}
+              </p>
+            </div>
+
+            {wantsText && (
               <div>
-                {fieldLabel("Answer")}
-                <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={2} placeholder="We're open daily from 9am to 11pm." />
+                {fieldLabel(kind === "qa" ? "Answer" : "Information")}
+                {kind === "qa" ? (
+                  <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3} placeholder="Type the answer the bot should give" />
+                ) : (
+                  <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} placeholder="Paste or type the information" />
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {type === "text" && (
-            <div>
-              {fieldLabel("Content")}
-              <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4} placeholder="Paste your policy, product info, or any reference text..." />
-            </div>
-          )}
-
-          {type === "url" && (
-            <div>
-              {fieldLabel("Source URL")}
-              <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://example.com/faq" />
-            </div>
-          )}
+            {wantsLink && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[220px_1fr]">
+                <div>
+                  {fieldLabel("Link type")}
+                  <Combobox value={linkKind} onChange={(v) => setLinkKind(v || LINK_KINDS[0])} options={LINK_KIND_OPTIONS} placeholder="Select link type" />
+                  {linkKind === "__other" && (
+                    <Input className="mt-2" value={linkOther} onChange={(e) => setLinkOther(e.target.value)} placeholder="What is this link?" />
+                  )}
+                </div>
+                <div>
+                  {fieldLabel("Link")}
+                  <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="Paste the link (https://...)" />
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="mt-3.5 flex justify-end">
             <Button onClick={saveEntry} disabled={saving} className="gap-2">
@@ -1333,35 +1392,31 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       ) : knowledge.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <BookOpen size={28} className="mx-auto mb-2.5 text-muted-foreground" />
-          <p className="text-[13px] text-muted-foreground">No knowledge added yet. Add your first FAQ, text, or URL.</p>
+          <p className="text-[13px] text-muted-foreground">No knowledge added yet. Add the first question your customers ask.</p>
         </div>
       ) : (
         <div className="scroll-area-hover flex h-[420px] flex-col gap-2 overflow-y-auto pr-1">
           {knowledge.map((k) => {
-            const Icon = typeIcon[k.type] || FileText;
+            const isQa = k.type === "faq";
+            const Icon = isQa ? HelpCircle : FileText;
+            const text = isQa ? k.answer : k.content;
             return (
               <div key={k._id} className="flex shrink-0 items-start gap-2.5 rounded-lg border bg-background p-3">
-                <div
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md border"
-                  style={{ background: `${typeColor[k.type]}12`, borderColor: `${typeColor[k.type]}25` }}
-                >
-                  <Icon size={13} color={typeColor[k.type]} />
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.07]">
+                  <Icon size={13} className="text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  {k.type === "faq" && (
-                    <>
-                      <p className="mb-0.5 text-[13px] font-semibold text-foreground">{k.question}</p>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{k.answer}</p>
-                    </>
+                  {isQa ? (
+                    <p className="mb-0.5 text-[13px] font-semibold text-foreground">{k.question}</p>
+                  ) : (
+                    <p className="mb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">General information</p>
                   )}
-                  {k.type === "text" && (
-                    <p className="line-clamp-3 text-xs leading-relaxed text-foreground">
-                      {k.content}
-                    </p>
-                  )}
-                  {k.type === "url" && (
-                    <a href={k.sourceUrl} target="_blank" rel="noreferrer" className="break-all text-xs text-[#a78bfa]">
-                      {k.sourceUrl}
+                  {text && <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{text}</p>}
+                  {k.sourceUrl && (
+                    <a href={k.sourceUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-[#a78bfa]">
+                      <Link2 size={11} className="shrink-0" />
+                      <span className="shrink-0 font-medium">{k.linkLabel || "Link"}:</span>
+                      <span className="truncate">{k.sourceUrl}</span>
                     </a>
                   )}
                 </div>
@@ -1414,51 +1469,68 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
 interface OutletForm {
   name: string; city: string; country: string; address: string;
   areaTagsStr: string; phone: string; hours: string; deliveryPlatformsStr: string;
-  mapUrl: string; isOnlineOnly: boolean; notes: string;
+  facilitiesStr: string; mapUrl: string; isOnlineOnly: boolean; notes: string;
 }
 const EMPTY_OUTLET_FORM: OutletForm = {
   name: "", city: "", country: "", address: "", areaTagsStr: "", phone: "",
-  hours: "", deliveryPlatformsStr: "", mapUrl: "", isOnlineOnly: false, notes: "",
+  hours: "", deliveryPlatformsStr: "", facilitiesStr: "", mapUrl: "", isOnlineOnly: false, notes: "",
 };
+const splitList = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
 function outletToForm(o: Outlet): OutletForm {
   return {
     name: o.name, city: o.city, country: o.country, address: o.address || "",
     areaTagsStr: (o.areaTags || []).join(", "), phone: o.phone || "", hours: o.hours || "",
-    deliveryPlatformsStr: (o.deliveryPlatforms || []).join(", "), mapUrl: o.mapUrl || "",
+    deliveryPlatformsStr: (o.deliveryPlatforms || []).join(", "),
+    facilitiesStr: (o.facilities || []).join(", "), mapUrl: o.mapUrl || "",
     isOnlineOnly: !!o.isOnlineOnly, notes: o.notes || "",
   };
 }
-function formToOutlet(f: OutletForm): Outlet {
+// Fields this business type doesn't use are saved empty, so a gym never
+// carries leftover delivery apps or a "delivery-only" flag.
+function formToOutlet(f: OutletForm, profile: ChatbotTemplateProfile): Outlet {
   return {
     name: f.name.trim(), city: f.city.trim(), country: f.country.trim(),
     address: f.address.trim() || undefined,
-    areaTags: f.areaTagsStr.split(",").map((s) => s.trim()).filter(Boolean),
+    areaTags: splitList(f.areaTagsStr),
     phone: f.phone.trim() || undefined,
     hours: f.hours.trim() || undefined,
-    deliveryPlatforms: f.deliveryPlatformsStr.split(",").map((s) => s.trim()).filter(Boolean),
+    deliveryPlatforms: profile.delivery ? splitList(f.deliveryPlatformsStr) : [],
+    facilities: splitList(f.facilitiesStr),
     mapUrl: f.mapUrl.trim() || undefined,
-    isOnlineOnly: f.isOnlineOnly,
+    isOnlineOnly: profile.onlineOnly ? f.isOnlineOnly : false,
     notes: f.notes.trim() || undefined,
   };
 }
 
-function LocationsTab({ outlets, setOutlets }: {
-  outlets: Outlet[]; setOutlets: (fn: (o: Outlet[]) => Outlet[]) => void;
+const COUNTRY_OPTIONS: ComboboxOption[] = COUNTRY_NAMES.map((c) => ({ value: c, label: c }));
+
+function LocationsTab({ outlets, setOutlets, profile }: {
+  outlets: Outlet[]; setOutlets: (fn: (o: Outlet[]) => Outlet[]) => void; profile: ChatbotTemplateProfile;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [form, setForm] = useState<OutletForm>(EMPTY_OUTLET_FORM);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const set = (key: keyof OutletForm) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  // A country saved before the dropdown existed (e.g. "UAE") stays selectable.
+  const countryOptions = form.country && !COUNTRY_NAMES.includes(form.country)
+    ? [{ value: form.country, label: form.country }, ...COUNTRY_OPTIONS]
+    : COUNTRY_OPTIONS;
 
   const cancelForm = () => { setShowAdd(false); setEditIndex(null); setForm(EMPTY_OUTLET_FORM); };
   const startEdit = (i: number) => { setForm(outletToForm(outlets[i])); setEditIndex(i); setShowAdd(true); };
 
   const submitForm = () => {
     if (!form.name.trim() || !form.city.trim() || !form.country.trim()) {
-      toast.error("Name, city and country are required");
+      toast.error("Name, country and city are required");
       return;
     }
-    const outlet = formToOutlet(form);
+    if (form.mapUrl.trim() && !/^https?:\/\/\S+$/i.test(form.mapUrl.trim())) {
+      toast.error("The map link must start with http:// or https://");
+      return;
+    }
+    const outlet = formToOutlet(form, profile);
     if (editIndex !== null) {
       setOutlets((prev) => prev.map((o, i) => (i === editIndex ? outlet : o)));
     } else {
@@ -1473,6 +1545,8 @@ function LocationsTab({ outlets, setOutlets }: {
     setDeleteIndex(null);
   };
 
+  const { business, branch } = profile;
+
   return (
     <Section
       title="Locations"
@@ -1484,44 +1558,59 @@ function LocationsTab({ outlets, setOutlets }: {
       }
     >
       <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
-        Add every branch or delivery-coverage area this business has — the chatbot uses all of them together to
-        answer "which location is near me" or "do you deliver to X." Leave this empty for a single-location business.
+        Add each {branch} of your {business}. The chatbot uses all of them together to answer questions like
+        &quot;which {branch} is near me?&quot; or &quot;what are your hours there?&quot;. Leave this empty if you only have one {branch}.
       </p>
 
       {showAdd && (
         <div className="mb-4 rounded-lg border bg-background p-4">
           {editIndex !== null && <p className="mb-3 text-xs font-semibold text-[#a78bfa]">Editing location</p>}
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <div>{fieldLabel("Name *")}<Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Downtown Branch" /></div>
-            <div>{fieldLabel("City *")}<Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Dubai" /></div>
-            <div>{fieldLabel("Country *")}<Input value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} placeholder="UAE" /></div>
-            <div>{fieldLabel("Address")}<Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Al Wasl Road, near..." /></div>
-            <div>{fieldLabel("Phone")}<Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+971 4 000 0000" /></div>
-            <div>{fieldLabel("Hours")}<Input value={form.hours} onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))} placeholder="11am - 1am daily" /></div>
-          </div>
-          <div className="mt-2.5">
-            {fieldLabel("Also covers / known as (comma separated)")}
-            <Input value={form.areaTagsStr} onChange={(e) => setForm((f) => ({ ...f, areaTagsStr: e.target.value }))} placeholder="Al Barsha, Business Bay, Al Quoz" />
-          </div>
-          <div className="mt-2.5">
-            {fieldLabel("Order/delivery platforms (comma separated)")}
-            <Input value={form.deliveryPlatformsStr} onChange={(e) => setForm((f) => ({ ...f, deliveryPlatformsStr: e.target.value }))} placeholder="Talabat, Noon Food, Smiles" />
-          </div>
-          <div className="mt-2.5">
-            {fieldLabel("Directions / map link")}
-            <Input value={form.mapUrl} onChange={(e) => setForm((f) => ({ ...f, mapUrl: e.target.value }))} placeholder="https://maps.google.com/..." />
-          </div>
-          <div className="mt-2.5">
-            {fieldLabel("Internal notes")}
-            <Textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="e.g. Ground floor, food court" />
-          </div>
-          <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5">
+            <div className="sm:col-span-2">{fieldLabel(`${business[0].toUpperCase()}${business.slice(1)} / ${branch} name *`)}<Input value={form.name} onChange={set("name")} placeholder={`Enter ${business} name`} /></div>
             <div>
-              <p className="text-[13px] font-medium text-foreground">Delivery/online-only</p>
-              <p className="text-[11px] text-muted-foreground">No dine-in at this location.</p>
+              {fieldLabel("Country *")}
+              <Combobox value={form.country} onChange={(v) => setForm((f) => ({ ...f, country: v || "" }))} options={countryOptions} placeholder="Select country" />
             </div>
-            <Switch checked={form.isOnlineOnly} onCheckedChange={() => setForm((f) => ({ ...f, isOnlineOnly: !f.isOnlineOnly }))} />
+            <div>{fieldLabel("City *")}<Input value={form.city} onChange={set("city")} placeholder="Enter city" /></div>
+            <div className="sm:col-span-2">{fieldLabel("Address")}<Input value={form.address} onChange={set("address")} placeholder="Enter full address" /></div>
+            <div>{fieldLabel("Phone")}<Input value={form.phone} onChange={set("phone")} placeholder="Enter phone number" /></div>
+            <div>{fieldLabel("Opening hours")}<Input value={form.hours} onChange={set("hours")} placeholder="Enter opening hours" /></div>
           </div>
+          <div className="mt-2.5">
+            {fieldLabel(`${profile.facilitiesLabel} (comma separated)`)}
+            <Input value={form.facilitiesStr} onChange={set("facilitiesStr")} placeholder={`Enter ${profile.facilitiesLabel.toLowerCase()}, separated by commas`} />
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel(profile.delivery ? "Delivery areas / nearby areas (comma separated)" : "Nearby areas (comma separated)")}
+            <Input value={form.areaTagsStr} onChange={set("areaTagsStr")} placeholder="Enter area names, separated by commas" />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Helps the bot answer &quot;do you have a {branch} near …?&quot;{profile.delivery ? " and \"do you deliver to …?\"" : ""}.
+            </p>
+          </div>
+          {profile.delivery && (
+            <div className="mt-2.5">
+              {fieldLabel("Order / delivery apps (comma separated)")}
+              <Input value={form.deliveryPlatformsStr} onChange={set("deliveryPlatformsStr")} placeholder="Enter delivery app names, separated by commas" />
+            </div>
+          )}
+          <div className="mt-2.5">
+            {fieldLabel("Google Maps link")}
+            <Input value={form.mapUrl} onChange={set("mapUrl")} placeholder="Paste Google Maps link" />
+          </div>
+          <div className="mt-2.5">
+            {fieldLabel("Other details for customers")}
+            <Textarea rows={2} value={form.notes} onChange={set("notes")} placeholder={`Anything else customers should know about this ${branch}`} />
+            <p className="mt-1 text-[11px] text-muted-foreground">The chatbot can share this with customers.</p>
+          </div>
+          {profile.onlineOnly && (
+            <div className="mt-3 flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5">
+              <div>
+                <p className="text-[13px] font-medium text-foreground">{profile.onlineOnly.title}</p>
+                <p className="text-[11px] text-muted-foreground">{profile.onlineOnly.hint}</p>
+              </div>
+              <Switch checked={form.isOnlineOnly} onCheckedChange={() => setForm((f) => ({ ...f, isOnlineOnly: !f.isOnlineOnly }))} />
+            </div>
+          )}
           <div className="mt-3.5 flex justify-end">
             <Button onClick={submitForm} className="gap-2">
               {editIndex !== null ? <Save size={14} /> : <Plus size={14} />}
@@ -1534,7 +1623,7 @@ function LocationsTab({ outlets, setOutlets }: {
       {outlets.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <MapPin size={28} className="mx-auto mb-2.5 text-muted-foreground" />
-          <p className="text-[13px] text-muted-foreground">No locations added — this chatbot is treated as single-location.</p>
+          <p className="text-[13px] text-muted-foreground">No locations added — this chatbot is treated as a single {branch}.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -1546,13 +1635,16 @@ function LocationsTab({ outlets, setOutlets }: {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <p className="text-[13px] font-semibold text-foreground">{o.name}</p>
-                  {o.isOnlineOnly && (
-                    <span className="rounded-full bg-amber-500/[0.12] px-1.5 py-0.25 text-[9px] font-bold text-amber-500">DELIVERY ONLY</span>
+                  {o.isOnlineOnly && profile.onlineOnly && (
+                    <span className="rounded-full bg-amber-500/[0.12] px-1.5 py-0.25 text-[9px] font-bold text-amber-500">{profile.onlineOnly.badge}</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{o.city}, {o.country}{o.address ? ` — ${o.address}` : ""}</p>
+                {!!o.facilities?.length && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{profile.facilitiesLabel}: {o.facilities.join(", ")}</p>
+                )}
                 {!!o.areaTags?.length && (
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">Also serves: {o.areaTags.join(", ")}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Nearby areas: {o.areaTags.join(", ")}</p>
                 )}
               </div>
               <div className="flex shrink-0 gap-1.5">

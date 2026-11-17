@@ -773,3 +773,19 @@ wrong, so the label now works out the biggest saving across the Basic/Pro tiers
   padding, whitespace-nowrap); phones still wrap.
 - Admin service form: Testimonials tab hidden — services have no testimonials
   field, so it never saved; the backend now rejects unknown fields.
+
+## 2026-11-17 — My Services + Browse Services; template-aware settings; KB answers
+- Sidebar: "Chatbots" removed. My Services (/dashboard/modules) lists the
+  user's chatbots next to agents/automations; new Browse Services
+  (/dashboard/services) subscribes to any service (chatbots: Basic/Pro choice →
+  30-day trial → settings; agents/automations: existing setup form).
+  ?openModule= deep links now open on Browse Services. Admins keep the
+  all-clients list as Administration → Client Chatbots (/dashboard/chatbots);
+  customers hitting that URL go to My Services.
+- Locations tab + booking-link label follow the chatbot's template
+  (src/lib/chatbot-templates.ts): gym has no delivery fields, restaurants do;
+  country is a dropdown (src/lib/countries.ts, shared with Profile); neutral
+  "Enter gym name"-style placeholders.
+- Knowledge Base: question first; answer as Text / Link / Text + link with a
+  link type (Google Maps, menu, booking page…); "General information" for
+  content with no question.
