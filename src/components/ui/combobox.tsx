@@ -79,6 +79,7 @@ export function Combobox({
   const [search, setSearch] = React.useState("");
   const [creatingNew, setCreatingNew] = React.useState(false);
   const [newValue, setNewValue] = React.useState("");
+  const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Falls back to showing the raw value itself when `creatable` and the
   // current value was typed in rather than picked from `options` — e.g. a
@@ -96,6 +97,22 @@ export function Combobox({
       setNewValue("");
     }
   }, [open]);
+
+  // The list highlights its first item and scrolls it into view as soon as
+  // it mounts. If that happens before the popover has been positioned under
+  // the field, the browser scrolls the whole page to the top to reach it.
+  // So the list mounts two frames after opening (once positioned), and the
+  // search box is then focused without scrolling.
+  const [listReady, setListReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) { setListReady(false); return; }
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => setListReady(true)); });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [open]);
+  React.useEffect(() => {
+    if (open && listReady && !creatingNew) searchRef.current?.focus({ preventScroll: true });
+  }, [open, listReady, creatingNew]);
 
   const filteredOptions = creatable
     ? options.filter((o) => o.label.toLowerCase().includes(search.trim().toLowerCase()))
@@ -150,6 +167,7 @@ export function Combobox({
 
         <PopoverContent
           align="start"
+          initialFocus={false}
           className={cn("w-(--anchor-width) min-w-56 p-0", contentClassName)}
         >
           {creatingNew ? (
@@ -157,7 +175,7 @@ export function Combobox({
               <p className="mb-2 text-xs font-medium text-foreground">Add a new one</p>
               <div className="flex gap-1.5">
                 <Input
-                  autoFocus
+                  ref={(el) => el?.focus({ preventScroll: true })}
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder={createInputPlaceholder}
@@ -178,9 +196,11 @@ export function Combobox({
                 ← Back to list
               </button>
             </div>
+          ) : !listReady ? (
+            <div className="h-24" aria-hidden />
           ) : (
             <Command shouldFilter={!creatable}>
-              <CommandInput value={search} onValueChange={setSearch} placeholder={searchPlaceholder} />
+              <CommandInput ref={searchRef} value={search} onValueChange={setSearch} placeholder={searchPlaceholder} />
               <CommandList>
                 {filteredOptions.length === 0 && <CommandEmpty>{emptyText}</CommandEmpty>}
                 <CommandGroup>

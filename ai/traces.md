@@ -832,3 +832,14 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
 - Deleted `chatbots-page.tsx` (dashboard) and `subscriptions-page.tsx`.
 - Admin sidebar Administration: Users, Customer Services, Service Catalog,
   Payments, Usage, Website Content.
+
+## 2026-11-17 — Chatbot Overview: one AI provider + model dropdown; Combobox scroll fix
+- AI Model section: one Provider (OpenAI / Anthropic / Gemini) + `ModelPicker`
+  (models from `GET /chatbots/:id/models`, "Auto (recommended)" first and
+  default; resets to Auto on provider change; notes for no key / load error;
+  Claude note about keyword matching). Embedding provider/model fields gone.
+- Key check (`checkRequiredKeys`) looks at the one provider only.
+- `Combobox`: list mounts two frames after the popover opens and the search
+  box is focused with `preventScroll` — opening any dropdown no longer
+  scrolls the page to the top (cmdk's scrollIntoView ran before the popover
+  was positioned).

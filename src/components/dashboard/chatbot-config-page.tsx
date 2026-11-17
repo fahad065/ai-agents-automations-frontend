@@ -92,7 +92,6 @@ const CHAT_PROVIDER_OPTIONS: ComboboxOption[] = [
   { value: "anthropic", label: "Anthropic (Claude)", icon: <SiAnthropic className="size-4" style={{ color: "#D97757" }} /> },
   { value: "gemini", label: "Google Gemini", icon: <SiGooglegemini className="size-4" style={{ color: "#4285F4" }} /> },
 ];
-const EMBEDDING_PROVIDER_OPTIONS: ComboboxOption[] = CHAT_PROVIDER_OPTIONS.filter((o) => o.value !== "anthropic");
 
 interface Chatbot {
   _id: string;
@@ -112,7 +111,6 @@ interface Chatbot {
   outlets?: Outlet[];
   billing: Billing;
   chatModelConfig?: AiModelConfig;
-  embeddingModelConfig?: AiModelConfig;
   createdAt: string;
   updatedAt?: string;
 }
@@ -313,6 +311,59 @@ const copyText = async (text: string, label: string) => {
 
 const fieldLabel = (text: string) => <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">{text}</Label>;
 
+// ── AI model picker ──────────────────────────────────────────
+// Lists the chat models the bot owner's own key can use for a provider
+// (GET /chatbots/:id/models). "Auto" is always first and is the default —
+// the backend then picks a good model for that provider.
+function ModelPicker({ chatbotId, provider, value, onChange }: {
+  chatbotId: string; provider: AiProvider; value: string; onChange: (model: string) => void;
+}) {
+  const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [state, setState] = useState<"loading" | "ready" | "no-key" | "error">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    setState("loading");
+    api.get(`/chatbots/${chatbotId}/models`, { params: { provider } })
+      .then((res) => {
+        if (cancelled) return;
+        const d = res.data?.data || res.data || {};
+        setModels(d.models || []);
+        setState(d.keyMissing ? "no-key" : d.error ? "error" : "ready");
+      })
+      .catch(() => { if (!cancelled) { setModels([]); setState("error"); } });
+    return () => { cancelled = true; };
+  }, [chatbotId, provider]);
+
+  const options: ComboboxOption[] = [
+    { value: "auto", label: "Auto (recommended)" },
+    ...models.map((m) => ({ value: m.id, label: m.label === m.id ? m.id : `${m.label} (${m.id})` })),
+  ];
+  // Keep a model chosen earlier visible even if the list no longer has it.
+  if (value !== "auto" && !models.some((m) => m.id === value)) options.push({ value, label: value });
+
+  const label = AI_PROVIDER_INFO[provider]?.label || provider;
+  return (
+    <>
+      <Combobox
+        value={value}
+        onChange={(v) => onChange(v || "auto")}
+        options={options}
+        searchPlaceholder="Search models..."
+        emptyText="No model matches."
+        disabled={state === "loading"}
+        placeholder={state === "loading" ? "Loading models..." : "Auto (recommended)"}
+      />
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        {state === "loading" && `Loading ${label} models...`}
+        {state === "ready" && `${models.length} ${label} models available on your key.`}
+        {state === "no-key" && `Add your ${label} API key to pick a specific model. Auto works once the key is added.`}
+        {state === "error" && `Couldn't load ${label} models — check the API key. Auto still works.`}
+      </p>
+    </>
+  );
+}
+
 // ── OpenAI key gate dialog ───────────────────────────────────
 // Display info per BYOK provider a chatbot can be configured to use — kept
 // local to this file rather than shared with api-keys-page.tsx's own
@@ -429,7 +480,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     name: "", description: "", persona: "", bookingUrl: "", language: "en" as "en" | "ar" | "both",
     fallbackMessage: "", fallbackMessage_ar: "", humanHandoff: false,
     chatModelConfig: EMPTY_AI_MODEL_CONFIG as AiModelConfig,
-    embeddingModelConfig: EMPTY_AI_MODEL_CONFIG as AiModelConfig,
   };
   const [overview, setOverview] = useState(emptyOverview);
   // Baselines track the last-loaded/last-saved snapshot of each tab's editable
@@ -511,31 +561,21 @@ export function ChatbotConfigPage({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, channels.website?.enabled, chatbot]);
 
-  // Checks the bot OWNER's key for whichever provider(s) this bot is
-  // actually configured to use — chatModelConfig/embeddingModelConfig
-  // default to OpenAI, but may be Anthropic/Gemini (see backend CLAUDE.md's
-  // multi-provider BYOK section). Not the viewer's key — an admin viewing
+  // Checks the bot OWNER's key for the bot's one AI provider (OpenAI unless
+  // changed on the Overview tab) — it powers both replies and the
+  // knowledge base. Not the viewer's key — an admin viewing
   // a client's bot needs to know whether the client has one, not whether
   // the admin does. Passing ?userId= is a no-op for a non-admin viewing
   // their own bot since the backend only honors it for admins, so it's
   // always safe to pass the bot's userId here regardless of who's viewing.
   const checkRequiredKeys = async (bot: Chatbot) => {
-    const chatProvider = bot.chatModelConfig?.provider || "openai";
-    const embeddingProvider = bot.embeddingModelConfig?.provider || "openai";
+    const provider = bot.chatModelConfig?.provider || "openai";
     try {
       const res = await api.get(`/api-keys?userId=${bot.userId}`);
       const keys = res.data?.data || res.data || [];
-      const hasKey = (p: AiProvider) =>
-        keys.some((k: any) => k.provider === p && k.status !== "inactive");
-      // Chat reply is the more critical gap (no reply at all without it) —
-      // surface that first if both are missing.
-      const missing: AiProvider | null = !hasKey(chatProvider)
-        ? chatProvider
-        : !hasKey(embeddingProvider)
-          ? embeddingProvider
-          : null;
-      setMissingKeyProvider(missing);
-      setShowKeyDialog(!!missing);
+      const hasKey = keys.some((k: any) => k.provider === provider && k.status !== "inactive");
+      setMissingKeyProvider(hasKey ? null : provider);
+      setShowKeyDialog(!hasKey);
     } catch {
       // Fail open — don't block setup over the check itself failing.
       setMissingKeyProvider(null);
@@ -558,8 +598,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage: bot.fallbackMessage || "",
         fallbackMessage_ar: bot.fallbackMessage_ar || "",
         humanHandoff: !!bot.humanHandoff,
-        chatModelConfig: bot.chatModelConfig || EMPTY_AI_MODEL_CONFIG,
-        embeddingModelConfig: bot.embeddingModelConfig || EMPTY_AI_MODEL_CONFIG,
+        chatModelConfig: { ...EMPTY_AI_MODEL_CONFIG, ...(bot.chatModelConfig || {}) },
       } as typeof emptyOverview;
       setOverview(freshOverview);
       setOverviewBaseline(freshOverview);
@@ -710,7 +749,6 @@ export function ChatbotConfigPage({ id }: { id: string }) {
         fallbackMessage_ar: overview.fallbackMessage_ar,
         humanHandoff: overview.humanHandoff,
         chatModelConfig: overview.chatModelConfig,
-        embeddingModelConfig: overview.embeddingModelConfig,
       });
       setOverviewBaseline(overview);
       toast.success("Chatbot updated");
@@ -974,56 +1012,35 @@ export function ChatbotConfigPage({ id }: { id: string }) {
 
           <Section title="AI Model" icon={BotIcon}>
             <p className="mb-3.5 text-xs text-muted-foreground">
-              Which BYOK provider powers this bot's replies and knowledge-base embeddings. The provider determines which of your own API keys gets billed — add it from the API Keys page first if you haven't. Model defaults to "Auto" (a sensible model for that provider); only override it if you know exactly which model you want.
+              The AI provider that answers your customers and reads your knowledge base. It uses your own API key for that provider (add it on the API Keys page). Leave the model on Auto unless you want a specific one.
             </p>
-            <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div>
-                {fieldLabel("Chat provider")}
+                {fieldLabel("Provider")}
                 <Combobox
                   value={overview.chatModelConfig.provider}
                   onChange={(v) => setOverview((o) => ({
                     ...o,
-                    chatModelConfig: { ...o.chatModelConfig, provider: v as AiProvider },
+                    // Clearing goes back to the default provider; a new
+                    // provider starts on Auto (the old model id won't exist there).
+                    chatModelConfig: { provider: (v || "openai") as AiProvider, model: "auto" },
                   }))}
                   options={CHAT_PROVIDER_OPTIONS}
+                  searchPlaceholder="Search providers..."
                 />
+                {overview.chatModelConfig.provider === "anthropic" && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Claude has no embeddings API, so your knowledge base is matched by keywords instead of meaning.
+                  </p>
+                )}
               </div>
               <div>
-                {fieldLabel("Chat model")}
-                <Input
-                  value={overview.chatModelConfig.model}
-                  onChange={(e) => setOverview((o) => ({
-                    ...o,
-                    chatModelConfig: { ...o.chatModelConfig, model: e.target.value || "auto" },
-                  }))}
-                  placeholder="auto"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <div>
-                {fieldLabel("Embedding provider")}
-                <Combobox
-                  value={overview.embeddingModelConfig.provider}
-                  onChange={(v) => setOverview((o) => ({
-                    ...o,
-                    embeddingModelConfig: { ...o.embeddingModelConfig, provider: v as AiProvider },
-                  }))}
-                  options={EMBEDDING_PROVIDER_OPTIONS}
-                />
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Anthropic has no embeddings API — only OpenAI/Gemini can rank your knowledge base.
-                </p>
-              </div>
-              <div>
-                {fieldLabel("Embedding model")}
-                <Input
-                  value={overview.embeddingModelConfig.model}
-                  onChange={(e) => setOverview((o) => ({
-                    ...o,
-                    embeddingModelConfig: { ...o.embeddingModelConfig, model: e.target.value || "auto" },
-                  }))}
-                  placeholder="auto"
+                {fieldLabel("Model")}
+                <ModelPicker
+                  chatbotId={id}
+                  provider={overview.chatModelConfig.provider}
+                  value={overview.chatModelConfig.model || "auto"}
+                  onChange={(model) => setOverview((o) => ({ ...o, chatModelConfig: { ...o.chatModelConfig, model } }))}
                 />
               </div>
             </div>
