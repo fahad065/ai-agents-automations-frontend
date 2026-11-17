@@ -71,7 +71,7 @@ const STATUS_CONFIG: Record<string, string> = {
 };
 
 // ── Add Chatbot Modal ────────────────────────────────────────
-// Chatbots don't go through /usermodules/subscribe (SubscribeModal below) —
+// Chatbots don't go through /userservices/subscribe (SubscribeModal below) —
 // that endpoint creates a UserModule record, the wrong data model for a
 // chatbot. This does what the marketing page's pricing section does:
 // POST /chatbots with moduleSlug + the chosen tier, so the backend prices
@@ -210,7 +210,7 @@ export function SubscribeModal({ module, onClose, onSuccess }: {
     if (!isNichePipeline && !form.niche.trim()) { setError("Content niche is required"); return; }
     setSaving(true); setError("");
     try {
-      await api.post("/usermodules/subscribe", {
+      await api.post("/userservices/subscribe", {
         moduleId: module._id, moduleName: module.name,
         moduleType: module.type, pipelineType: module.pipelineType,
         name: form.name, niche: form.niche, apiKeyMode: form.apiKeyMode,
@@ -476,20 +476,20 @@ export function MyModulesPage() {
 
   const fetchModules = async () => {
     setLoading(true);
-    const [mods, bots] = await Promise.allSettled([api.get("/usermodules/my"), api.get("/chatbots")]);
+    const [mods, bots] = await Promise.allSettled([api.get("/userservices/my"), api.get("/chatbots")]);
     if (mods.status === "fulfilled") setAgents(mods.value.data?.data || mods.value.data || []);
     if (bots.status === "fulfilled") setChatbots(bots.value.data?.data || bots.value.data || []);
     setLoading(false);
   };
 
   const toggleModule = async (id: string) => {
-    try { await api.patch(`/usermodules/${id}/toggle`); fetchModules(); } catch {}
+    try { await api.patch(`/userservices/${id}/toggle`); fetchModules(); } catch {}
   };
 
   const deleteModule = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/usermodules/${deleteTarget._id}`);
+      await api.delete(`/userservices/${deleteTarget._id}`);
       toast.success("Service removed");
       fetchModules();
     } catch {
@@ -513,7 +513,7 @@ export function MyModulesPage() {
   const handleRunNow = async (id: string) => {
     try {
       setRunningModuleId(id);
-      await api.post(`/usermodules/${id}/run`);
+      await api.post(`/userservices/${id}/run`);
       toast.success("Pipeline started! Takes 15-25 min. You'll get a notification when done.");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to start pipeline");

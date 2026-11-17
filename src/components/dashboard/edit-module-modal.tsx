@@ -95,7 +95,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
     if (isInstagram) return;
     setLoadingModels(true);
     try {
-      const res = await api.get(`/usermodules/atlas-models?type=${module.pipelineType}`);
+      const res = await api.get(`/userservices/atlas-models?type=${module.pipelineType}`);
       if (res.data?.models?.length > 0) {
         setModels(res.data.models as VideoModel[]);
       }
@@ -173,7 +173,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   const handleSaveSchedule = async () => {
     setSaving(true);
     try {
-      await api.patch(`/usermodules/${module._id}`, getPayload());
+      await api.patch(`/userservices/${module._id}`, getPayload());
       toast.success(isManual ? "Settings saved!" : `Schedule saved! Next run: ${getNextRunPreview() || "as scheduled"}`);
       onSaved(); onClose();
     } catch (err: any) {
@@ -185,7 +185,7 @@ export function EditModuleModal({ module, onClose, onSaved, onRunNow, colors, is
   const handleSaveAndRun = async () => {
     setSavingRun(true);
     try {
-      await api.patch(`/usermodules/${module._id}`, getPayload());
+      await api.patch(`/userservices/${module._id}`, getPayload());
       onSaved(); onClose(); onRunNow();
       toast.success("Settings saved! Pipeline starting now...");
     } catch (err: any) {

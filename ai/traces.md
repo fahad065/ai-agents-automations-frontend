@@ -799,3 +799,9 @@ wrong, so the label now works out the biggest saving across the Basic/Pro tiers
   auth/{auth-wrapper,form-field,submit-button,divider,google-button,callback/page},
   marketing/{marketplace,automations,testimonials}-section, dashboard/run-pipeline-button,
   lib/dashboard-api.ts. tsc + build clean; e2e restaurant 66/66, gym 76/76.
+
+## 2026-11-17 — /usermodules → /userservices
+Backend moved agents/automations onto `userservices`; every dashboard call to
+`/usermodules/*` now uses `/userservices/*` (same response shape). Verified by
+the backend's agent e2e suite (subscribe from Browse Services, My Services
+card, pause/resume, remove) — 32/32.

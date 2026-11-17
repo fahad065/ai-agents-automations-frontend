@@ -80,7 +80,7 @@ export function BillingPage() {
     setLoading(true);
     try {
       const [subsRes, summaryRes] = await Promise.all([
-        api.get("/usermodules/my"),
+        api.get("/userservices/my"),
         api.get("/billing/summary"),
       ]);
       setSubscriptions(subsRes.data?.data || subsRes.data || []);
@@ -107,7 +107,7 @@ export function BillingPage() {
   const cancelSubscription = async () => {
     if (!cancelTarget) return;
     try {
-      await api.patch(`/usermodules/${cancelTarget._id}/cancel`);
+      await api.patch(`/userservices/${cancelTarget._id}/cancel`);
       toast.success("Subscription cancelled");
       fetchAll();
     } catch {

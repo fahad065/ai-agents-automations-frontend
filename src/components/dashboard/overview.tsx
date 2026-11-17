@@ -246,11 +246,11 @@ export function DashboardOverview() {
         }
       } else {
         const [agentsRes, automationsRes, chatbotsRes, apiKeysRes, billRes, runsRes, recentBillRes] = await Promise.all([
-          api.get("/usermodules/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
-          api.get("/usermodules/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
+          api.get("/userservices/my?moduleType=agent").catch(() => ({ data: { data: [], total: 0 } })),
+          api.get("/userservices/my?moduleType=automation").catch(() => ({ data: { data: [], total: 0 } })),
           api.get("/chatbots").catch(() => ({ data: [] })),
           api.get("/api-keys").catch(() => ({ data: [] })),
-          api.get("/usermodules/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
+          api.get("/userservices/billing-summary").catch(() => ({ data: { total: 0, byModule: [] } })),
           api.get("/pipeline-runs?limit=1").catch(() => ({ data: { total: 0 } })),
           api.get("/billing?limit=5").catch(() => ({ data: { data: [] } })),
         ]);

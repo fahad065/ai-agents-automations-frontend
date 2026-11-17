@@ -202,7 +202,7 @@ export default function PipelineLogsPage() {
     }
     setRetrying(run._id);
     try {
-      await api.post(`/usermodules/${run.agentId}/run`);
+      await api.post(`/userservices/${run.agentId}/run`);
       toast.success("Pipeline restarted!");
       fetchRuns(page, moduleFilter);
     } catch (err: any) {

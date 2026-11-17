@@ -64,7 +64,7 @@ function ManageModal({ sub, onClose, onRefresh }: {
   const handleExtend = async () => {
     setSaving(true); setAction("extend");
     try {
-      await api.patch(`/usermodules/${sub._id}/extend-trial`, { days: extendDays });
+      await api.patch(`/userservices/${sub._id}/extend-trial`, { days: extendDays });
       toast.success("Subscription updated.");
       onRefresh(); onClose();
     } catch {
@@ -76,7 +76,7 @@ function ManageModal({ sub, onClose, onRefresh }: {
   const handleFreeForever = async () => {
     setSaving(true); setAction("free");
     try {
-      await api.patch(`/usermodules/${sub._id}/free-forever`);
+      await api.patch(`/userservices/${sub._id}/free-forever`);
       toast.success("Updated successfully.");
       onRefresh(); onClose();
     } catch {
@@ -88,7 +88,7 @@ function ManageModal({ sub, onClose, onRefresh }: {
   const handleCancel = async () => {
     setSaving(true); setAction("cancel");
     try {
-      await api.patch(`/usermodules/${sub._id}/cancel`);
+      await api.patch(`/userservices/${sub._id}/cancel`);
       toast.success("Subscription updated");
       onRefresh(); onClose();
     } catch {
@@ -233,7 +233,7 @@ export function SubscriptionsPage() {
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(typeFilter !== "all" && { moduleType: typeFilter }),
       });
-      const res = await api.get(`/usermodules?${params}`);
+      const res = await api.get(`/userservices?${params}`);
       setSubs(res.data?.data || []);
       setTotal(res.data?.total || 0);
     } catch {}

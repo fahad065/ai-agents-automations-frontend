@@ -38,7 +38,7 @@ export function PipelineStatusWidget({ userModuleId, colors, onRunNow }: {
 
   const fetchStatus = async () => {
     try {
-      const res = await api.get(`/usermodules/${userModuleId}/run-status`);
+      const res = await api.get(`/userservices/${userModuleId}/run-status`);
       const data = res.data;
       setRun(data);
       if (data.status === "running" || data.status === "pending") {
@@ -53,7 +53,7 @@ export function PipelineStatusWidget({ userModuleId, colors, onRunNow }: {
   const handleRetry = async () => {
     toast.loading("Restarting...", { id: "retry" });
     try {
-      await api.post(`/usermodules/${userModuleId}/run`);
+      await api.post(`/userservices/${userModuleId}/run`);
       toast.success("Pipeline restarted!", { id: "retry", duration: 4000 });
       setTimeout(fetchStatus, 2000);
     } catch (err: any) {

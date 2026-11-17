@@ -47,7 +47,7 @@ export function ServicesMarketplacePage() {
   const [ownedModuleIds, setOwnedModuleIds] = useState<Set<string>>(new Set());
 
   const loadOwned = async () => {
-    const [bots, mods] = await Promise.allSettled([api.get("/chatbots"), api.get("/usermodules/my")]);
+    const [bots, mods] = await Promise.allSettled([api.get("/chatbots"), api.get("/userservices/my")]);
     if (bots.status === "fulfilled") {
       const counts: Record<string, number> = {};
       for (const b of bots.value.data?.data || bots.value.data || []) counts[b.template] = (counts[b.template] || 0) + 1;
