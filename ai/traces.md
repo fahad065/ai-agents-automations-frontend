@@ -789,3 +789,13 @@ wrong, so the label now works out the biggest saving across the Basic/Pro tiers
 - Knowledge Base: question first; answer as Text / Link / Text + link with a
   link type (Google Maps, menu, booking page…); "General information" for
   content with no question.
+
+## 2026-11-17 — No custom/blank chatbots; unused files removed
+- Backend now stores chatbots in `userservices` (see backend ai/traces.md); the
+  `/chatbots/*` API shape is unchanged, so no page needed rewriting.
+- Client Chatbots → "+ New Chatbot" (admin, build for a client): "Custom / Blank"
+  removed — a chatbot service must be chosen; every bot comes from the catalog.
+- Deleted unused files (no imports, no references by name): admin/admin-pipelines,
+  auth/{auth-wrapper,form-field,submit-button,divider,google-button,callback/page},
+  marketing/{marketplace,automations,testimonials}-section, dashboard/run-pipeline-button,
+  lib/dashboard-api.ts. tsc + build clean; e2e restaurant 66/66, gym 76/76.

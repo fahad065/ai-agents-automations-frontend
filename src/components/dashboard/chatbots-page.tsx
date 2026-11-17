@@ -85,9 +85,10 @@ const TEMPLATES: Template[] = [
   { key: "salon", emoji: "💇", name: "Salon / Spa" },
   { key: "hotel", emoji: "🏨", name: "Hotel / Travel" },
   { key: "auto_dealership", emoji: "🚗", name: "Auto Dealership" },
-  { key: "custom", emoji: "✨", name: "Custom / Blank" },
 ];
 
+// Every chatbot is a subscription to one of the catalog's chatbot services;
+// there is no blank/custom bot. A bot without a known template shows 🤖.
 const TEMPLATE_EMOJI: Record<string, string> = TEMPLATES.reduce((acc, t) => {
   acc[t.key] = t.emoji;
   return acc;
@@ -104,7 +105,7 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState<string>("custom");
+  const [template, setTemplate] = useState<string>("");
   const [language, setLanguage] = useState<"en" | "ar" | "both">("en");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -131,13 +132,14 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
 
   const handleCreate = async () => {
     if (!name.trim()) { setError("Chatbot name is required"); return; }
+    if (!template) { setError("Choose which chatbot service this is"); return; }
     setSaving(true); setError("");
     try {
       const res = await api.post("/chatbots", {
         name: name.trim(),
         description: description.trim() || undefined,
         language,
-        template: template !== "custom" ? template : undefined,
+        template,
         userId: isAdmin && clientId ? clientId : undefined,
       });
       const created = res.data?.data || res.data;
@@ -209,7 +211,7 @@ function CreateChatbotModal({ onClose, onCreated, isAdmin }: {
           </div>
 
           <div>
-            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Template</Label>
+            <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Chatbot service *</Label>
             <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
               {TEMPLATES.map((t) => (
                 <button
@@ -411,7 +413,7 @@ export function ChatbotsPage() {
           {visibleChatbots.map((bot) => {
             const sc = STATUS_CONFIG[bot.status] || STATUS_CONFIG.draft;
             const emoji = (bot.template && TEMPLATE_EMOJI[bot.template]) || "🤖";
-            const typeName = (bot.template && TEMPLATE_NAME[bot.template]) || "Custom / Blank";
+            const typeName = (bot.template && TEMPLATE_NAME[bot.template]) || "Chatbot";
             const channels = bot.channels || {};
             return (
               <div key={bot._id} className="rounded-xl border bg-card p-4.5">
