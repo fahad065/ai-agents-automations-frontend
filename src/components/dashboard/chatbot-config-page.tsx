@@ -9,11 +9,12 @@ import {
   BarChart3, Plus, Trash2, X, Globe, Copy, ChevronDown, ChevronUp,
   AlertCircle, HelpCircle, FileText, Link2, User as UserIcon, Bot as BotIcon,
   DollarSign, CheckCircle2, Clock, Mail, Wrench, Lock, Info, Phone, LayoutGrid,
-  Pencil, MapPin,
+  Pencil, MapPin, Download,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
 import { ChatbotTrialBanner } from "./chatbot-trial-banner";
+import { ApiKeyDialog } from "./api-key-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,6 +140,22 @@ interface BillingRecord {
   status: string;
   description: string;
   billingDate: string;
+  invoiceNumber?: string;
+}
+
+// Downloads an invoice PDF (needs the auth header, so not a plain link).
+async function downloadInvoice(record: BillingRecord) {
+  try {
+    const res = await api.get(`/billing/${record._id}/invoice`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `LogicMate-Invoice-${record.invoiceNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.error("Couldn't download the invoice");
+  }
 }
 
 const BANK_DETAILS = {
@@ -365,91 +382,16 @@ function ModelPicker({ chatbotId, provider, value, onChange }: {
   );
 }
 
-// ── OpenAI key gate dialog ───────────────────────────────────
-// Display info per BYOK provider a chatbot can be configured to use — kept
-// local to this file rather than shared with api-keys-page.tsx's own
-// (larger) PROVIDERS list, since this one only needs the 3 chat/embedding-
-// capable providers and their key-entry copy, not the full catalog.
-const AI_PROVIDER_INFO: Record<AiProvider, { label: string; placeholder: string; helpUrl: string }> = {
-  openai: { label: "OpenAI", placeholder: "sk-...", helpUrl: "https://platform.openai.com/api-keys" },
-  anthropic: { label: "Anthropic (Claude)", placeholder: "sk-ant-...", helpUrl: "https://console.anthropic.com/settings/keys" },
-  gemini: { label: "Google Gemini", placeholder: "AIza...", helpUrl: "https://aistudio.google.com/apikey" },
+// ── Provider key prompt ──────────────────────────────────────
+// LogicMate is bring-your-own-key: a chatbot can't read its knowledge base
+// or reply without its owner's own key for the bot's AI provider (no
+// platform-wide fallback — see backend CLAUDE.md). The prompt is the same
+// ApiKeyDialog the API Keys page uses, with the provider preselected.
+const AI_PROVIDER_INFO: Record<AiProvider, { label: string }> = {
+  openai: { label: "OpenAI" },
+  anthropic: { label: "Anthropic (Claude)" },
+  gemini: { label: "Google Gemini" },
 };
-
-// LogicMate is bring-your-own-key — a chatbot can't embed a knowledge base
-// or answer a single message without its owner's own key, for whichever
-// provider the bot is configured to use (no platform-wide fallback, see
-// backend CLAUDE.md's BYOK section). Rather than let someone build out a
-// whole bot and only discover that at chat time, this prompts for the key
-// up front, before any setup work.
-function AddProviderKeyDialog({ provider, ownerId, forOtherUser, onClose, onSaved }: {
-  provider: AiProvider; ownerId: string; forOtherUser: boolean; onClose: () => void; onSaved: () => void;
-}) {
-  const [keyValue, setKeyValue] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const info = AI_PROVIDER_INFO[provider];
-
-  const handleSave = async () => {
-    if (!keyValue.trim()) { setError(`Enter a ${info.label} API key`); return; }
-    setSaving(true); setError("");
-    try {
-      await api.post("/api-keys", {
-        provider,
-        label: info.label,
-        key: keyValue.trim(),
-        userId: forOtherUser ? ownerId : undefined,
-      });
-      toast.success(`${info.label} key saved`);
-      onSaved();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to save key");
-    }
-    setSaving(false);
-  };
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add a {info.label} API key</DialogTitle>
-        </DialogHeader>
-        <p className="-mt-2 text-xs leading-relaxed text-muted-foreground">
-          {forOtherUser
-            ? `This client needs their own ${info.label} key on file before their chatbot can embed knowledge or reply — paste it here to add it to their account.`
-            : `Your chatbot needs a ${info.label} key on file before it can embed its knowledge base or reply to customers.`}
-        </p>
-
-        <div className="flex flex-col gap-3">
-          <div>
-            {fieldLabel(`${info.label} API Key`)}
-            <Input
-              type="password"
-              value={keyValue}
-              onChange={(e) => setKeyValue(e.target.value)}
-              placeholder={info.placeholder}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-            />
-          </div>
-          <a href={info.helpUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#a78bfa]">
-            Get an API key from {info.label} →
-          </a>
-          {error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Not now</Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? "Saving..." : "Save Key"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ── Main ──────────────────────────────────────────────────────
 export function ChatbotConfigPage({ id }: { id: string }) {
@@ -1190,12 +1132,16 @@ export function ChatbotConfigPage({ id }: { id: string }) {
       </div>
 
       {showKeyDialog && missingKeyProvider && (
-        <AddProviderKeyDialog
-          provider={missingKeyProvider}
-          ownerId={chatbot.userId}
-          forOtherUser={isAdmin && chatbot.userId !== (user as any)?._id}
+        <ApiKeyDialog
+          open
+          defaultProvider={missingKeyProvider}
+          ownerId={isAdmin && chatbot.userId !== (user as any)?._id ? chatbot.userId : undefined}
+          notice={isAdmin && chatbot.userId !== (user as any)?._id
+            ? `This client needs their own ${AI_PROVIDER_INFO[missingKeyProvider].label} key before their chatbot can read its knowledge base or reply. It's saved to their account.`
+            : `Your chatbot needs a ${AI_PROVIDER_INFO[missingKeyProvider].label} key before it can read its knowledge base or reply to customers.`}
+          cancelLabel="Not now"
           onClose={() => setShowKeyDialog(false)}
-          onSaved={() => checkRequiredKeys(chatbot)}
+          onSaved={() => { setShowKeyDialog(false); checkRequiredKeys(chatbot); }}
         />
       )}
     </div>
@@ -2517,9 +2463,17 @@ function BillingTab({
               <div key={h._id} className="flex items-center justify-between gap-2.5 rounded-lg border bg-background px-3.5 py-2.5">
                 <div className="min-w-0">
                   <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-foreground">{h.description}</p>
-                  <p className="text-[11px] text-muted-foreground">{new Date(h.billingDate).toLocaleDateString()}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(h.billingDate).toLocaleDateString()}
+                    {h.invoiceNumber && <> · Invoice {h.invoiceNumber}</>}
+                  </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {h.invoiceNumber && (
+                    <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-[11px]" onClick={() => downloadInvoice(h)}>
+                      <Download size={12} /> Invoice
+                    </Button>
+                  )}
                   <span className="text-[13px] font-bold text-foreground">{h.currency} {h.amount}</span>
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-bold"

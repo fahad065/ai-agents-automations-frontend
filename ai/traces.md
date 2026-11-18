@@ -854,3 +854,13 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
 - E-commerce/Education chatbots removed from template lists, the detail-page
   map and niche cards; counts now 20 services / 7 chatbot templates; clinic
   card icon 🩺.
+
+## 2026-11-18 — One API key form; invoice download
+- `api-key-dialog.tsx` (new): the API Keys page's create/update dialog
+  (provider combobox with logos, name, key value with show/hide, AES-256
+  note), exported with `PROVIDERS`. Extra props: `defaultProvider`,
+  `ownerId` (admin saving for a client), `notice`, `cancelLabel`. The
+  chatbot config page's "add your key" prompt now uses it (provider
+  preselected) instead of its own simpler form.
+- Chatbot Billing tab: history rows show the invoice number and an
+  "Invoice" button (downloads the PDF from `GET /billing/:id/invoice`).
