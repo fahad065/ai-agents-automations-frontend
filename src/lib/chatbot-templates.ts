@@ -75,21 +75,6 @@ const PROFILES: Record<string, Partial<ChatbotTemplateProfile>> = {
     bookingLabel: "Test drive booking link",
     bookingHelp: "If a customer wants a test drive or a service appointment, the bot shares this link.",
   },
-  education: {
-    business: "school",
-    branch: "campus",
-    facilitiesLabel: "Courses / programmes offered",
-    bookingLabel: "Enrolment / trial class link",
-    bookingHelp: "If a student or parent wants to enrol or book a trial class, the bot shares this link.",
-  },
-  ecommerce: {
-    business: "store",
-    branch: "store",
-    facilitiesLabel: "Services offered",
-    onlineOnly: { title: "Warehouse / online only", hint: "No walk-in customers at this location.", badge: "ONLINE ONLY" },
-    bookingLabel: "Shop / order link",
-    bookingHelp: "If a customer wants to order, the bot shares this link.",
-  },
 };
 
 export function chatbotTemplateProfile(template?: string): ChatbotTemplateProfile {
@@ -102,9 +87,7 @@ export const SERVICE_SLUG_TO_TEMPLATE: Record<string, string> = {
   "restaurant-chatbot": "restaurant",
   "real-estate-chatbot": "real_estate",
   "clinic-chatbot": "clinic",
-  "ecommerce-chatbot": "ecommerce",
   "gym-chatbot": "gym",
-  "education-chatbot": "education",
   "salon-chatbot": "salon",
   "hotel-chatbot": "hotel",
   "auto-dealership-chatbot": "auto_dealership",
@@ -113,10 +96,8 @@ export const SERVICE_SLUG_TO_TEMPLATE: Record<string, string> = {
 export const CHATBOT_TEMPLATE_META: Record<string, { emoji: string; name: string }> = {
   restaurant: { emoji: "🍽️", name: "Restaurant" },
   real_estate: { emoji: "🏠", name: "Real Estate" },
-  clinic: { emoji: "💆", name: "Clinic" },
-  ecommerce: { emoji: "🛍️", name: "E-commerce" },
+  clinic: { emoji: "🩺", name: "Clinic" },
   gym: { emoji: "🏋️", name: "Gym" },
-  education: { emoji: "🎓", name: "Education" },
   salon: { emoji: "💇", name: "Salon / Spa" },
   hotel: { emoji: "🏨", name: "Hotel / Travel" },
   auto_dealership: { emoji: "🚗", name: "Auto Dealership" },

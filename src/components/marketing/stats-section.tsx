@@ -18,7 +18,7 @@ export function StatsSection() {
   const STATS = [
     {
       icon: Bot, color: "#7c3aed",
-      value: "22+", label: isAr ? "وكلاء وأتمتة وشات بوتات" : "Agents, automations & chatbots",
+      value: "20", label: isAr ? "وكلاء وأتمتة وشات بوتات" : "Agents, automations & chatbots",
       sub: isAr ? "المحتوى، العقارات، الرعاية الصحية والمزيد" : "Content, real estate, healthcare and more",
     },
     {

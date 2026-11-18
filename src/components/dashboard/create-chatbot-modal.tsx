@@ -24,10 +24,8 @@ interface AdminUserOption {
 export const TEMPLATES: { key: string; emoji: string; name: string }[] = [
   { key: "restaurant", emoji: "🍽️", name: "Restaurant" },
   { key: "real_estate", emoji: "🏠", name: "Real Estate" },
-  { key: "clinic", emoji: "💆", name: "Clinic" },
-  { key: "ecommerce", emoji: "🛍️", name: "E-commerce" },
+  { key: "clinic", emoji: "🩺", name: "Clinic" },
   { key: "gym", emoji: "🏋️", name: "Gym" },
-  { key: "education", emoji: "🎓", name: "Education" },
   { key: "salon", emoji: "💇", name: "Salon / Spa" },
   { key: "hotel", emoji: "🏨", name: "Hotel / Travel" },
   { key: "auto_dealership", emoji: "🚗", name: "Auto Dealership" },

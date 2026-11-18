@@ -67,7 +67,7 @@ export function AboutPage() {
     { year: "2024 Q1", event: isAr ? "توسعنا لـ 4 وكلاء ذكاء اصطناعي. أول 50 مستخدم على المنصة." : "Expanded to 4 AI agents. First 50 users onboarded." },
     { year: "2024 Q3", event: isAr ? "أضفنا خطوط أتمتة العقارات والتسويق، وتوسعنا فيما وراء إنشاء المحتوى." : "Expanded into Real Estate and Marketing automation, growing beyond content creation." },
     { year: "2025", event: isAr ? "13 وكيل في 12 قطاع، تخدم أعمالاً في أسواق متعددة حول العالم." : "13 agents across 12 industries, serving businesses across multiple markets worldwide." },
-    { year: "2026", event: isAr ? "أطلقنا الشات بوتات — 9 قوالب جاهزة عبر الموقع وواتساب وإنستقرام. المنصة الآن أكثر من 20 وكيلاً وأتمتة وشات بوت، تخدم أعمالاً حول العالم." : "Launched chatbots — 9 ready-made templates across website, WhatsApp and Instagram. The platform is now 20+ agents, automations and chatbots strong, serving businesses worldwide." },
+    { year: "2026", event: isAr ? "أطلقنا الشات بوتات — 7 قوالب جاهزة عبر الموقع وواتساب وإنستقرام. المنصة الآن 20 وكيلاً وأتمتة وشات بوت، تخدم أعمالاً حول العالم." : "Launched chatbots — 7 ready-made templates across website, WhatsApp and Instagram. The platform is now 20 agents, automations and chatbots strong, serving businesses worldwide." },
   ];
 
   return (

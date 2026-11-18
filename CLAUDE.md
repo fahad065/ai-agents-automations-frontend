@@ -142,8 +142,7 @@ Three product categories (all data from backend):
 5. Admin guard on backend checks `user.role === "admin"`
 
 ## Admin credentials (production)
-- Email: `fahad@test.com`
-- Password: `Admin@123`
+Not stored in the repo — ask the platform owner.
 
 ## Styling conventions
 - Inline styles only — all `style={{...}}` objects

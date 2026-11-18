@@ -35,7 +35,7 @@ const NICHES = [
   {
     icon: "🛒", label: "E-commerce",
     slug: "ecommerce_retail", color: "#ef4444",
-    agents: ["Product Description AI", "Review Responder", "Social Commerce Agent", "E-commerce Support Bot"],
+    agents: ["Product Description AI", "Review Responder", "Social Commerce Agent"],
     desc: "Automate product listings, customer reviews and social selling.",
   },
   {
@@ -59,7 +59,7 @@ const NICHES = [
   {
     icon: "🎓", label: "Education",
     slug: "education", color: "#f97316",
-    agents: ["Course Marketing", "Student Engagement", "Content Creator", "Education Enrolment Bot"],
+    agents: ["Course Marketing", "Student Engagement", "Content Creator"],
     desc: "Grow enrollments and keep students engaged with AI-driven content.",
   },
   {
