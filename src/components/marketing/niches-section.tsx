@@ -42,7 +42,7 @@ const NICHES = [
     icon: "🏥", label: "Healthcare",
     slug: "healthcare", color: "#22c55e",
     agents: ["Patient Communication", "Appointment Reminder", "Health Content Agent", "Clinic Appointment Bot"],
-    desc: "HIPAA-aware agents for patient outreach and healthcare content.",
+    desc: "Patient enquiries, appointment requests and healthcare content, handled for you.",
   },
   {
     icon: "👥", label: "HR & Recruitment",

@@ -12,6 +12,8 @@ export interface ChatbotTemplateProfile {
   facilitiesLabel: string;
   /** Delivery apps + "delivery-only kitchen" switch (restaurants only). */
   delivery: boolean;
+  /** "Insurance accepted" list on branches in the UAE (clinics). */
+  insurance?: boolean;
   /** Optional "no walk-in customers" switch for this business type. */
   onlineOnly?: { title: string; hint: string; badge: string };
   bookingLabel: string;
@@ -45,6 +47,7 @@ const PROFILES: Record<string, Partial<ChatbotTemplateProfile>> = {
   clinic: {
     business: "clinic",
     facilitiesLabel: "Services / specialities",
+    insurance: true,
     bookingLabel: "Appointment booking link",
     bookingHelp: "If a patient wants an appointment, the bot shares this link.",
   },
@@ -76,6 +79,12 @@ const PROFILES: Record<string, Partial<ChatbotTemplateProfile>> = {
     bookingHelp: "If a customer wants a test drive or a service appointment, the bot shares this link.",
   },
 };
+
+// Insurance acceptance matters (and varies by branch) for UAE clinics.
+export const INSURANCE_COUNTRY = "United Arab Emirates";
+export function showsInsurance(profile: ChatbotTemplateProfile, country?: string): boolean {
+  return !!profile.insurance && country === INSURANCE_COUNTRY;
+}
 
 export function chatbotTemplateProfile(template?: string): ChatbotTemplateProfile {
   return { ...DEFAULT_PROFILE, ...(template ? PROFILES[template] : {}) };

@@ -843,3 +843,14 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   box is focused with `preventScroll` — opening any dropdown no longer
   scrolls the page to the top (cmdk's scrollIntoView ran before the popover
   was positioned).
+
+## 2026-11-18 — Clinic: "Insurance accepted" on UAE branches; HIPAA claim removed
+- `chatbot-templates.ts`: clinic profile `insurance: true`; `showsInsurance(profile,
+  country)` is true only for country "United Arab Emirates". Locations form
+  shows the field only then; a branch in another country (or any non-clinic
+  bot) saves an empty list. The branch row shows "Insurance accepted: …".
+- Homepage Healthcare card no longer claims "HIPAA-aware" (a US certification
+  LogicMate doesn't hold) — EN + AR copy replaced.
+- E-commerce/Education chatbots removed from template lists, the detail-page
+  map and niche cards; counts now 20 services / 7 chatbot templates; clinic
+  card icon 🩺.

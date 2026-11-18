@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { COUNTRY_NAMES } from "@/lib/countries";
-import { chatbotTemplateProfile, type ChatbotTemplateProfile } from "@/lib/chatbot-templates";
+import { chatbotTemplateProfile, showsInsurance, type ChatbotTemplateProfile } from "@/lib/chatbot-templates";
 import { SiOpenai, SiAnthropic, SiGooglegemini } from "react-icons/si";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -70,6 +70,7 @@ interface Outlet {
   hours?: string;
   deliveryPlatforms?: string[];
   facilities?: string[];
+  insurance?: string[];
   mapUrl?: string;
   isOnlineOnly?: boolean;
   notes?: string;
@@ -1486,11 +1487,11 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
 interface OutletForm {
   name: string; city: string; country: string; address: string;
   areaTagsStr: string; phone: string; hours: string; deliveryPlatformsStr: string;
-  facilitiesStr: string; mapUrl: string; isOnlineOnly: boolean; notes: string;
+  facilitiesStr: string; insuranceStr: string; mapUrl: string; isOnlineOnly: boolean; notes: string;
 }
 const EMPTY_OUTLET_FORM: OutletForm = {
   name: "", city: "", country: "", address: "", areaTagsStr: "", phone: "",
-  hours: "", deliveryPlatformsStr: "", facilitiesStr: "", mapUrl: "", isOnlineOnly: false, notes: "",
+  hours: "", deliveryPlatformsStr: "", facilitiesStr: "", insuranceStr: "", mapUrl: "", isOnlineOnly: false, notes: "",
 };
 const splitList = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
 function outletToForm(o: Outlet): OutletForm {
@@ -1498,7 +1499,7 @@ function outletToForm(o: Outlet): OutletForm {
     name: o.name, city: o.city, country: o.country, address: o.address || "",
     areaTagsStr: (o.areaTags || []).join(", "), phone: o.phone || "", hours: o.hours || "",
     deliveryPlatformsStr: (o.deliveryPlatforms || []).join(", "),
-    facilitiesStr: (o.facilities || []).join(", "), mapUrl: o.mapUrl || "",
+    facilitiesStr: (o.facilities || []).join(", "), insuranceStr: (o.insurance || []).join(", "), mapUrl: o.mapUrl || "",
     isOnlineOnly: !!o.isOnlineOnly, notes: o.notes || "",
   };
 }
@@ -1513,6 +1514,7 @@ function formToOutlet(f: OutletForm, profile: ChatbotTemplateProfile): Outlet {
     hours: f.hours.trim() || undefined,
     deliveryPlatforms: profile.delivery ? splitList(f.deliveryPlatformsStr) : [],
     facilities: splitList(f.facilitiesStr),
+    insurance: showsInsurance(profile, f.country.trim()) ? splitList(f.insuranceStr) : [],
     mapUrl: f.mapUrl.trim() || undefined,
     isOnlineOnly: profile.onlineOnly ? f.isOnlineOnly : false,
     notes: f.notes.trim() || undefined,
@@ -1597,6 +1599,15 @@ function LocationsTab({ outlets, setOutlets, profile }: {
             {fieldLabel(`${profile.facilitiesLabel} (comma separated)`)}
             <Input value={form.facilitiesStr} onChange={set("facilitiesStr")} placeholder={`Enter ${profile.facilitiesLabel.toLowerCase()}, separated by commas`} />
           </div>
+          {showsInsurance(profile, form.country) && (
+            <div className="mt-2.5">
+              {fieldLabel("Insurance accepted (comma separated)")}
+              <Input value={form.insuranceStr} onChange={set("insuranceStr")} placeholder="Enter insurance providers or cards, separated by commas" />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Lets the bot answer &quot;do you accept my insurance?&quot; for this {branch}. For any insurer not listed, it says so and offers to check with your team.
+              </p>
+            </div>
+          )}
           <div className="mt-2.5">
             {fieldLabel(profile.delivery ? "Delivery areas / nearby areas (comma separated)" : "Nearby areas (comma separated)")}
             <Input value={form.areaTagsStr} onChange={set("areaTagsStr")} placeholder="Enter area names, separated by commas" />
@@ -1659,6 +1670,9 @@ function LocationsTab({ outlets, setOutlets, profile }: {
                 <p className="text-xs text-muted-foreground">{o.city}, {o.country}{o.address ? ` — ${o.address}` : ""}</p>
                 {!!o.facilities?.length && (
                   <p className="mt-0.5 text-[11px] text-muted-foreground">{profile.facilitiesLabel}: {o.facilities.join(", ")}</p>
+                )}
+                {!!o.insurance?.length && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Insurance accepted: {o.insurance.join(", ")}</p>
                 )}
                 {!!o.areaTags?.length && (
                   <p className="mt-0.5 text-[11px] text-muted-foreground">Nearby areas: {o.areaTags.join(", ")}</p>

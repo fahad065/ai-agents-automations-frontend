@@ -168,8 +168,8 @@ const t = {
     ar: "أتمتة قوائم المنتجات ومراجعات العملاء والبيع عبر وسائل التواصل.",
   },
   desc_healthcare: {
-    en: "HIPAA-aware agents for patient outreach and healthcare content.",
-    ar: "وكلاء مدركون لمتطلبات HIPAA لتواصل المرضى ومحتوى الرعاية الصحية.",
+    en: "Patient enquiries, appointment requests and healthcare content, handled for you.",
+    ar: "استفسارات المرضى وطلبات المواعيد ومحتوى الرعاية الصحية، نتكفّل فيها عنك.",
   },
   desc_hr_recruitment: {
     en: "Post jobs, screen CVs and onboard new hires — all automated.",
