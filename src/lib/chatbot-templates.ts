@@ -12,7 +12,7 @@ export interface ChatbotTemplateProfile {
   facilitiesLabel: string;
   /** Delivery apps + "delivery-only kitchen" switch (restaurants only). */
   delivery: boolean;
-  /** "Insurance accepted" list on branches in the UAE (clinics). */
+  /** "Insurance accepted" list on each branch (clinics). */
   insurance?: boolean;
   /** Optional "no walk-in customers" switch for this business type. */
   onlineOnly?: { title: string; hint: string; badge: string };
@@ -80,10 +80,9 @@ const PROFILES: Record<string, Partial<ChatbotTemplateProfile>> = {
   },
 };
 
-// Insurance acceptance matters (and varies by branch) for UAE clinics.
-export const INSURANCE_COUNTRY = "United Arab Emirates";
-export function showsInsurance(profile: ChatbotTemplateProfile, country?: string): boolean {
-  return !!profile.insurance && country === INSURANCE_COUNTRY;
+// Clinics list the insurance plans each branch accepts (any country).
+export function showsInsurance(profile: ChatbotTemplateProfile): boolean {
+  return !!profile.insurance;
 }
 
 export function chatbotTemplateProfile(template?: string): ChatbotTemplateProfile {

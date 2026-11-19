@@ -864,3 +864,9 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   preselected) instead of its own simpler form.
 - Chatbot Billing tab: history rows show the invoice number and an
   "Invoice" button (downloads the PDF from `GET /billing/:id/invoice`).
+
+## 2026-11-19 — Clinic "Insurance accepted" for every country
+- Owner direction: the clinic chatbot is sold worldwide. `showsInsurance(profile)`
+  no longer checks for "United Arab Emirates" (`INSURANCE_COUNTRY` removed) —
+  the Locations form shows the insurance field for every clinic branch, in
+  any country, and saving keeps the list whatever the country.

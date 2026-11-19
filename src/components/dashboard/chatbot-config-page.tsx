@@ -1460,7 +1460,7 @@ function formToOutlet(f: OutletForm, profile: ChatbotTemplateProfile): Outlet {
     hours: f.hours.trim() || undefined,
     deliveryPlatforms: profile.delivery ? splitList(f.deliveryPlatformsStr) : [],
     facilities: splitList(f.facilitiesStr),
-    insurance: showsInsurance(profile, f.country.trim()) ? splitList(f.insuranceStr) : [],
+    insurance: showsInsurance(profile) ? splitList(f.insuranceStr) : [],
     mapUrl: f.mapUrl.trim() || undefined,
     isOnlineOnly: profile.onlineOnly ? f.isOnlineOnly : false,
     notes: f.notes.trim() || undefined,
@@ -1545,7 +1545,7 @@ function LocationsTab({ outlets, setOutlets, profile }: {
             {fieldLabel(`${profile.facilitiesLabel} (comma separated)`)}
             <Input value={form.facilitiesStr} onChange={set("facilitiesStr")} placeholder={`Enter ${profile.facilitiesLabel.toLowerCase()}, separated by commas`} />
           </div>
-          {showsInsurance(profile, form.country) && (
+          {showsInsurance(profile) && (
             <div className="mt-2.5">
               {fieldLabel("Insurance accepted (comma separated)")}
               <Input value={form.insuranceStr} onChange={set("insuranceStr")} placeholder="Enter insurance providers or cards, separated by commas" />
