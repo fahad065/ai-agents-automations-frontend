@@ -81,7 +81,8 @@
     + ".lm-cb-header-sub{font-size:11px;opacity:.85;margin-top:2px;}"
     + ".lm-cb-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;}"
     + ".lm-cb-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f7f7f9;}"
-    + ".lm-cb-msg{max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word;}"
+    + ".lm-cb-msg{max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;}"
+    + ".lm-cb-msg a{color:inherit;text-decoration:underline;font-weight:600;}"
     + ".lm-cb-msg.user{align-self:" + (isAr ? "flex-start" : "flex-end") + ";background:var(--lm-cb-color);color:#fff;border-bottom-" + (isAr ? "left" : "right") + "-radius:4px;}"
     + ".lm-cb-msg.bot{align-self:" + (isAr ? "flex-end" : "flex-start") + ";background:#fff;color:#111;border:1px solid #e5e5e5;border-bottom-" + (isAr ? "right" : "left") + "-radius:4px;}"
     + ".lm-cb-msg.handoff{background:#fff7ed;border-color:#fdba74;}"
@@ -141,6 +142,33 @@
     return div.innerHTML;
   }
 
+  // Turns http(s) links in a message into clickable links (new tab) —
+  // bare URLs and Markdown-style [label](url). Built with DOM nodes only
+  // (never innerHTML), so message text can't inject markup.
+  var LINK_RE = /\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"]+)/g;
+  function appendRichText(el, text) {
+    var last = 0, m;
+    LINK_RE.lastIndex = 0;
+    while ((m = LINK_RE.exec(text))) {
+      var label = m[1], url = m[2] || m[3], trail = "";
+      if (!m[2]) {
+        // A bare URL shouldn't swallow sentence punctuation after it.
+        var t = url.match(/[.,;:!?)\]]+$/);
+        if (t) { trail = t[0]; url = url.slice(0, -trail.length); }
+      }
+      if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = label || url;
+      el.appendChild(a);
+      if (trail) el.appendChild(document.createTextNode(trail));
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }
+
   function addMessage(role, text, isHandoff) {
     var el = document.createElement("div");
     el.className = "lm-cb-msg " + (role === "user" ? "user" : "bot") + (isHandoff ? " handoff" : "");
@@ -150,7 +178,7 @@
       tag.textContent = isAr ? "تم التحويل لفريقنا" : "Connecting you with our team";
       el.appendChild(tag);
     }
-    el.appendChild(document.createTextNode(text));
+    appendRichText(el, text);
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }

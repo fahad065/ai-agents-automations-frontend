@@ -870,3 +870,11 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   no longer checks for "United Arab Emirates" (`INSURANCE_COUNTRY` removed) —
   the Locations form shows the insurance field for every clinic branch, in
   any country, and saving keeps the list whatever the country.
+
+## 2026-11-19 — Clickable links in the chatbot widget
+- `public/chatbot-widget.js`: bot replies turn http(s) URLs and Markdown
+  `[label](url)` links into clickable links (new tab, `rel="noopener
+  noreferrer"`), built with DOM nodes only — message text can never inject
+  HTML. Trailing punctuation stays outside a bare link. Line breaks in a
+  reply are kept (`white-space: pre-wrap`), so e.g. the hand-off contact
+  request sits on its own line.
