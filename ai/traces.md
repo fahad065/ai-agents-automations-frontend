@@ -891,3 +891,13 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   admin Service Catalog "Brochure PDF URL" field (purpose `service-brochure`).
 - Widget: a reply's `media` shows as a photo strip + brochure link (DOM only,
   http(s) only). Conversations tab shows media sent with a reply.
+
+## 2026-11-20 — Profile → Documents on private R2 storage
+- Upload: `POST /uploads` (purpose `user-document`) → browser PUT straight to
+  the private bucket → `POST /documents {documentType, key, name}`. Same
+  limits as everywhere: photos (JPG/PNG/WebP) ≤10 MB, PDFs ≤100 MB.
+- View: opens `GET /documents/:id/file` (a 5-minute signed link) in a new tab;
+  the tab is opened before the request so pop-up blockers allow it.
+- The page no longer receives a file URL (`fileName` replaces `fileUrl`).
+- Invoices need no frontend change: the Billing tab download now gets the copy
+  saved when the invoice was issued.

@@ -85,7 +85,7 @@ function formatFileSize(bytes?: number): string {
 interface UploadedDocument {
   _id: string;
   documentType: string;
-  fileUrl: string;
+  fileName?: string;
   fileType?: string;
   fileSize?: number;
   uploadedAt: string;
@@ -150,29 +150,35 @@ export function ProfilePage() {
     if (!docFile) { toast.error("Choose a file to upload"); return; }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", docFile);
-      formData.append("documentType", docType.trim());
-      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${API_URL}/documents`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData,
+      // 1) the platform's upload endpoint signs a private upload, 2) the file
+      // goes straight to storage (Cloudflare R2, private bucket), 3) the
+      // document is recorded. It's never publicly reachable.
+      const { data: up } = await api.post("/uploads", {
+        purpose: "user-document", contentType: docFile.type, size: docFile.size, name: docFile.name,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Upload failed");
-      }
-      const created = await res.json();
+      const put = await fetch(up.uploadUrl, { method: "PUT", headers: up.headers, body: docFile });
+      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      const { data: created } = await api.post("/documents", { documentType: docType.trim(), key: up.key, name: up.name });
       setDocuments((prev) => [created, ...prev]);
       setDocType("");
       setDocFile(null);
       toast.success("Document uploaded");
     } catch (e: any) {
-      toast.error(e?.message || "Failed to upload document");
+      toast.error(e?.response?.data?.message || e?.message || "Failed to upload document");
     }
     setUploading(false);
+  };
+
+  // Private files open through a link that expires after a few minutes.
+  const openDocument = async (doc: UploadedDocument) => {
+    const win = window.open("", "_blank");
+    try {
+      const { data } = await api.get(`/documents/${doc._id}/file`);
+      if (win) win.location.href = data.url; else window.location.href = data.url;
+    } catch {
+      win?.close();
+      toast.error("Couldn't open the document");
+    }
   };
 
   const confirmDeleteDocument = async () => {
@@ -353,7 +359,7 @@ export function ProfilePage() {
                 />
               </div>
               <div style={{ flex: "1 1 220px", minWidth: "200px" }}>
-                {lbl("File (JPG, PNG, WEBP, or PDF — max 10MB)")}
+                {lbl("File (JPG, PNG or WebP up to 10 MB, or PDF up to 100 MB)")}
                 <input
                   type="file"
                   accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
@@ -401,9 +407,9 @@ export function ProfilePage() {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#a78bfa", textDecoration: "none", fontWeight: 500 }}>
+                      <button onClick={() => openDocument(doc)} style={{ fontSize: "12px", color: "#a78bfa", background: "transparent", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>
                         View
-                      </a>
+                      </button>
                       <button
                         onClick={() => setDeleteTarget(doc)}
                         aria-label="Delete document"
