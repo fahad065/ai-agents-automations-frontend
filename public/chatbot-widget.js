@@ -83,6 +83,12 @@
     + ".lm-cb-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f7f7f9;}"
     + ".lm-cb-msg{max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;}"
     + ".lm-cb-msg a{color:inherit;text-decoration:underline;font-weight:600;}"
+    + ".lm-cb-media{align-self:" + (isAr ? "flex-end" : "flex-start") + ";max-width:85%;display:flex;flex-direction:column;gap:6px;}"
+    + ".lm-cb-photos{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}"
+    + ".lm-cb-photos a{flex:0 0 auto;display:block;width:120px;height:90px;border-radius:10px;overflow:hidden;border:1px solid #e5e5e5;background:#f4f4f5;}"
+    + ".lm-cb-photos img{width:100%;height:100%;object-fit:cover;display:block;}"
+    + ".lm-cb-file{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:8px 11px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:12px;font-weight:600;text-decoration:none;}"
+    + ".lm-cb-file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}"
     + ".lm-cb-msg.user{align-self:" + (isAr ? "flex-start" : "flex-end") + ";background:var(--lm-cb-color);color:#fff;border-bottom-" + (isAr ? "left" : "right") + "-radius:4px;}"
     + ".lm-cb-msg.bot{align-self:" + (isAr ? "flex-end" : "flex-start") + ";background:#fff;color:#111;border:1px solid #e5e5e5;border-bottom-" + (isAr ? "right" : "left") + "-radius:4px;}"
     + ".lm-cb-msg.handoff{background:#fff7ed;border-color:#fdba74;}"
@@ -169,6 +175,42 @@
     if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
   }
 
+  // Photos and a PDF brochure the bot sent with its reply (from the
+  // knowledge base). Built with DOM nodes; only http(s) URLs are used.
+  function addMedia(media) {
+    if (!media || !media.length) return;
+    var safe = function (u) { return typeof u === "string" && /^https?:\/\//i.test(u); };
+    var wrap = document.createElement("div");
+    wrap.className = "lm-cb-media";
+    var photos = media.filter(function (m) { return m.kind === "image" && safe(m.url); });
+    if (photos.length) {
+      var row = document.createElement("div");
+      row.className = "lm-cb-photos";
+      photos.forEach(function (m) {
+        var a = document.createElement("a");
+        a.href = m.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        var img = document.createElement("img");
+        img.src = m.url; img.alt = m.name || ""; img.loading = "lazy";
+        a.appendChild(img);
+        row.appendChild(a);
+      });
+      wrap.appendChild(row);
+    }
+    media.filter(function (m) { return m.kind === "pdf" && safe(m.url); }).forEach(function (m) {
+      var a = document.createElement("a");
+      a.className = "lm-cb-file";
+      a.href = m.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.appendChild(document.createTextNode("\uD83D\uDCC4 "));
+      var label = document.createElement("span");
+      label.textContent = m.name || (isAr ? "الملف" : "Brochure (PDF)");
+      a.appendChild(label);
+      wrap.appendChild(a);
+    });
+    if (!wrap.childNodes.length) return;
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
   function addMessage(role, text, isHandoff) {
     var el = document.createElement("div");
     el.className = "lm-cb-msg " + (role === "user" ? "user" : "bot") + (isHandoff ? " handoff" : "");
@@ -249,6 +291,7 @@
       .then(function (data) {
         hideTyping();
         addMessage("bot", data.reply || (isAr ? "عذراً، صار خطأ. حاول مرة ثانية." : "Sorry, something went wrong. Please try again."), data.handoff);
+        addMedia(data.media);
       })
       .catch(function () {
         hideTyping();

@@ -878,3 +878,16 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   HTML. Trailing punctuation stays outside a bare link. Line breaks in a
   reply are kept (`white-space: pre-wrap`), so e.g. the hand-off contact
   request sits on its own line.
+
+## 2026-11-20 — Photos + PDF on knowledge entries; uploads via the one endpoint
+- `dashboard/knowledge-media-picker.tsx`: Knowledge Base form "Photos &
+  brochure" — up to 5 photos (JPG/PNG/WebP ≤10 MB) and 1 PDF (≤100 MB), plan
+  usage shown (`GET /chatbots/:id/knowledge/media-usage`). Uploads call
+  `POST /uploads` (purpose `chatbot-knowledge`) and PUT straight to
+  Cloudflare R2; cancelled/removed unsaved files are discarded
+  (`DELETE /uploads`). Entries save `attachments: [{key, name}]`; the list
+  shows thumbnails.
+- `ui/upload-button.tsx`: reusable button for any upload purpose; used on the
+  admin Service Catalog "Brochure PDF URL" field (purpose `service-brochure`).
+- Widget: a reply's `media` shows as a photo strip + brochure link (DOM only,
+  http(s) only). Conversations tab shows media sent with a reply.

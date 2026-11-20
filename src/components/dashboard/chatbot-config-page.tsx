@@ -15,6 +15,7 @@ import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { toast } from "sonner";
 import { ChatbotTrialBanner } from "./chatbot-trial-banner";
 import { ApiKeyDialog } from "./api-key-dialog";
+import { KnowledgeMediaPicker, type KnowledgeAttachment, type MediaUsage } from "./knowledge-media-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -194,6 +195,7 @@ interface KnowledgeEntry {
   content?: string;
   sourceUrl?: string;
   linkLabel?: string;
+  attachments?: KnowledgeAttachment[];
   createdAt: string;
 }
 
@@ -201,6 +203,7 @@ interface ConvMessage {
   role: string;
   content: string;
   timestamp: string;
+  media?: { kind: "image" | "pdf"; url: string; name?: string }[];
 }
 interface Conversation {
   _id: string;
@@ -1187,11 +1190,24 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
   const [editTarget, setEditTarget] = useState<KnowledgeEntry | null>(null);
+  const [attachments, setAttachments] = useState<KnowledgeAttachment[]>([]);
+  const [mediaUsage, setMediaUsage] = useState<MediaUsage | null>(null);
+
+  const loadMediaUsage = () => {
+    api.get(`/chatbots/${botId}/knowledge/media-usage`).then((r) => setMediaUsage(r.data)).catch(() => setMediaUsage(null));
+  };
+  useEffect(() => { if (showAdd) loadMediaUsage(); }, [showAdd, botId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Files uploaded in this form but never saved are removed from storage.
+  const discardUnsaved = (list: KnowledgeAttachment[]) => {
+    for (const a of list) if (a.unsaved) api.delete(`/uploads`, { params: { purpose: "chatbot-knowledge", chatbotId: botId, key: a.key } }).catch(() => {});
+  };
 
   const reset = () => {
     setKind("qa"); setAnswerKind("text"); setQuestion(""); setAnswer(""); setContent("");
-    setSourceUrl(""); setLinkKind(LINK_KINDS[0]); setLinkOther(""); setEditTarget(null);
+    setSourceUrl(""); setLinkKind(LINK_KINDS[0]); setLinkOther(""); setEditTarget(null); setAttachments([]);
   };
+  const cancelForm = () => { discardUnsaved(attachments); reset(); };
 
   const startEdit = (entry: KnowledgeEntry) => {
     setEditTarget(entry);
@@ -1202,6 +1218,7 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
     setAnswer(entry.answer || "");
     setContent(entry.content || "");
     setSourceUrl(entry.sourceUrl || "");
+    setAttachments((entry.attachments || []).map((a) => ({ ...a, unsaved: false })));
     const label = entry.linkLabel || "";
     if (!label || LINK_KINDS.includes(label)) { setLinkKind(label || LINK_KINDS[0]); setLinkOther(""); }
     else { setLinkKind("__other"); setLinkOther(label); }
@@ -1217,11 +1234,11 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
   const saveEntry = async () => {
     const text = (kind === "qa" ? answer : content).trim();
     if (kind === "qa" && !question.trim()) { toast.error("Enter the question"); return; }
-    if (wantsText && !text) { toast.error(kind === "qa" ? "Enter the answer" : "Enter the information"); return; }
+    if (wantsText && !text && !(kind === "qa" && attachments.length)) { toast.error(kind === "qa" ? "Enter the answer" : "Enter the information"); return; }
     if (wantsLink && !isHttpUrl(sourceUrl)) { toast.error("Enter a link starting with http:// or https://"); return; }
     if (wantsLink && linkKind === "__other" && !linkOther.trim()) { toast.error("Say what the link is"); return; }
     const label = linkKind === "__other" ? linkOther.trim() : linkKind;
-    const body: Record<string, string> = {
+    const body: Record<string, unknown> = {
       // A link-only "general information" entry is the older "url" type.
       type: kind === "qa" ? "faq" : (wantsText ? "text" : "url"),
       sourceUrl: wantsLink ? sourceUrl.trim() : "",
@@ -1229,6 +1246,7 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
     };
     if (kind === "qa") { body.question = question.trim(); body.answer = wantsText ? text : ""; }
     else { body.content = wantsText ? text : ""; }
+    body.attachments = attachments.map((a) => ({ key: a.key, name: a.name }));
     setSaving(true);
     try {
       if (editTarget) {
@@ -1241,6 +1259,7 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       reset();
       setShowAdd(false);
       refresh();
+      loadMediaUsage();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || (editTarget ? "Failed to update entry" : "Failed to add entry"));
     }
@@ -1267,7 +1286,7 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
       title="Knowledge Base"
       icon={BookOpen}
       right={
-        <Button size="sm" onClick={() => { if (showAdd) reset(); setShowAdd(!showAdd); }} className="gap-1.5">
+        <Button size="sm" onClick={() => { if (showAdd) cancelForm(); setShowAdd(!showAdd); }} className="gap-1.5">
           {showAdd ? <X size={12} /> : <Plus size={12} />} {showAdd ? "Cancel" : "Add Knowledge"}
         </Button>
       }
@@ -1338,6 +1357,8 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
                 </div>
               </div>
             )}
+
+            <KnowledgeMediaPicker botId={botId} value={attachments} onChange={setAttachments} usage={mediaUsage} />
           </div>
 
           <div className="mt-3.5 flex justify-end">
@@ -1382,6 +1403,19 @@ function KnowledgeTab({ botId, knowledge, loading, showAdd, setShowAdd, refresh 
                       <span className="shrink-0 font-medium">{k.linkLabel || "Link"}:</span>
                       <span className="truncate">{k.sourceUrl}</span>
                     </a>
+                  )}
+                  {!!k.attachments?.length && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {k.attachments.filter((a) => a.kind === "image").map((a) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={a.key} src={a.url} alt={a.name} className="size-9 rounded border object-cover" />
+                      ))}
+                      {k.attachments.filter((a) => a.kind === "pdf").map((a) => (
+                        <a key={a.key} href={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] text-foreground">
+                          <FileText size={11} className="text-destructive" /> {a.name}
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <div className="flex shrink-0 gap-1.5">
@@ -2066,7 +2100,21 @@ function ConversationsTab({ conversations, loading, expandedConvo, setExpandedCo
                               isUser ? "border-border bg-background" : "border-primary/25 bg-primary/[0.12]",
                             )}
                           >
-                            {m.content}
+                            <span className="whitespace-pre-wrap">{m.content}</span>
+                            {!!m.media?.length && (
+                              <span className="mt-1.5 flex flex-wrap gap-1.5">
+                                {m.media.map((f) => f.kind === "image" ? (
+                                  <a key={f.url} href={f.url} target="_blank" rel="noreferrer">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={f.url} alt={f.name || ""} className="size-12 rounded border object-cover" />
+                                  </a>
+                                ) : (
+                                  <a key={f.url} href={f.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-[11px]">
+                                    <FileText size={11} className="text-destructive" /> {f.name || "PDF"}
+                                  </a>
+                                ))}
+                              </span>
+                            )}
                             <p className="mt-1 text-[9px] text-muted-foreground">
                               {m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : ""}
                             </p>

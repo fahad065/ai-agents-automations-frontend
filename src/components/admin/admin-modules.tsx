@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toServiceViews, toServicePayload, serviceStatusLabel } from "@/lib/service-view";
+import { UploadButton } from "@/components/ui/upload-button";
 
 interface HeroStat { label: string; value: string; label_ar?: string; value_ar?: string; }
 interface Feature { title: string; description: string; icon: string; title_ar?: string; description_ar?: string; }
@@ -557,7 +558,16 @@ export function AdminModules() {
                 </div>
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Brochure PDF URL", "shows a Download brochure button next to Watch demo")}
-                  <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="https://….public.blob.vercel-storage.com/….pdf" />
+                  <div className="flex gap-2">
+                    <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="Paste a link, or upload the PDF" />
+                    <UploadButton
+                      purpose="service-brochure"
+                      details={{ serviceId: form.slug.trim() || undefined }}
+                      accept="application/pdf"
+                      label="Upload PDF"
+                      onUploaded={(f) => f.url && setForm(prev => ({ ...prev, brochureUrl: f.url! }))}
+                    />
+                  </div>
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Status", "inactive = hidden from the public catalog")}
