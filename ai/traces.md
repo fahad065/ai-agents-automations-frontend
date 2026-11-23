@@ -942,3 +942,9 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   field and deletes the file. Remove is also how the old Vercel Blob links get
   cleared (Blob files themselves are deleted by the owner).
 - `ui/media-preview.tsx`: PDFs now preview inline (iframe) with a link.
+
+## 2026-11-23 — "See a demo" on /chatbots scrolls to the templates
+- Owner's choice: the hero button scrolls to the Templates section, where
+  each card's "Watch it in action" plays that template's own uploaded video.
+  The hardcoded Vercel Blob product-overview URL (`GENERAL_DEMO_URL`) is gone,
+  so no Blob URLs remain in the code. Templates intro no longer says "GCC".

@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { toServiceViews } from "@/lib/service-view";
 
-const GENERAL_DEMO_URL = "https://1ajwuueru6fqolyr.public.blob.vercel-storage.com/chatbot-demos/logicmate-chatbots-product-demo.mp4";
 
 const CHANNELS = [
   {
@@ -178,7 +177,9 @@ export function ChatbotsPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => setDemoVideo({ url: GENERAL_DEMO_URL, title: "LogicMate Chatbots" })}
+            // Scrolls to the templates, where each card's "Watch it in action"
+            // plays that template's own demo video (uploaded in Service Catalog).
+            onClick={() => document.getElementById("templates")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="rounded-[10px] px-7 py-6 text-[15px] font-medium"
           >
             {isAr ? "شوف ديمو" : "See a demo"}
@@ -245,7 +246,7 @@ export function ChatbotsPage() {
       </section>
 
       {/* ── Templates ────────────────────────────────────────── */}
-      <section className="border-t px-6 py-24">
+      <section id="templates" className="scroll-mt-20 border-t px-6 py-24">
         <div className="mx-auto max-w-[1000px]">
           <div className="mb-12 text-center">
             <p className="mb-3 text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
@@ -256,8 +257,8 @@ export function ChatbotsPage() {
             </h2>
             <p className="mx-auto max-w-[500px] text-[15px] text-muted-foreground">
               {isAr
-                ? "قوالب مُعدّة مسبقاً لأعمال الخليج. عدّل، انشر، وخلّ البوت يشتغل."
-                : "Pre-built templates for GCC businesses. Customise, deploy, and let the bot handle the rest."}
+                ? "قوالب جاهزة للشركات في كل مكان. عدّل، انشر، وخلّ البوت يشتغل. اضغط «شاهد كيف يعمل» على أي قالب عشان تشوف الديمو."
+                : "Pre-built templates for businesses everywhere. Customise, deploy, and let the bot handle the rest. Tap “Watch it in action” on any template to see its demo."}
             </p>
           </div>
 
