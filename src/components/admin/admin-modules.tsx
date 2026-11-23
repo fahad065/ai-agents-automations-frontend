@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toServiceViews, toServicePayload, serviceStatusLabel } from "@/lib/service-view";
-import { UploadButton } from "@/components/ui/upload-button";
+import { UploadButton, type UploadedFile } from "@/components/ui/upload-button";
+import { MediaPreview } from "@/components/ui/media-preview";
 
 interface HeroStat { label: string; value: string; label_ar?: string; value_ar?: string; }
 interface Feature { title: string; description: string; icon: string; title_ar?: string; description_ar?: string; }
@@ -283,6 +284,24 @@ export function AdminModules() {
         text: rest.join("|").trim(),
       };
     });
+
+  // An uploaded demo video / brochure: fill the field and, when editing an
+  // existing service, save that one field straight away (the backend deletes
+  // the file it replaces). A new service saves it with "Create service".
+  const MEDIA_ACCEPT = "video/*,audio/*,image/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.mkv,.mov,.m4a";
+  const onMediaUploaded = async (field: "demoVideoUrl" | "brochureUrl", f: UploadedFile) => {
+    if (!f.url) return;
+    setForm(prev => ({ ...prev, [field]: f.url! }));
+    if (!editingId) return;
+    try {
+      await api.patch(`/services/${editingId}`, { [`content.${field}`]: f.url });
+      toast.success(field === "demoVideoUrl" ? "Video saved on the service" : "File saved on the service");
+      fetchModules();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || "Uploaded, but saving failed — click Update service");
+    }
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.slug.trim()) {
@@ -553,21 +572,36 @@ export function AdminModules() {
                   <Input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder="youtube, instagram, tiktok" />
                 </div>
                 <div className="col-span-full mb-3.5">
-                  {fieldLabel("Demo Video URL")}
-                  <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="https://youtu.be/..." />
-                </div>
-                <div className="col-span-full mb-3.5">
-                  {fieldLabel("Brochure PDF URL", "shows a Download brochure button next to Watch demo")}
+                  {fieldLabel("Demo / how-it-works video", "upload from your computer, or paste a YouTube link")}
                   <div className="flex gap-2">
-                    <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="Paste a link, or upload the PDF" />
+                    <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="Upload a file, or paste https://youtu.be/..." />
                     <UploadButton
-                      purpose="service-brochure"
+                      purpose="service-media"
                       details={{ serviceId: form.slug.trim() || undefined }}
-                      accept="application/pdf"
-                      label="Upload PDF"
-                      onUploaded={(f) => f.url && setForm(prev => ({ ...prev, brochureUrl: f.url! }))}
+                      accept={MEDIA_ACCEPT}
+                      label="Upload"
+                      disabled={!form.slug.trim()}
+                      onUploaded={(f) => onMediaUploaded("demoVideoUrl", f)}
+                      testId="service-video-input"
                     />
                   </div>
+                  <MediaPreview url={form.demoVideoUrl} />
+                </div>
+                <div className="col-span-full mb-3.5">
+                  {fieldLabel("Brochure", "shows a Download brochure button next to Watch demo")}
+                  <div className="flex gap-2">
+                    <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="Upload a file, or paste a link" />
+                    <UploadButton
+                      purpose="service-media"
+                      details={{ serviceId: form.slug.trim() || undefined }}
+                      accept={MEDIA_ACCEPT}
+                      label="Upload"
+                      disabled={!form.slug.trim()}
+                      onUploaded={(f) => onMediaUploaded("brochureUrl", f)}
+                      testId="service-brochure-input"
+                    />
+                  </div>
+                  <MediaPreview url={form.brochureUrl} />
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Status", "inactive = hidden from the public catalog")}

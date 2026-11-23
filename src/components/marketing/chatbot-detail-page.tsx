@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { youtubeEmbedUrl } from "@/components/ui/media-preview";
 import Link from "next/link";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -399,7 +400,15 @@ export function ChatbotDetailPage({ slug }: { slug: string }) {
             </p>
 
             <div className="overflow-hidden rounded-2xl border shadow-[0_24px_48px_rgba(0,0,0,0.3)]">
-              {videoError ? (
+              {youtubeEmbedUrl(agent.demoVideoUrl) ? (
+                <iframe
+                  src={youtubeEmbedUrl(agent.demoVideoUrl)!}
+                  title={`${agent.name} demo`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="block aspect-video w-full border-0"
+                />
+              ) : videoError ? (
                 <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-black text-[13px] text-[#a3a3a3]">
                   <Play size={24} className="text-[#525252]" />
                   {isAr ? "تعذر تحميل الفيديو حالياً." : "This video couldn't be loaded right now."}

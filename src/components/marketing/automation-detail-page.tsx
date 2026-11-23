@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { youtubeEmbedUrl } from "@/components/ui/media-preview";
 import Link from "next/link";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { useLang } from "@/hooks/use-lang";
@@ -136,11 +137,9 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
     ? openModulePath
     : `/auth/signup?redirect=${encodeURIComponent(openModulePath)}`;
 
-  const embedUrl = automation.demoVideoUrl
-    ? automation.demoVideoUrl
-        .replace("youtu.be/", "www.youtube.com/embed/")
-        .replace("watch?v=", "embed/")
-    : "";
+  // YouTube links play in an embed; an uploaded video file in a <video> player.
+  const embedUrl = automation.demoVideoUrl ? youtubeEmbedUrl(automation.demoVideoUrl) : null;
+  const videoFile = automation.demoVideoUrl && !embedUrl ? automation.demoVideoUrl : null;
 
   const ctaLabel = automation.status === "active"
     ? (isAuthenticated ? (isAr ? "فتح لوحة التحكم" : "Open dashboard") : (isAr ? "ابدأ مجاناً" : "Get started free"))
@@ -265,7 +264,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
       )}
 
       {/* Demo video */}
-      {automation.demoVideoUrl && embedUrl && (
+      {automation.demoVideoUrl && (embedUrl || videoFile) && (
         <section className="border-b bg-foreground/[0.015] px-6 py-16">
           <div className="mx-auto max-w-[800px] text-center">
             <h2 className="mb-3 text-[clamp(24px,3vw,36px)] font-bold text-foreground">
@@ -275,22 +274,28 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
               A real example of this automation running end to end.
             </p>
             <div className="relative overflow-hidden rounded-2xl border pb-[56.25%] shadow-[0_24px_48px_rgba(0,0,0,0.3)]">
-              <iframe
-                src={embedUrl}
-                title={`${automation.name} demo`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 size-full border-0"
-              />
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={`${automation.name} demo`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 size-full border-0"
+                />
+              ) : (
+                <video src={videoFile!} controls preload="metadata" playsInline className="absolute inset-0 size-full bg-black object-contain" />
+              )}
             </div>
-            <a
-              href={automation.demoVideoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline"
-            >
-              <ExternalLink size={13} /> Watch on YouTube
-            </a>
+            {embedUrl && (
+              <a
+                href={automation.demoVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline"
+              >
+                <ExternalLink size={13} /> Watch on YouTube
+              </a>
+            )}
           </div>
         </section>
       )}

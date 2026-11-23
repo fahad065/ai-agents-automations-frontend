@@ -219,7 +219,7 @@ No fixed public pricing — every chatbot's price is set by hand from the dashbo
 ### Marketing page (`chatbots-page.tsx`) — now backend-driven, links to real detail pages
 The template grid used to be a hardcoded `TEMPLATES` array. It's now fetched from `GET /modules?moduleType=chatbot` (same catalog + admin CMS editor agents/automations use — see "Chatbot template detail pages" below) and each card is a `Link` to `/chatbots/[slug]`. The **"Watch it in action"** button on each card still works exactly as before — it's a `<button>` inside the card `Link` with `preventDefault`/`stopPropagation` so clicking it opens the shared demo-video modal (`demoVideo` state + `<video>` element) instead of navigating. The hero's **"See a demo"** button still opens the same modal with `GENERAL_DEMO_URL`, a broader product overview video — that one stayed hardcoded, it isn't per-template.
 
-Every demo video is a recording of a *real* chatbot answering *real* questions through the actual `/chat/:embedKey` endpoint — not a mockup. Built via headless Chrome (puppeteer-core) driving the widget on a throwaway demo HTML page, OpenAI TTS (`onyx` voice) for narration, `ffmpeg` for assembly. See `scripts/upload-demo-video.mjs` for how a finished video gets a real hosted URL. Each template's `demoVideoUrl` now lives on its `ModuleTemplate` doc (editable via `/dashboard/cms-modules`), not in frontend code.
+Every demo video is a recording of a *real* chatbot answering *real* questions through the actual `/chat/:embedKey` endpoint — not a mockup. Built via headless Chrome (puppeteer-core) driving the widget on a throwaway demo HTML page, OpenAI TTS (`onyx` voice) for narration, `ffmpeg` for assembly. A finished video is uploaded from the admin Service edit screen (Upload next to the demo-video field → Cloudflare R2, purpose `service-media`). Each template's `demoVideoUrl` now lives on its `ModuleTemplate` doc (editable via `/dashboard/cms-modules`), not in frontend code.
 
 **"Free" claims were removed** (commit `f0941c3`) — the page used to say "Start free" / "Free 30 days, no credit card" / "Get started free" from before chatbot billing existed. Now: "Get started" (hero + closing CTA) and "Custom pricing, built for your business" (closing badge). If you're ever asked to add a video or pricing copy to this page again, check it doesn't reintroduce a "free" claim — chatbots are setup fee + monthly, not free.
 
@@ -270,11 +270,7 @@ Rather than reusing chatbot's `?autostart=1` pattern (which fires a `POST` immed
 ### Marketing assets — `LogicMate/marketing-assets/chatbot-demos/`
 Sits one level up from all three repos (sibling to the frontend/backend/python-services folders), **not tracked by any of the three git repos**. Holds the source `.mp4` files before upload. Also home to `sunset-cafe-demo.html` and the 5 other `{template}-demo.html` throwaway capture pages that live in the frontend's `public/` folder during a recording session — those are deliberately **never committed** (test-only, would ship a fake landing page to production). Check `git status` before committing anything touching `public/*-demo.html`.
 
-`ai-agents-automations-frontend/scripts/upload-demo-video.mjs` — one-off Vercel Blob uploader:
-```bash
-node --env-file=.env.local scripts/upload-demo-video.mjs <local-file-path> [blob-pathname]
-```
-Needs `BLOB_READ_WRITE_TOKEN` in `.env.local` (Vercel dashboard → project → Storage → Blob). Prints the real hotlinkable URL on success.
+Uploading: admin → Service Catalog → edit the service → **Upload** next to "Demo / how-it-works video" (or "Brochure"). The file goes straight from the browser to Cloudflare R2 (`services/<slug>/videos|audio|images|files/`) and, on an existing service, the URL is saved at once; the old uploaded file is deleted when replaced. Any video/audio/image/PDF/Office format; video up to 2 GB. (The old `scripts/upload-demo-video.mjs` Vercel Blob uploader was removed on 2026-11-23.)
 
 ## Performance pass (2026-08)
 A separate review (not this session originally) recommended: remove GSAP, add `next/image`, add dynamic imports for heavy pages, add `loading.tsx` skeletons, adopt React Query. Verified each claim against the actual codebase before acting — two were wrong:

@@ -1,25 +1,14 @@
 import { FileDown } from "lucide-react";
 
 // "Download brochure" — shown next to "Watch demo" on every service detail
-// page that has `content.brochureUrl` set (admin: Services → Basic tab).
-// Vercel Blob serves files inline by default; `?download=1` makes it send
-// Content-Disposition: attachment so the PDF downloads instead of opening.
-// (The `download` attribute alone is ignored for cross-origin URLs.)
-export function brochureDownloadHref(url: string): string {
-  try {
-    const u = new URL(url);
-    if (u.hostname.endsWith(".blob.vercel-storage.com")) u.searchParams.set("download", "1");
-    return u.toString();
-  } catch {
-    return url;
-  }
-}
-
+// page that has `content.brochureUrl` set (admin: Services → Basic tab,
+// uploaded to Cloudflare R2). Opens in a new tab; the browser's own viewer
+// has a download button.
 export function BrochureButton({ url, isAr }: { url?: string; isAr: boolean }) {
   if (!url) return null;
   return (
     <a
-      href={brochureDownloadHref(url)}
+      href={url}
       download
       target="_blank"
       rel="noopener noreferrer"

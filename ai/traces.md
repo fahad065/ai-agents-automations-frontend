@@ -901,3 +901,20 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
 - The page no longer receives a file URL (`fileName` replaces `fileUrl`).
 - Invoices need no frontend change: the Billing tab download now gets the copy
   saved when the invoice was issued.
+
+## 2026-11-23 — Admin uploads service videos/files to R2; Vercel Blob removed
+- Service edit screen: "Upload" next to **Demo / how-it-works video** and
+  **Brochure** (purpose `service-media`, any video/audio/image/PDF/Office
+  format, video ≤2 GB). Shows upload progress (XHR), fills the field and, when
+  editing an existing service, saves that field at once
+  (`PATCH /services/:id {"content.demoVideoUrl": url}`); the backend deletes
+  the file it replaced. `ui/media-preview.tsx` previews YouTube / video /
+  audio / image / document links under the field.
+- `ui/upload-button.tsx`: infers the type from the extension when the browser
+  leaves `file.type` empty (MKV, M4A…), shows % while uploading.
+- Agent and automation detail pages play an uploaded video file in a
+  `<video>` player (YouTube links still embed); chatbot pages already did.
+- Removed Vercel Blob: `@vercel/blob`, `scripts/upload-demo-video.mjs`, the
+  brochure `?download=1` Blob special case. Still on Blob: the hardcoded
+  `GENERAL_DEMO_URL` ("See a demo" on /chatbots) — needs a new URL once the
+  owner deletes the Blob store.
