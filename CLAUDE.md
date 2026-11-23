@@ -152,6 +152,9 @@ Not stored in the repo — ask the platform owner.
 - Gradient text: `background: "linear-gradient(...)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"`
 - Max page width: `1280px` with `margin: "0 auto"`
 
+## File upload convention (owner rule, 2026-11-23 — read before adding any file field)
+Every file on the platform (brochures, demo videos, user documents, invoices, quotations, anything new) is uploaded from the user's computer straight to Cloudflare R2 through the backend's `POST /uploads` (a *purpose* per kind of file — see backend CLAUDE.md). No Vercel Blob, no text box for pasting a file URL. File fields are **upload-only**: an **Upload** button the first time; once a file is saved, a preview (`src/components/ui/media-preview.tsx`: video/audio player, inline PDF, image, or link) with **Replace** (uploads, saves at once, the backend deletes the old file) and **Remove** (AlertDialog confirm, clears the field, deletes the file). Reference implementation: the demo-video and brochure fields in `admin/admin-modules.tsx`; reusable pieces `ui/upload-button.tsx` and `ui/media-preview.tsx`. Demo videos open in `ui/demo-video-modal.tsx`.
+
 ## Dropdown convention (established 2026-11-11, corrected 2026-11-11 — read before adding any new dropdown)
 **Every new dropdown field in this codebase uses `src/components/ui/combobox.tsx`'s `Combobox` component — never a bare native `<select>`, and never a hand-rolled button-grid/popup.** This was an explicit, platform-wide request: click opens a popover with a search input filtering the option list below it, and a selected value **always** shows a clear "X" on the right of the field.
 
