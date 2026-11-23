@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DemoVideoModal } from "@/components/ui/demo-video-modal";
 import Link from "next/link";
 import { useTheme } from "@/hooks/use-theme";
 import { useLang } from "@/hooks/use-lang";
 import {
   MessageCircle, Globe, Smartphone, Zap,
   Clock, Shield, BarChart3, ArrowRight, Check, Bot,
-  Users, Star, Headphones, Play, X,
+  Users, Star, Headphones, Play,
 } from "lucide-react";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
@@ -425,37 +426,7 @@ export function ChatbotsPage() {
       </section>
 
       {/* ── Demo video modal ─────────────────────────────────── */}
-      {demoVideo && (
-        <div
-          onClick={() => setDemoVideo(null)}
-          className="fixed inset-0 z-1000 flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[800px] overflow-hidden rounded-2xl bg-black shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
-          >
-            <div className="flex items-center justify-between px-4.5 py-3.5">
-              <p className="text-[13px] font-semibold text-white">
-                {demoVideo.title} — {isAr ? "ديمو مباشر" : "Live demo"}
-              </p>
-              <button
-                onClick={() => setDemoVideo(null)}
-                aria-label={isAr ? "إغلاق" : "Close"}
-                className="flex size-7 items-center justify-center rounded-full bg-white/10 text-white"
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <video
-              src={demoVideo.url}
-              controls
-              autoPlay
-              playsInline
-              className="block aspect-video w-full bg-black"
-            />
-          </div>
-        </div>
-      )}
+      <DemoVideoModal url={demoVideo?.url ?? null} title={demoVideo?.title} isAr={isAr} onClose={() => setDemoVideo(null)} />
     </div>
   );
 }

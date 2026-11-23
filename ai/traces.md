@@ -918,3 +918,18 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   brochure `?download=1` Blob special case. Still on Blob: the hardcoded
   `GENERAL_DEMO_URL` ("See a demo" on /chatbots) — needs a new URL once the
   owner deletes the Blob store.
+
+## 2026-11-23 — One demo-video pop-up for every demo button
+- `ui/demo-video-modal.tsx` (shadcn Dialog): YouTube links embed; uploaded
+  files (R2) play in a `<video>` player; if a file can't be played (missing,
+  a format the browser can't decode) it shows "This video couldn't be played
+  here" + a direct link instead of a broken player. Escape/backdrop/X close.
+- Used by: "Watch demo" on chatbot, agent and automation detail pages (was a
+  link that opened the raw file in a new tab) and the /chatbots "See a demo" /
+  "Watch it in action" buttons (replaced the hand-rolled modal, which had no
+  error handling).
+- Checked in a real browser: an uploaded WebM plays, a missing file shows the
+  fallback, a YouTube link embeds, the list-page card opens the pop-up without
+  navigating, the pop-up fits a 390px phone, no page errors.
+- Upload tip: MP4 (H.264) plays in every browser; MOV/MKV/AVI may only play
+  in some, and fall back to the direct link elsewhere.

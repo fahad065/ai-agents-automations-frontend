@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { DemoVideoModal } from "@/components/ui/demo-video-modal";
 import { youtubeEmbedUrl } from "@/components/ui/media-preview";
 import Link from "next/link";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
@@ -71,6 +72,7 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
   const { isAr } = useLang();
   const { isAuthenticated } = useAuthStore();
   const [automation, setAutomation] = useState<AutomationTemplate | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const heroRef = useRef<HTMLDivElement>(null);
@@ -201,15 +203,15 @@ export function AutomationDetailPage({ slug }: { slug: string }) {
                 </Button>
 
                 {automation.demoVideoUrl && (
-                  <a
-                    href={automation.demoVideoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.015] px-4.5 py-3.25 text-[15px] font-medium whitespace-nowrap text-muted-foreground no-underline"
+                  <button
+                    type="button"
+                    onClick={() => setShowDemo(true)}
+                    className="inline-flex items-center gap-2 rounded-[10px] border bg-foreground/[0.015] px-4.5 py-3.25 text-[15px] font-medium whitespace-nowrap text-muted-foreground cursor-pointer"
                   >
                     <Play size={14} /> {isAr ? "شاهد العرض" : "Watch demo"}
-                  </a>
+                  </button>
                 )}
+                <DemoVideoModal url={showDemo ? automation.demoVideoUrl || null : null} title={automation.name} isAr={isAr} onClose={() => setShowDemo(false)} />
                 <BrochureButton url={automation.brochureUrl} isAr={isAr} />
               </div>
             </div>
