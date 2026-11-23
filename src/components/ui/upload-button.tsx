@@ -24,7 +24,7 @@ const TYPE_BY_EXT: Record<string, string> = {
   mp4: "video/mp4", m4v: "video/x-m4v", mov: "video/quicktime", webm: "video/webm", ogv: "video/ogg",
   mkv: "video/x-matroska", avi: "video/x-msvideo", mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac",
   wav: "audio/wav", ogg: "audio/ogg", flac: "audio/flac", weba: "audio/webm", jpg: "image/jpeg", jpeg: "image/jpeg",
-  png: "image/png", webp: "image/webp", gif: "image/gif", avif: "image/avif", pdf: "application/pdf",
+  png: "image/png", webp: "image/webp", gif: "image/gif", avif: "image/avif", bmp: "image/bmp", pdf: "application/pdf",
   doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

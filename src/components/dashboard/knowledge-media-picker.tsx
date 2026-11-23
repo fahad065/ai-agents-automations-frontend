@@ -28,7 +28,35 @@ export interface MediaUsage {
   maxBytes: { image: number; pdf: number };
 }
 
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+// Photo formats every browser can show (sent as they are). Any other photo
+// the browser can open (e.g. iPhone HEIC in Safari, TIFF) is converted to JPG
+// before upload, so visitors on any browser can see it.
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif", "image/bmp"];
+const CONVERT_EXT = /\.(heic|heif|tiff?|jfif|pjpeg)$/i;
+
+async function toJpeg(file: File): Promise<File | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) return null;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return null; // this browser can't open the format
+  }
+}
+
+// The file to upload: as-is when it's a web photo format, otherwise a JPG copy.
+async function webPhoto(file: File): Promise<File | null> {
+  if (IMAGE_TYPES.includes(file.type) && !CONVERT_EXT.test(file.name)) return file;
+  if (!file.type.startsWith("image/") && !CONVERT_EXT.test(file.name)) return null;
+  if (file.type === "image/svg+xml") return null;
+  return toJpeg(file);
+}
 
 export function KnowledgeMediaPicker({
   botId,
@@ -68,8 +96,13 @@ export function KnowledgeMediaPicker({
       toast.error(kind === "image" ? `Up to ${usage!.perEntry.image} photos per entry` : "One PDF per entry");
       return;
     }
-    for (const file of list) {
-      if (kind === "image" && !IMAGE_TYPES.includes(file.type)) { toast.error(`${file.name}: use JPG, PNG or WebP`); continue; }
+    for (const original of list) {
+      let file = original;
+      if (kind === "image") {
+        const photo = await webPhoto(original);
+        if (!photo) { toast.error(`${original.name}: this photo format can't be opened here — save it as JPG or PNG and try again`); continue; }
+        file = photo;
+      }
       if (kind === "pdf" && file.type !== "application/pdf") { toast.error(`${file.name}: not a PDF`); continue; }
       if (file.size > usage!.maxBytes[kind]) { toast.error(`${file.name} is larger than ${mb(usage!.maxBytes[kind])}`); continue; }
       setBusy((n) => n + 1);
@@ -109,7 +142,7 @@ export function KnowledgeMediaPicker({
       </div>
       <p className="mb-2 mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
         Shown in the website chat when the bot answers this question — e.g. a property&apos;s photos and its brochure.
-        Up to {usage.perEntry.image} photos (JPG, PNG or WebP, {mb(usage.maxBytes.image)} each) and 1 PDF ({mb(usage.maxBytes.pdf)}).
+        Up to {usage.perEntry.image} photos (any format — JPG, PNG, WebP, AVIF, GIF, iPhone HEIC… — {mb(usage.maxBytes.image)} each) and 1 PDF ({mb(usage.maxBytes.pdf)}).
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -148,7 +181,7 @@ export function KnowledgeMediaPicker({
           className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50">
           <FileText size={13} /> Add PDF brochure
         </button>
-        <input ref={photoInput} type="file" accept={IMAGE_TYPES.join(",")} multiple hidden data-testid="photo-input"
+        <input ref={photoInput} type="file" accept="image/*,.heic,.heif" multiple hidden data-testid="photo-input"
           onChange={(e) => { upload("image", e.target.files); e.target.value = ""; }} />
         <input ref={pdfInput} type="file" accept="application/pdf" hidden data-testid="pdf-input"
           onChange={(e) => { upload("pdf", e.target.files); e.target.value = ""; }} />

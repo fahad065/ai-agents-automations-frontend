@@ -359,10 +359,10 @@ export function ProfilePage() {
                 />
               </div>
               <div style={{ flex: "1 1 220px", minWidth: "200px" }}>
-                {lbl("File (JPG, PNG or WebP up to 10 MB, or PDF up to 100 MB)")}
+                {lbl("File (photo — JPG, PNG, WebP, AVIF, GIF or BMP — up to 10 MB, or PDF up to 100 MB)")}
                 <input
                   type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                  accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.pdf,image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,application/pdf"
                   onChange={(e) => setDocFile(e.target.files?.[0] || null)}
                   style={{ ...inp, padding: "7px 10px" }}
                 />

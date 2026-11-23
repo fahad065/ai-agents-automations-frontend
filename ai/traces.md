@@ -948,3 +948,11 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   each card's "Watch it in action" plays that template's own uploaded video.
   The hardcoded Vercel Blob product-overview URL (`GENERAL_DEMO_URL`) is gone,
   so no Blob URLs remain in the code. Templates intro no longer says "GCC".
+
+## 2026-11-24 — Knowledge-base photo picker takes every photo format
+- `knowledge-media-picker.tsx`: `accept="image/*,.heic,.heif"`. JPG, PNG,
+  WebP, AVIF, GIF, BMP upload as they are; anything else the browser can open
+  (iPhone HEIC in Safari, TIFF where supported) is drawn to a canvas and
+  uploaded as a JPG (90% quality, same name with .jpg). Unopenable files get a
+  clear message. iPhones already hand HEIC to websites as JPG.
+- Profile documents accept AVIF/GIF/BMP photos too.
