@@ -933,3 +933,12 @@ Page titles match the labels. e2e gym 76/76, agent 32/32.
   navigating, the pop-up fits a 390px phone, no page errors.
 - Upload tip: MP4 (H.264) plays in every browser; MOV/MKV/AVI may only play
   in some, and fall back to the direct link elsewhere.
+
+## 2026-11-23 — Service video/brochure fields are upload-only
+- Owner: no text box, just upload. First time: Upload. Editing again: the
+  saved file previews (video player / inline PDF / image / link) with
+  **Replace** and **Remove**. Replace uploads to R2 and saves the new URL at
+  once (backend deletes the old file); Remove asks to confirm, then clears the
+  field and deletes the file. Remove is also how the old Vercel Blob links get
+  cleared (Blob files themselves are deleted by the owner).
+- `ui/media-preview.tsx`: PDFs now preview inline (iframe) with a link.

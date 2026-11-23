@@ -168,6 +168,7 @@ export function AdminModules() {
   const [saving, setSaving] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Module | null>(null);
+  const [removeField, setRemoveField] = useState<"demoVideoUrl" | "brochureUrl" | null>(null);
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>("basic");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -301,6 +302,70 @@ export function AdminModules() {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e?.response?.data?.message || "Uploaded, but saving failed — click Update service");
     }
+  };
+
+  // Removing the file: clear the field and, on an existing service, save at
+  // once (the backend deletes the old file from storage if it's ours).
+  const onMediaRemoved = async (field: "demoVideoUrl" | "brochureUrl") => {
+    setForm(prev => ({ ...prev, [field]: "" }));
+    if (!editingId) return;
+    try {
+      await api.patch(`/services/${editingId}`, { [`content.${field}`]: "" });
+      toast.success(field === "demoVideoUrl" ? "Video removed" : "Brochure removed");
+      fetchModules();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || "Couldn't remove it — try again");
+    }
+  };
+
+  const mediaField = (field: "demoVideoUrl" | "brochureUrl", label: string, hint: string, testId: string) => {
+    const url = form[field];
+    const noSlug = !form.slug.trim();
+    return (
+      <div className="col-span-full mb-3.5" data-testid={`${testId}-field`}>
+        {fieldLabel(label, hint)}
+        {url ? (
+          <div className="rounded-md border p-3">
+            <MediaPreview url={url} />
+            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+              <UploadButton
+                purpose="service-media"
+                details={{ serviceId: form.slug.trim() || undefined }}
+                accept={MEDIA_ACCEPT}
+                label="Replace"
+                disabled={noSlug}
+                onUploaded={(f) => onMediaUploaded(field, f)}
+                testId={testId}
+              />
+              <button
+                type="button"
+                onClick={() => setRemoveField(field)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/5"
+                data-testid={`${testId}-remove`}
+              >
+                <Trash2 size={13} /> Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed p-3">
+            <UploadButton
+              purpose="service-media"
+              details={{ serviceId: form.slug.trim() || undefined }}
+              accept={MEDIA_ACCEPT}
+              label="Upload"
+              disabled={noSlug}
+              onUploaded={(f) => onMediaUploaded(field, f)}
+              testId={testId}
+            />
+            <span className="text-[11px] text-muted-foreground">
+              {noSlug ? "Fill in the slug first — it names the folder." : "Video up to 2 GB, documents up to 200 MB. MP4 plays in every browser."}
+            </span>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleSave = async () => {
@@ -571,38 +636,8 @@ export function AdminModules() {
                   {fieldLabel("Platforms", "comma separated")}
                   <Input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder="youtube, instagram, tiktok" />
                 </div>
-                <div className="col-span-full mb-3.5">
-                  {fieldLabel("Demo / how-it-works video", "upload from your computer, or paste a YouTube link")}
-                  <div className="flex gap-2">
-                    <Input value={form.demoVideoUrl} onChange={e => setForm(f => ({ ...f, demoVideoUrl: e.target.value }))} placeholder="Upload a file, or paste https://youtu.be/..." />
-                    <UploadButton
-                      purpose="service-media"
-                      details={{ serviceId: form.slug.trim() || undefined }}
-                      accept={MEDIA_ACCEPT}
-                      label="Upload"
-                      disabled={!form.slug.trim()}
-                      onUploaded={(f) => onMediaUploaded("demoVideoUrl", f)}
-                      testId="service-video-input"
-                    />
-                  </div>
-                  <MediaPreview url={form.demoVideoUrl} />
-                </div>
-                <div className="col-span-full mb-3.5">
-                  {fieldLabel("Brochure", "shows a Download brochure button next to Watch demo")}
-                  <div className="flex gap-2">
-                    <Input value={form.brochureUrl} onChange={e => setForm(f => ({ ...f, brochureUrl: e.target.value }))} placeholder="Upload a file, or paste a link" />
-                    <UploadButton
-                      purpose="service-media"
-                      details={{ serviceId: form.slug.trim() || undefined }}
-                      accept={MEDIA_ACCEPT}
-                      label="Upload"
-                      disabled={!form.slug.trim()}
-                      onUploaded={(f) => onMediaUploaded("brochureUrl", f)}
-                      testId="service-brochure-input"
-                    />
-                  </div>
-                  <MediaPreview url={form.brochureUrl} />
-                </div>
+                {mediaField("demoVideoUrl", "Demo / how-it-works video", "plays in a pop-up when visitors click Watch demo", "service-video-input")}
+                {mediaField("brochureUrl", "Brochure", "shows a Download brochure button next to Watch demo", "service-brochure-input")}
                 <div className="mb-3.5">
                   {fieldLabel("Status", "inactive = hidden from the public catalog")}
                   <Combobox
@@ -1059,6 +1094,29 @@ export function AdminModules() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!removeField} onOpenChange={(open) => !open && setRemoveField(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{removeField === "demoVideoUrl" ? "Remove the demo video?" : "Remove the brochure?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {editingId
+                ? "It disappears from the service page now, and a file you uploaded is deleted from storage. This can't be undone."
+                : "It won't be saved on the new service."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (removeField) onMediaRemoved(removeField); setRemoveField(null); }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+              data-testid="confirm-remove-media"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

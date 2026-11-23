@@ -6,6 +6,7 @@ import { FileText, Music } from "lucide-react";
 // image, or a link for documents (PDF, Office…).
 const VIDEO = /\.(mp4|webm|mov|ogv|m4v|mkv|avi)(\?|#|$)/i;
 const AUDIO = /\.(mp3|m4a|aac|wav|ogg|weba|flac)(\?|#|$)/i;
+const PDF = /\.pdf(\?|#|$)/i;
 const IMAGE = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i;
 
 export function youtubeEmbedUrl(url: string): string | null {
@@ -34,9 +35,20 @@ export function MediaPreview({ url }: { url?: string }) {
   }
   // eslint-disable-next-line @next/next/no-img-element
   if (IMAGE.test(u)) return <img src={u} alt="Preview" className={`${box} max-h-48 object-contain`} />;
+  const fileName = decodeURIComponent(u.split("/").pop()?.split("?")[0] || "Open file");
+  if (PDF.test(u)) {
+    return (
+      <div className="mt-2 max-w-md">
+        <iframe src={`${u}#view=FitH`} title="PDF preview" className="h-64 w-full rounded-md border bg-white" data-testid="media-preview-pdf" />
+        <a href={u} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex max-w-full items-center gap-1.5 truncate text-xs font-medium text-primary hover:underline">
+          <FileText size={13} className="shrink-0" /> {fileName}
+        </a>
+      </div>
+    );
+  }
   return (
     <a href={u} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-md items-center gap-1.5 truncate text-xs font-medium text-primary hover:underline">
-      <FileText size={13} className="shrink-0" /> {decodeURIComponent(u.split("/").pop()?.split("?")[0] || "Open file")}
+      <FileText size={13} className="shrink-0" /> {fileName}
     </a>
   );
 }
