@@ -529,18 +529,18 @@ function BlogModal({ post, onClose, onSave }: {
                         ...f, title: e.target.value,
                         slug: post ? f.slug : autoSlug(e.target.value),
                       }))}
-                      placeholder="How AI is changing content creation"
+                      placeholder="e.g. How AI is changing content creation"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       {fieldLabel("Slug")}
-                      <Input value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="how-ai-changing-content" />
+                      <Input value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="e.g. how-ai-changing-content" />
                     </div>
                     <div>
                       {fieldLabel("Category")}
-                      <Input value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="AI, YouTube, Marketing" />
+                      <Input value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="e.g. AI, Chatbots, Marketing" />
                     </div>
                   </div>
 
@@ -564,7 +564,7 @@ function BlogModal({ post, onClose, onSave }: {
                     <Label className="mb-1.25 block text-xs font-medium text-muted-foreground">
                       Tags <span className="font-normal">(comma separated)</span>
                     </Label>
-                    <Input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="ai, youtube, automation, content" />
+                    <Input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="e.g. ai, chatbots, automation" />
                   </div>
 
                   <div className="flex items-center justify-between rounded-lg border bg-background px-3.5 py-3">

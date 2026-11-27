@@ -109,6 +109,7 @@ const NICHE_OPTIONS = [
   { slug: "agriculture",      name: "Agriculture" },
   { slug: "finance",          name: "Finance & Microfinance" },
   { slug: "internal_copilot", name: "Internal Copilot" },
+  { slug: "home_services",    name: "Home & Property Services" },
 ];
 
 const formatLabel = (val: string) =>
@@ -117,20 +118,20 @@ const formatLabel = (val: string) =>
 const emptyForm = {
   name: "", slug: "", description: "", tagline: "",
   type: "agent",
-  pipelineType: "youtube",
-  pipelineCategory: "standalone", nicheSlug: "content_social",
+  pipelineType: "",
+  pipelineCategory: "standalone", nicheSlug: "",
   components: "",
-  icon: "🤖", color: "#7c3aed",
+  icon: "", color: "#7c3aed",
   capabilities: "", requiredApiKeys: [] as string[],
   status: "coming_soon", sortOrder: 1,
   platforms: "",
   demoVideoUrl: "", brochureUrl: "",
   heroStats: "", featureCards: "", howItWorks: "",
   faq: "", testimonials: "",
-  pricingMonthly: "49", pricingAnnual: "39", pricingFeatures: "",
+  pricingMonthly: "", pricingAnnual: "", pricingFeatures: "",
   // Chatbot-only tiered pricing (Basic/Pro) — see backend CLAUDE.md "Tiered chatbot pricing"
-  tierBasicMonthly: "39", tierBasicAnnual: "31", tierBasicFeatures: "",
-  tierProMonthly: "79", tierProAnnual: "63", tierProFeatures: "",
+  tierBasicMonthly: "", tierBasicAnnual: "", tierBasicFeatures: "",
+  tierProMonthly: "", tierProAnnual: "", tierProFeatures: "",
   // Arabic fields
   name_ar: "", tagline_ar: "", description_ar: "",
   capabilities_ar: "", pricingFeatures_ar: "",
@@ -139,6 +140,51 @@ const emptyForm = {
 };
 
 type FormState = typeof emptyForm;
+
+// Example text shown in empty fields, written for the service type being
+// edited. Always "e.g." so an example can't be mistaken for a saved value.
+type ServiceKind = "chatbot" | "agent" | "automation";
+const PLACEHOLDERS: Record<ServiceKind, Record<string, string>> = {
+  chatbot: {
+    name: "e.g. Restaurant Chatbot", slug: "e.g. restaurant-chatbot", tagline: "e.g. Never miss a booking or a guest question again", icon: "e.g. 🍽️",
+    description: "What the chatbot answers, who it's for, which channels it works on — and what it never does",
+    capabilities: "e.g. Menu & price questions, Booking link or requests, Lead capture, Replies in any language",
+    platforms: "e.g. website, whatsapp, instagram",
+    heroStats: "e.g.\nReplies|Instant\nAlways on|24/7\nLanguages|Any\nTo go live on your site|1 day",
+    featureCards: "e.g.\n📋|Menu & price questions|Guests ask about dishes and prices and get an instant answer...\n📅|Booking requests|The bot shares your booking link or takes the request...",
+    howItWorks: "e.g.\n1|Add your details|Paste your menu, prices and hours into your dashboard...\n2|Add your AI key|The bot runs on your own OpenAI, Claude or Gemini account...",
+    faq: "e.g.\nDo I need any technical skills?|No. You add your details in a simple dashboard...\nCan it take payments?|Not on Basic or Pro...",
+    pricingFeatures: "e.g.\nWebsite chat widget\nKnowledge base\nLead capture",
+    name_ar: "مثال: شات بوت المطاعم", tagline_ar: "مثال: لا تفوّت أي حجز أو سؤال من ضيوفك", capabilities_ar: "مثال: أسئلة المنيو والأسعار, طلبات الحجز, حفظ بيانات الضيوف",
+    pricingFeatures_ar: "مثال:\nودجت محادثة على موقعك\nقاعدة المعرفة",
+  },
+  agent: {
+    name: "e.g. YouTube Agent", slug: "e.g. youtube-agent", tagline: "e.g. A new video on your channel every day", icon: "e.g. 🎬",
+    description: "What the agent produces, how often, and what the customer needs to connect",
+    capabilities: "e.g. Trend discovery, AI scriptwriting, Auto upload",
+    platforms: "e.g. youtube",
+    heroStats: "e.g.\nVideos generated|20+\nCost per video|$3-5\nShorts per video|3",
+    featureCards: "e.g.\n⚡|Viral hook generation|Generates hooks for the first 5 seconds...\n📝|AI scriptwriting|Full 8-12 minute scripts...",
+    howItWorks: "e.g.\n1|Agent finds a trending topic|Every day the agent scans...\n2|Script written|AI writes the full script...",
+    faq: "e.g.\nHow much does each video cost?|Each video costs about $3-5 in AI usage...\nDo I need a YouTube account?|Yes...",
+    pricingFeatures: "e.g.\nUnlimited pipeline runs\nDaily trend discovery\nAuto YouTube upload",
+    name_ar: "مثال: وكيل يوتيوب", tagline_ar: "مثال: فيديو جديد على قناتك كل يوم", capabilities_ar: "مثال: اكتشاف الاتجاهات, كتابة السيناريو, الرفع التلقائي",
+    pricingFeatures_ar: "مثال:\nتشغيل غير محدود\nاكتشاف الاتجاهات يومياً",
+  },
+  automation: {
+    name: "e.g. Appointment Reminders", slug: "e.g. appointment-reminders", tagline: "e.g. Fewer no-shows, without lifting a finger", icon: "e.g. ⏰",
+    description: "What the automation does, what starts it, which accounts it connects to — and what it never does",
+    capabilities: "e.g. WhatsApp & email reminders, Confirm or reschedule links, No-show follow-up",
+    platforms: "e.g. whatsapp, email, google-calendar",
+    heroStats: "e.g.\nNo-shows|Fewer\nSet-up|15 minutes\nRuns|24/7\nChannels|WhatsApp + email",
+    featureCards: "e.g.\n⏰|Reminders on time|24 hours and 2 hours before every appointment...\n🔁|Confirm or reschedule|Customers reply to confirm or pick a new time...",
+    howItWorks: "e.g.\n1|Connect your calendar|Link Google Calendar or Outlook...\n2|Choose your messages|Pick when reminders go out...",
+    faq: "e.g.\nWhich calendars does it work with?|Google Calendar and Outlook...\nWho pays for WhatsApp messages?|Your own Meta account...",
+    pricingFeatures: "e.g.\nUnlimited reminders\nWhatsApp + email\nRun history",
+    name_ar: "مثال: تذكير بالمواعيد", tagline_ar: "مثال: مواعيد فايتة أقل بدون أي مجهود", capabilities_ar: "مثال: تذكير بالواتساب والإيميل, تأكيد أو تغيير الموعد",
+    pricingFeatures_ar: "مثال:\nتذكيرات غير محدودة\nواتساب وإيميل",
+  },
+};
 
 const monoTextareaClass = "font-mono text-xs";
 
@@ -187,8 +233,15 @@ export function AdminModules() {
     setLoading(false);
   };
 
+  // Next free sort order for a type: the highest existing number + 1
+  // (7 chatbots numbered 1–7 → a new chatbot gets 8).
+  const nextSortOrder = (type: string) =>
+    modules.filter((m) => m.type === type).reduce((max, m) => Math.max(max, m.sortOrder || 0), 0) + 1;
+
+  const ph = PLACEHOLDERS[(form.type as ServiceKind)] ?? PLACEHOLDERS.agent;
+
   const openCreate = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm, sortOrder: nextSortOrder(emptyForm.type) });
     setEditingId(null);
     setActiveTab("basic");
     setShowForm(true);
@@ -201,8 +254,8 @@ export function AdminModules() {
       description: m.description || "",
       tagline: m.tagline || "",
       type: m.type || "agent",
-      pipelineType: m.pipelineType || "youtube",
-      icon: m.icon || "🤖",
+      pipelineType: m.pipelineType || "",
+      icon: m.icon || "",
       color: m.color || "#7c3aed",
       capabilities: (m.capabilities || []).join(", "),
       requiredApiKeys: m.requiredApiKeys || [],
@@ -210,7 +263,7 @@ export function AdminModules() {
       sortOrder: m.sortOrder || 1,
       platforms: (m.platforms || []).join(", "),
       pipelineCategory: m.pipelineCategory || "standalone",
-      nicheSlug: m.nicheSlug || "content_social",
+      nicheSlug: m.nicheSlug || "",
       components: (m.components || []).join("\n"),
       demoVideoUrl: m.demoVideoUrl || "",
       brochureUrl: m.brochureUrl || "",
@@ -382,11 +435,11 @@ export function AdminModules() {
         tagline: form.tagline.trim(),
         type: form.type,
         // Pipeline fields only mean something for agents/automations.
-        pipelineType: form.type === "chatbot" ? undefined : form.pipelineType,
+        pipelineType: form.type === "chatbot" ? undefined : form.pipelineType || undefined,
         icon: form.icon.trim(),
         color: form.color.trim(),
         pipelineCategory: form.type === "chatbot" ? "standalone" : form.pipelineCategory,
-        nicheSlug: form.nicheSlug,
+        nicheSlug: form.nicheSlug || undefined,
         components: form.type === "chatbot" ? [] : form.components.split("\n").map(c => c.trim()).filter(Boolean),
         status: form.status,
         sortOrder: Number(form.sortOrder),
@@ -585,10 +638,10 @@ export function AdminModules() {
             {/* BASIC TAB */}
             {activeTab === "basic" && (
               <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-                <div className="mb-3.5">{fieldLabel("Name *")}<Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="YouTube Agent" /></div>
-                <div className="mb-3.5">{fieldLabel("Slug *")}<Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="youtube-agent" /></div>
-                <div className="mb-3.5">{fieldLabel("Tagline")}<Input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Automate your YouTube channel" /></div>
-                <div className="mb-3.5">{fieldLabel("Icon", "emoji")}<Input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="🤖" /></div>
+                <div className="mb-3.5">{fieldLabel("Name *")}<Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={ph.name} /></div>
+                <div className="mb-3.5">{fieldLabel("Slug *")}<Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder={ph.slug} /></div>
+                <div className="mb-3.5">{fieldLabel("Tagline")}<Input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder={ph.tagline} /></div>
+                <div className="mb-3.5">{fieldLabel("Icon", "emoji")}<Input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder={ph.icon} /></div>
                 <div className="mb-3.5">
                   {fieldLabel("Color", "hex")}
                   <div className="flex gap-2">
@@ -597,14 +650,14 @@ export function AdminModules() {
                       onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                       className="h-9 w-11 cursor-pointer rounded-lg border p-0.5"
                     />
-                    <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="flex-1" />
+                    <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="e.g. #7c3aed" className="flex-1" />
                   </div>
                 </div>
                 <div className="mb-3.5">
                   {fieldLabel("Type")}
                   <Combobox
                     value={form.type}
-                    onChange={(v) => setForm(f => ({ ...f, type: v }))}
+                    onChange={(v) => setForm(f => ({ ...f, type: v, ...(editingId ? {} : { sortOrder: nextSortOrder(v) }) }))}
                     options={[
                       { value: "agent", label: "Agent" },
                       { value: "automation", label: "Automation" },
@@ -612,7 +665,7 @@ export function AdminModules() {
                     ]}
                   />
                 </div>
-                <div className="mb-3.5">{fieldLabel("Sort Order")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
+                <div className="mb-3.5">{fieldLabel("Sort Order", editingId ? undefined : "next free number for this type")}<Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: Number(e.target.value) }))} /></div>
                 {form.type === "chatbot" && (
                   <div className="mb-3.5">
                     {fieldLabel("Niche", "drives the industry filter on /services and /pricing")}
@@ -620,21 +673,22 @@ export function AdminModules() {
                       value={form.nicheSlug}
                       onChange={(v) => setForm(f => ({ ...f, nicheSlug: v }))}
                       options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
+                      placeholder="Select a niche"
                       searchPlaceholder="Search niches..."
                     />
                   </div>
                 )}
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Description")}
-                  <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+                  <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder={ph.description} />
                 </div>
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Capabilities", "comma separated")}
-                  <Input value={form.capabilities} onChange={e => setForm(f => ({ ...f, capabilities: e.target.value }))} placeholder="Trend discovery, AI scriptwriting, Auto upload" />
+                  <Input value={form.capabilities} onChange={e => setForm(f => ({ ...f, capabilities: e.target.value }))} placeholder={ph.capabilities} />
                 </div>
                 <div className="col-span-full mb-3.5">
                   {fieldLabel("Platforms", "comma separated")}
-                  <Input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder="youtube, instagram, tiktok" />
+                  <Input value={form.platforms} onChange={e => setForm(f => ({ ...f, platforms: e.target.value }))} placeholder={ph.platforms} />
                 </div>
                 {mediaField("demoVideoUrl", "Demo / how-it-works video", "plays in a pop-up when visitors click Watch demo", "service-video-input")}
                 {mediaField("brochureUrl", "Brochure", "shows a Download brochure button next to Watch demo", "service-brochure-input")}
@@ -662,6 +716,7 @@ export function AdminModules() {
                     value={form.pipelineType}
                     onChange={(v) => setForm(f => ({ ...f, pipelineType: v }))}
                     options={PIPELINE_TYPES.map(p => ({ value: p, label: formatLabel(p) }))}
+                    placeholder="Select a pipeline type"
                   />
                 </div>
                 <div className="mb-3.5">
@@ -681,6 +736,7 @@ export function AdminModules() {
                     value={form.nicheSlug}
                     onChange={(v) => setForm(f => ({ ...f, nicheSlug: v }))}
                     options={NICHE_OPTIONS.map(n => ({ value: n.slug, label: n.name }))}
+                    placeholder="Select a niche"
                     searchPlaceholder="Search niches..."
                   />
                 </div>
@@ -691,7 +747,7 @@ export function AdminModules() {
                       value={form.components}
                       onChange={e => setForm(f => ({ ...f, components: e.target.value }))}
                       rows={4}
-                      placeholder={"whatsapp_channel\nleads_collector\nai_qualifier\ncrm_sync"}
+                      placeholder={"e.g.\nwhatsapp_channel\nleads_collector\nai_qualifier\ncrm_sync"}
                       className={monoTextareaClass}
                     />
                   </div>
@@ -739,7 +795,7 @@ export function AdminModules() {
                     value={form.heroStats}
                     onChange={e => setForm(f => ({ ...f, heroStats: e.target.value }))}
                     rows={5}
-                    placeholder={"Videos generated|20+\nCost per video|$3-5\nShorts per video|3\nSuccess rate|95%"}
+                    placeholder={ph.heroStats}
                     className={monoTextareaClass}
                   />
                 </div>
@@ -749,7 +805,7 @@ export function AdminModules() {
                     value={form.featureCards}
                     onChange={e => setForm(f => ({ ...f, featureCards: e.target.value }))}
                     rows={7}
-                    placeholder={"⚡|Viral hook generation|Generates psychological hooks...\n📝|AI scriptwriting|Full 8-12 minute scripts..."}
+                    placeholder={ph.featureCards}
                     className={monoTextareaClass}
                   />
                 </div>
@@ -759,7 +815,7 @@ export function AdminModules() {
                     value={form.howItWorks}
                     onChange={e => setForm(f => ({ ...f, howItWorks: e.target.value }))}
                     rows={5}
-                    placeholder={"1|Agent discovers trending topic|Every day the agent scans...\n2|Script generated|AI writes full script..."}
+                    placeholder={ph.howItWorks}
                     className={monoTextareaClass}
                   />
                 </div>
@@ -769,7 +825,7 @@ export function AdminModules() {
                     value={form.faq}
                     onChange={e => setForm(f => ({ ...f, faq: e.target.value }))}
                     rows={5}
-                    placeholder={"How much does it cost?|Each video costs approximately $3-5...\nDo I need an account?|Yes you need..."}
+                    placeholder={ph.faq}
                     className={monoTextareaClass}
                   />
                 </div>
@@ -793,8 +849,8 @@ export function AdminModules() {
                   <div className="mb-4 rounded-lg border p-3.5">
                     <p className="mb-3 text-sm font-semibold text-foreground">Basic tier</p>
                     <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierBasicMonthly} onChange={e => setForm(f => ({ ...f, tierBasicMonthly: e.target.value }))} /></div>
-                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierBasicAnnual} onChange={e => setForm(f => ({ ...f, tierBasicAnnual: e.target.value }))} /></div>
+                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierBasicMonthly} onChange={e => setForm(f => ({ ...f, tierBasicMonthly: e.target.value }))} placeholder="e.g. 99" /></div>
+                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierBasicAnnual} onChange={e => setForm(f => ({ ...f, tierBasicAnnual: e.target.value }))} placeholder="e.g. 79" /></div>
                     </div>
                     <div>
                       {fieldLabel("Basic Features", "one per line")}
@@ -802,7 +858,7 @@ export function AdminModules() {
                         value={form.tierBasicFeatures}
                         onChange={e => setForm(f => ({ ...f, tierBasicFeatures: e.target.value }))}
                         rows={5}
-                        placeholder={"Website chat widget\nKnowledge base\nEmail notifications"}
+                        placeholder={"e.g.\nWebsite chat widget in your brand colour\nKnowledge base\nLead capture\nEmail support"}
                       />
                     </div>
                   </div>
@@ -811,8 +867,8 @@ export function AdminModules() {
                   <div className="mb-4 rounded-lg border p-3.5">
                     <p className="mb-3 text-sm font-semibold text-foreground">Pro tier</p>
                     <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierProMonthly} onChange={e => setForm(f => ({ ...f, tierProMonthly: e.target.value }))} /></div>
-                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierProAnnual} onChange={e => setForm(f => ({ ...f, tierProAnnual: e.target.value }))} /></div>
+                      <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.tierProMonthly} onChange={e => setForm(f => ({ ...f, tierProMonthly: e.target.value }))} placeholder="e.g. 99" /></div>
+                      <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.tierProAnnual} onChange={e => setForm(f => ({ ...f, tierProAnnual: e.target.value }))} placeholder="e.g. 79" /></div>
                     </div>
                     <div>
                       {fieldLabel("Pro Features", "one per line")}
@@ -820,7 +876,7 @@ export function AdminModules() {
                         value={form.tierProFeatures}
                         onChange={e => setForm(f => ({ ...f, tierProFeatures: e.target.value }))}
                         rows={6}
-                        placeholder={"Everything in Basic\nWhatsApp integration\nInstagram integration\nAnalytics & insights\nPriority support"}
+                        placeholder={"e.g.\nEverything in Basic, plus:\nWhatsApp Business channel\nInstagram DM channel\nAnalytics\nPriority support"}
                       />
                     </div>
                   </div>
@@ -838,8 +894,8 @@ export function AdminModules() {
               ) : (
                 <div>
                   <div className="mb-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} /></div>
-                    <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} /></div>
+                    <div>{fieldLabel("Monthly Price ($)")}<Input type="number" value={form.pricingMonthly} onChange={e => setForm(f => ({ ...f, pricingMonthly: e.target.value }))} placeholder="e.g. 99" /></div>
+                    <div>{fieldLabel("Annual Price ($/mo)")}<Input type="number" value={form.pricingAnnual} onChange={e => setForm(f => ({ ...f, pricingAnnual: e.target.value }))} placeholder="e.g. 79" /></div>
                   </div>
                   <div className="mb-3.5">
                     {fieldLabel("Pricing Features", "one per line")}
@@ -847,7 +903,7 @@ export function AdminModules() {
                       value={form.pricingFeatures}
                       onChange={e => setForm(f => ({ ...f, pricingFeatures: e.target.value }))}
                       rows={10}
-                      placeholder={"Unlimited pipeline runs\nDaily trend discovery\nFull script generation\nAuto YouTube upload\n3 Shorts per video\nAI thumbnail generation\nEmail notifications\nPriority support"}
+                      placeholder={ph.pricingFeatures}
                     />
                   </div>
                   <div className="rounded-lg border bg-background p-3.5">
@@ -877,7 +933,7 @@ export function AdminModules() {
                     <Input
                       value={form.name_ar}
                       onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
-                      placeholder="مثال: وكيل يوتيوب"
+                      placeholder={ph.name_ar}
                       dir="rtl"
                     />
                   </div>
@@ -886,7 +942,7 @@ export function AdminModules() {
                     <Input
                       value={form.tagline_ar}
                       onChange={e => setForm(f => ({ ...f, tagline_ar: e.target.value }))}
-                      placeholder="مثال: أتمتة قناتك على يوتيوب"
+                      placeholder={ph.tagline_ar}
                       dir="rtl"
                     />
                   </div>
@@ -896,7 +952,7 @@ export function AdminModules() {
                       value={form.description_ar}
                       onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))}
                       rows={4}
-                      placeholder="وصف بالعربية..."
+                      placeholder="الوصف بالعربي (لهجة إماراتية)…"
                       dir="rtl"
                     />
                   </div>
@@ -905,7 +961,7 @@ export function AdminModules() {
                     <Input
                       value={form.capabilities_ar}
                       onChange={e => setForm(f => ({ ...f, capabilities_ar: e.target.value }))}
-                      placeholder="اكتشاف الاتجاهات, كتابة السيناريو بالذكاء الاصطناعي, الرفع التلقائي"
+                      placeholder={ph.capabilities_ar}
                       dir="rtl"
                     />
                   </div>
@@ -925,6 +981,7 @@ export function AdminModules() {
                           onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                           rows={rows}
                           dir="rtl"
+                          placeholder={`مثال: سطر لكل سطر بالإنجليزي، بنفس الترتيب — ${hint.split(" — ")[0]}`}
                           className={monoTextareaClass}
                         />
                       </div>
@@ -938,7 +995,7 @@ export function AdminModules() {
                           value={form.tierBasicFeatures_ar}
                           onChange={e => setForm(f => ({ ...f, tierBasicFeatures_ar: e.target.value }))}
                           rows={4}
-                          placeholder={"واجهة الدردشة على الموقع\nقاعدة المعرفة\nإشعارات البريد الإلكتروني"}
+                          placeholder={"مثال:\nودجت محادثة على موقعك بلون علامتك\nقاعدة المعرفة\nحفظ بيانات العملاء"}
                           dir="rtl"
                         />
                       </div>
@@ -948,7 +1005,7 @@ export function AdminModules() {
                           value={form.tierProFeatures_ar}
                           onChange={e => setForm(f => ({ ...f, tierProFeatures_ar: e.target.value }))}
                           rows={5}
-                          placeholder={"كل ما في الباقة الأساسية\nتكامل واتساب\nتكامل انستغرام\nتحليلات ورؤى"}
+                          placeholder={"مثال:\nكل مميزات الباقة الأساسية، وفوقها:\nقناة واتساب للأعمال\nرسائل إنستغرام\nتحليلات"}
                           dir="rtl"
                         />
                       </div>
@@ -960,7 +1017,7 @@ export function AdminModules() {
                         value={form.pricingFeatures_ar}
                         onChange={e => setForm(f => ({ ...f, pricingFeatures_ar: e.target.value }))}
                         rows={5}
-                        placeholder={"نشر غير محدود\nدعم اللغة العربية\nتحليلات الأداء"}
+                        placeholder={ph.pricingFeatures_ar}
                         dir="rtl"
                       />
                     </div>

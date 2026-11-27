@@ -149,6 +149,7 @@ const t = {
   industries_agriculture: { en: "Agriculture", ar: "الزراعة" },
   industries_finance: { en: "Finance", ar: "المالية" },
   industries_internal_copilot: { en: "Internal Tools", ar: "الأدوات الداخلية" },
+  industries_home_services: { en: "Home & Property Services", ar: "الخدمات المنزلية وصيانة العقارات" },
 
   // Industry descriptions
   desc_content_social: {
@@ -198,6 +199,10 @@ const t = {
   desc_internal_copilot: {
     en: "AI copilots that support your internal teams and customer service.",
     ar: "مساعدون ذكاء اصطناعي يدعمون فرقك الداخلية وخدمة العملاء.",
+  },
+  desc_home_services: {
+    en: "Answer every price, area and booking question while your team is out on jobs.",
+    ar: "رد على كل سؤال عن الأسعار والمناطق والحجز وفريقك برا في الشغل.",
   },
 } as const;
 

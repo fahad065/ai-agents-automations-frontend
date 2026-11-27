@@ -174,7 +174,7 @@ export function SignupForm() {
                 </Label>
                 <Input
                   id="firstName"
-                  placeholder="Jane"
+                  placeholder="e.g. Jane"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   autoComplete="given-name"
@@ -189,7 +189,7 @@ export function SignupForm() {
                 </Label>
                 <Input
                   id="lastName"
-                  placeholder="Doe"
+                  placeholder="e.g. Doe"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   autoComplete="family-name"

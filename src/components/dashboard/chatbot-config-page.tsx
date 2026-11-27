@@ -1004,7 +1004,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                 <div>
                   {fieldLabel("Fallback Message (English)")}
                   <Textarea value={overview.fallbackMessage} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage: e.target.value }))} rows={2}
-                    placeholder="Sorry, I don't have that information. Let me connect you with our team." />
+                    placeholder="e.g. Sorry, I don't have that information. Let me connect you with our team." />
                 </div>
               )}
               {overview.language !== "en" && (
@@ -1013,7 +1013,7 @@ export function ChatbotConfigPage({ id }: { id: string }) {
                     Fallback Message (Arabic)
                   </Label>
                   <Textarea value={overview.fallbackMessage_ar} onChange={(e) => setOverview((o) => ({ ...o, fallbackMessage_ar: e.target.value }))} rows={2}
-                    dir="rtl" className="text-right" placeholder="عذراً، ما عندي هالمعلومة. راح أوصلك بفريقنا." />
+                    dir="rtl" className="text-right" placeholder="مثال: عذراً، ما عندي هالمعلومة. راح أوصلك بفريقنا." />
                 </div>
               )}
             </div>
@@ -1728,7 +1728,7 @@ function ColorField({ value, onChange }: { value: string; onChange: (v: string) 
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="#7c3aed or rgba(124,58,237,1)"
+          placeholder="e.g. #7c3aed or rgba(124,58,237,1)"
           className="flex-1 font-mono text-xs"
         />
       </div>
@@ -1793,7 +1793,7 @@ function ChannelsTab({ embedKey, channels, setChannels, embedCode, embedLoading,
               value={channels.website.welcomeMessage || ""}
               rows={2}
               onChange={(e) => setChannels((c) => ({ ...c, website: { ...c.website, welcomeMessage: e.target.value } }))}
-              placeholder="Hi! How can I help you today?"
+              placeholder="e.g. Hi! How can I help you today?"
             />
           </div>
           )}
@@ -1806,7 +1806,7 @@ function ChannelsTab({ embedKey, channels, setChannels, embedCode, embedLoading,
               dir="rtl"
               onChange={(e) => setChannels((c) => ({ ...c, website: { ...c.website, welcomeMessage_ar: e.target.value } }))}
               className="text-right"
-              placeholder="هلا! كيف أقدر أساعدك اليوم؟"
+              placeholder="مثال: هلا! كيف أقدر أساعدك اليوم؟"
             />
           </div>
           )}
@@ -2382,7 +2382,7 @@ function BillingTab({
             <div>
               {fieldLabel("Currency")}
               <Input value={pricingForm.currency}
-                onChange={(e) => setPricingForm((f: any) => ({ ...f, currency: e.target.value }))} placeholder="USD" />
+                onChange={(e) => setPricingForm((f: any) => ({ ...f, currency: e.target.value }))} placeholder="e.g. USD" />
             </div>
           </div>
           <div className="mt-3.5">

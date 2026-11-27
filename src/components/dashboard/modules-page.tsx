@@ -342,7 +342,7 @@ export function SubscribeModal({ module, onClose, onSuccess }: {
                 <>
                   <div>
                     <Label className="mb-1.5 text-xs font-medium text-muted-foreground">Service Name</Label>
-                    <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="My YouTube Agent" />
+                    <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. My YouTube Agent" />
                   </div>
                   <div>
                     <Label className="mb-1.5 text-xs font-medium text-muted-foreground">

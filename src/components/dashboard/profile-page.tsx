@@ -281,11 +281,11 @@ export function ProfilePage() {
               </div>
               <div>
                 {lbl("Phone Number")}
-                <input value={profile.phoneNumber} onChange={(e) => setProfile(p => ({ ...p, phoneNumber: e.target.value }))} style={inp} placeholder="+971 50 123 4567" />
+                <input value={profile.phoneNumber} onChange={(e) => setProfile(p => ({ ...p, phoneNumber: e.target.value }))} style={inp} placeholder="e.g. +971 50 123 4567" />
               </div>
               <div>
                 {lbl("Company / Business")}
-                <input value={profile.company} onChange={(e) => setProfile(p => ({ ...p, company: e.target.value }))} style={inp} placeholder="My Company LLC" />
+                <input value={profile.company} onChange={(e) => setProfile(p => ({ ...p, company: e.target.value }))} style={inp} placeholder="e.g. My Company LLC" />
               </div>
               <div>
                 {lbl("Country")}
