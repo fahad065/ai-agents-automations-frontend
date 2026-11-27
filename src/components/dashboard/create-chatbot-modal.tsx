@@ -29,6 +29,7 @@ export const TEMPLATES: { key: string; emoji: string; name: string }[] = [
   { key: "salon", emoji: "💇", name: "Salon / Spa" },
   { key: "hotel", emoji: "🏨", name: "Hotel / Travel" },
   { key: "auto_dealership", emoji: "🚗", name: "Auto Dealership" },
+  { key: "home_services", emoji: "🛠️", name: "Home Services" },
 ];
 
 // ── Create Chatbot Modal ────────────────────────────────────────

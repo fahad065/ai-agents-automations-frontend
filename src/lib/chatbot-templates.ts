@@ -16,6 +16,9 @@ export interface ChatbotTemplateProfile {
   insurance?: boolean;
   /** Optional "no walk-in customers" switch for this business type. */
   onlineOnly?: { title: string; hint: string; badge: string };
+  /** Label + hint for the per-branch area list (default "Nearby areas"). */
+  areasLabel?: string;
+  areasHint?: string;
   bookingLabel: string;
   bookingHelp: string;
 }
@@ -78,6 +81,15 @@ const PROFILES: Record<string, Partial<ChatbotTemplateProfile>> = {
     bookingLabel: "Test drive booking link",
     bookingHelp: "If a customer wants a test drive or a service appointment, the bot shares this link.",
   },
+  home_services: {
+    business: "company",
+    facilitiesLabel: "Services offered",
+    onlineOnly: { title: "No walk-in office", hint: "Customers don't visit this branch — your team goes to them.", badge: "MOBILE TEAM" },
+    areasLabel: "Areas covered",
+    areasHint: 'Helps the bot answer "do you cover …?". List districts, neighbourhoods or postcodes.',
+    bookingLabel: "Service booking link",
+    bookingHelp: "If a customer wants to book a job, the bot shares this link.",
+  },
 };
 
 // Clinics list the insurance plans each branch accepts (any country).
@@ -99,6 +111,7 @@ export const SERVICE_SLUG_TO_TEMPLATE: Record<string, string> = {
   "salon-chatbot": "salon",
   "hotel-chatbot": "hotel",
   "auto-dealership-chatbot": "auto_dealership",
+  "home-services-chatbot": "home_services",
 };
 
 export const CHATBOT_TEMPLATE_META: Record<string, { emoji: string; name: string }> = {
@@ -109,5 +122,6 @@ export const CHATBOT_TEMPLATE_META: Record<string, { emoji: string; name: string
   salon: { emoji: "💇", name: "Salon / Spa" },
   hotel: { emoji: "🏨", name: "Hotel / Travel" },
   auto_dealership: { emoji: "🚗", name: "Auto Dealership" },
+  home_services: { emoji: "🛠️", name: "Home Services" },
   custom: { emoji: "✨", name: "Custom" },
 };

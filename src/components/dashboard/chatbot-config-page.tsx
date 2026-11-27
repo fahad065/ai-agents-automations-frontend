@@ -1589,10 +1589,10 @@ function LocationsTab({ outlets, setOutlets, profile }: {
             </div>
           )}
           <div className="mt-2.5">
-            {fieldLabel(profile.delivery ? "Delivery areas / nearby areas (comma separated)" : "Nearby areas (comma separated)")}
+            {fieldLabel(`${profile.areasLabel ?? (profile.delivery ? "Delivery areas / nearby areas" : "Nearby areas")} (comma separated)`)}
             <Input value={form.areaTagsStr} onChange={set("areaTagsStr")} placeholder="Enter area names, separated by commas" />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Helps the bot answer &quot;do you have a {branch} near …?&quot;{profile.delivery ? " and \"do you deliver to …?\"" : ""}.
+              {profile.areasHint ?? <>Helps the bot answer &quot;do you have a {branch} near …?&quot;{profile.delivery ? " and \"do you deliver to …?\"" : ""}.</>}
             </p>
           </div>
           {profile.delivery && (
@@ -1655,7 +1655,7 @@ function LocationsTab({ outlets, setOutlets, profile }: {
                   <p className="mt-0.5 text-[11px] text-muted-foreground">Insurance accepted: {o.insurance.join(", ")}</p>
                 )}
                 {!!o.areaTags?.length && (
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">Nearby areas: {o.areaTags.join(", ")}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{profile.areasLabel ?? "Nearby areas"}: {o.areaTags.join(", ")}</p>
                 )}
               </div>
               <div className="flex shrink-0 gap-1.5">

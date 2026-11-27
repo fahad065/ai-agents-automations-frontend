@@ -36,6 +36,7 @@ const TEMPLATE_ENUM: Record<string, string> = {
   "salon-chatbot": "salon",
   "hotel-chatbot": "hotel",
   "auto-dealership-chatbot": "auto_dealership",
+  "home-services-chatbot": "home_services",
 };
 
 interface ChatbotModule {
